@@ -40,7 +40,7 @@
 //       itely true; 'Saucey Sounds'[0] === 'S', and 'Unofficial'[0]
 //       === 'U', which are the two "files" it crashes on while playing
 //       -g 'Jake Chudnow'.)
-//       (Done?)
+//       (Done!)
 //
 // TODO: A way to exclude a specific group path.
 //       (Done!)
