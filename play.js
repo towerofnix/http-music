@@ -13,6 +13,7 @@
 // TODO: Preemptively download and process the next track, while the
 //       current one is playing, to eliminate the silent time between
 //       tracks.
+//       (Done!)
 //
 // TODO: Delete old tracks! Since we aren't overwriting files, we
 //       need to manually delete files once we're done with them.
@@ -38,7 +39,6 @@
 //       itely true; 'Saucey Sounds'[0] === 'S', and 'Unofficial'[0]
 //       === 'U', which are the two "files" it crashes on while playing
 //       -g 'Jake Chudnow'.)
-//       (Done?)
 //
 // TODO: A way to exclude a specific group path.
 //       (Done!)
@@ -57,6 +57,9 @@
 //       friendly (i.e. don't require editing the script itself), and
 //       make it use the getHTMLLinks function defined in the new
 //       crawl-links.js script.
+//
+// TODO: Play-in-order track picker.
+//       (Done!)
 
 'use strict'
 
@@ -86,7 +89,7 @@ function promisifyProcess(proc, showLogging = true) {
 function flattenPlaylist(playlist) {
 	const groups = playlist.filter(x => Array.isArray(x[1]))
 	const nonGroups = playlist.filter(x => x[1] && !(Array.isArray(x[1])))
-	return groups.map(g => flattenPlaylist(g))
+	return groups.map(g => flattenPlaylist(g[1]))
 		.reduce((a, b) => a.concat(b), nonGroups)
 }
 
@@ -100,6 +103,21 @@ function playFile(file) {
 	return promisifyProcess(play)
 }
 
+function makeOrderedPlaylistPicker(playlist) {
+	const allSongs = flattenPlaylist(playlist)
+	let index = 0
+
+	return function() {
+		if (index < allSongs.length) {
+			const picked = allSongs[index]
+			index++
+			return picked
+		} else {
+			return null
+		}
+	}
+}
+
 function pickRandomFromPlaylist(playlist) {
 	const allSongs = flattenPlaylist(playlist)
 	const index = Math.floor(Math.random() * allSongs.length)
@@ -111,10 +129,16 @@ async function loopPlay(fn) {
 	// Looping play function. Takes one argument, the "pick" function,
 	// which returns a track to play. Preemptively downloads the next
 	// track while the current one is playing for seamless continuation
-	// from one song to the next.
+	// from one song to the next. Stops when the result of the pick
+	// function is null (or similar).
 
 	async function downloadNext() {
 		const picked = fn()
+
+		if (picked == null) {
+			return false
+		}
+
 		const [ title, href ] = picked
 		console.log(`Downloading ${title}..\n${href}`)
 
@@ -131,7 +155,7 @@ async function loopPlay(fn) {
 
 	let wavFile = await downloadNext()
 
-	while (true) {
+	while (wavFile) {
 		const nextPromise = downloadNext()
 		console.log(wavFile)
 		await playFile(wavFile)
@@ -360,11 +384,19 @@ fsp.readFile('./playlist.json', 'utf-8')
 				// Forces the playlist not to play.
 
 				willPlay = false
+			},
+
+			'-debug-list': function(util) {
+				// --debug-list
+				// Prints out the JSON representation of the active playlist.
+
+				console.log(JSON.stringify(curPlaylist, null, 2))
 			}
 		})
 
 		if (willPlay || (willPlay === null && shouldPlay)) {
-			return loopPlay(() => pickRandomFromPlaylist(curPlaylist))
+//			return loopPlay(() => pickRandomFromPlaylist(curPlaylist))
+			return loopPlay(makeOrderedPlaylistPicker(curPlaylist))
 		} else {
 			return curPlaylist
 		}
