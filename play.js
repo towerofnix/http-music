@@ -47,6 +47,16 @@
 //       (Done!)
 //
 // TODO: Option to include a specific path from the source playlist.
+//       (Done!)
+//
+// TODO: Make a playlist generator that parses http://billwurtz.com
+//       instrumentals.html.
+//       (Done!)
+//
+// TODO: Make crawl-itunes.js a bit more general, more command-line
+//       friendly (i.e. don't require editing the script itself), and
+//       make it use the getHTMLLinks function defined in the new
+//       crawl-links.js script.
 
 'use strict'
 
