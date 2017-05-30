@@ -170,8 +170,8 @@ async function loopPlay(fn) {
 
 	while (wavFile) {
 		const nextPromise = downloadNext()
-		console.log(wavFile)
 		await playFile(wavFile)
+		await fsp.unlink(wavFile)
 		wavFile = await nextPromise
 	}
 }
