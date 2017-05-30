@@ -76,6 +76,7 @@ function promisifyProcess(proc, showLogging = true) {
 			if (code === 0) {
 				resolve()
 			} else {
+				console.error('Process failed!', proc.spawnargs)
 				reject(code)
 			}
 		})
@@ -106,22 +107,36 @@ function pickRandomFromPlaylist(playlist) {
 	return picked
 }
 
-function loopPlay(fn) {
-	const picked = fn()
-	const [ title, href ] = picked
+async function loopPlay(fn) {
+	// Looping play function. Takes one argument, the "pick" function,
+	// which returns a track to play. Preemptively downloads the next
+	// track while the current one is playing for seamless continuation
+	// from one song to the next.
 
-	console.log(`Downloading ${title}..\n${href}`)
+	async function downloadNext() {
+		const picked = fn()
+		const [ title, href ] = picked
+		console.log(`Downloading ${title}..\n${href}`)
 
-	const outWav = `.${sanitize(title)}.wav`
+		const wavFile = `.${sanitize(title)}.wav`
 
-	return fetch(href)
-		.then(res => res.buffer())
-		.then(buf => fsp.writeFile('./.temp-track', buf))
-		.then(() => convert('./.temp-track', outWav))
-		.then(() => fsp.unlink('./.temp-track'))
-		.then(() => playFile(outWav), () => console.warn('Failed to convert ' + title + '\n' + href))
-		.then(() => fsp.unlink(outWav))
-		.then(() => loopPlay(fn))
+		const res = await fetch(href)
+		const buffer = await res.buffer()
+		await fsp.writeFile('./.temp-track', buffer)
+		await convert('./.temp-track', wavFile)
+		await fsp.unlink('./.temp-track')
+
+		return wavFile
+	}
+
+	let wavFile = await downloadNext()
+
+	while (true) {
+		const nextPromise = downloadNext()
+		console.log(wavFile)
+		await playFile(wavFile)
+		wavFile = await nextPromise
+	}
 }
 
 function filterPlaylistByPathString(playlist, pathString) {
