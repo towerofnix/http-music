@@ -66,7 +66,7 @@
 
 'use strict'
 
-const fsp = require('fs-promise')
+const fs = require('mz/fs')
 const fetch = require('node-fetch')
 const sanitize = require('sanitize-filename')
 const { spawn } = require('child_process')
@@ -152,7 +152,7 @@ async function loopPlay(fn) {
 
 		const res = await fetch(href)
 		const buffer = await res.buffer()
-		await fsp.writeFile('./.temp-track', buffer)
+		await fs.writeFile('./.temp-track', buffer)
 
 		try {
 			await convert('./.temp-track', wavFile)
@@ -163,7 +163,7 @@ async function loopPlay(fn) {
 			return await downloadNext()
 		}
 
-		await fsp.unlink('./.temp-track')
+		await fs.unlink('./.temp-track')
 
 		return wavFile
 	}
@@ -173,7 +173,7 @@ async function loopPlay(fn) {
 	while (wavFile) {
 		const nextPromise = downloadNext()
 		await playFile(wavFile)
-		await fsp.unlink(wavFile)
+		await fs.unlink(wavFile)
 		wavFile = await nextPromise
 	}
 }
@@ -296,7 +296,7 @@ async function processArgv(argv, handlers) {
 	}
 }
 
-fsp.readFile('./playlist.json', 'utf-8')
+fs.readFile('./playlist.json', 'utf-8')
 	.then(plText => JSON.parse(plText))
 	.then(async playlist => {
 		let sourcePlaylist = playlist
@@ -316,7 +316,7 @@ fsp.readFile('./playlist.json', 'utf-8')
 				// Opens a separate playlist file.
 				// This sets the source playlist.
 
-				const openedPlaylist = JSON.parse(await fsp.readFile(util.nextArg(), 'utf-8'))
+				const openedPlaylist = JSON.parse(await fs.readFile(util.nextArg(), 'utf-8'))
 				sourcePlaylist = openedPlaylist
 				curPlaylist = openedPlaylist
 			},
