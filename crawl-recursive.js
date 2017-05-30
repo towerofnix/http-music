@@ -60,8 +60,6 @@ function playlistifyParse(text, absURL) {
 if (process.argv.length === 2) {
 	console.log('Usage: crawl-recursive http://example.com/example/path')
 } else {
-	console.log('Crawling URL: ' + process.argv[2])
-
 	let url = process.argv[2]
 
 	if (!(url.endsWith('/'))) {
