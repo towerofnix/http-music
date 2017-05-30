@@ -29,6 +29,7 @@
 //       (Done!)
 //
 // TODO: Ignore .DS_Store.
+//       (Done!)
 //
 // TODO: Have a download timeout, somehow.
 //
@@ -118,11 +119,14 @@ function makeOrderedPlaylistPicker(playlist) {
 	}
 }
 
-function pickRandomFromPlaylist(playlist) {
+function makeShufflePlaylistPicker(playlist) {
 	const allSongs = flattenPlaylist(playlist)
-	const index = Math.floor(Math.random() * allSongs.length)
-	const picked = allSongs[index]
-	return picked
+
+	return function() {
+		const index = Math.floor(Math.random() * allSongs.length)
+		const picked = allSongs[index]
+		return picked
+	}
 }
 
 async function loopPlay(fn) {
@@ -147,7 +151,16 @@ async function loopPlay(fn) {
 		const res = await fetch(href)
 		const buffer = await res.buffer()
 		await fsp.writeFile('./.temp-track', buffer)
-		await convert('./.temp-track', wavFile)
+
+		try {
+			await convert('./.temp-track', wavFile)
+		} catch(err) {
+			console.warn('Failed to convert ' + title)
+			console.warn('Selecting a new track\n')
+
+			return await downloadNext()
+		}
+
 		await fsp.unlink('./.temp-track')
 
 		return wavFile
@@ -287,6 +300,8 @@ fsp.readFile('./playlist.json', 'utf-8')
 		let sourcePlaylist = playlist
 		let curPlaylist = playlist
 
+		let pickerType = 'shuffle'
+
 		// WILL play says whether the user has forced playback via an argument.
 		// SHOULD play says whether the program has automatically decided to play
 		// or not, if the user hasn't set WILL play.
@@ -391,19 +406,33 @@ fsp.readFile('./playlist.json', 'utf-8')
 				// Prints out the JSON representation of the active playlist.
 
 				console.log(JSON.stringify(curPlaylist, null, 2))
+			},
+
+			'-picker': function(util) {
+				// --picker <shuffle|ordered>
+				// Selects the mode that the song to play is picked.
+				// This should be used after finishing modifying the active
+				// playlist.
+
+				pickerType = util.nextArg()
 			}
 		})
 
 		if (willPlay || (willPlay === null && shouldPlay)) {
-//			return loopPlay(() => pickRandomFromPlaylist(curPlaylist))
-			return loopPlay(makeOrderedPlaylistPicker(curPlaylist))
+			let picker
+			if (pickerType === 'shuffle') {
+				console.log('Using shuffle picker')
+				picker = makeShufflePlaylistPicker(curPlaylist)
+			} else if (pickerType === 'ordered') {
+				console.log('Using ordered picker')
+				picker = makeOrderedPlaylistPicker(curPlaylist)
+			} else {
+				console.error('Invalid picker type: ' + pickerType)
+			}
+
+			return loopPlay(picker)
 		} else {
 			return curPlaylist
 		}
 	})
 	.catch(err => console.error(err))
-
-/*
-loopPlay(() => ['blah', 'http://192.168.2.19:1233/Koichi%20Sugiyama/Dragon%20Quest%205/34%2034%20Dragon%20Quest%205%20-%20Bonus%20Fight.mp3'])
-	.catch(err => console.error(err))
-*/
