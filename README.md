@@ -8,13 +8,12 @@ It's also decently powerful.
 ```bash
 # On the server; that is, the device that holds the media:
 $ cd my_music_folder
-$ python3 -m http.server 1233
+$ python3 -m http.server <some_port>
 
 # On the client; that is, the device with http-music:
 $ cd http-music
 $ yarn  # to install Node.js dependencies; you'll also need `avconv` and `play` (sox).
-$ node crawl-itunes.js > playlist.json  # Bad script name, right?
-# I think you might need to configure crawl-itunes.js to get the right IP and port..
+$ node crawl-recursive.js <server_ip> > playlist.json
 $ node play.js  # Go!
 ```
 

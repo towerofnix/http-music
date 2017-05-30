@@ -40,6 +40,7 @@
 //       itely true; 'Saucey Sounds'[0] === 'S', and 'Unofficial'[0]
 //       === 'U', which are the two "files" it crashes on while playing
 //       -g 'Jake Chudnow'.)
+//       (Done?)
 //
 // TODO: A way to exclude a specific group path.
 //       (Done!)
@@ -58,6 +59,7 @@
 //       friendly (i.e. don't require editing the script itself), and
 //       make it use the getHTMLLinks function defined in the new
 //       crawl-links.js script.
+//       (Done!)
 //
 // TODO: Play-in-order track picker.
 //       (Done!)
