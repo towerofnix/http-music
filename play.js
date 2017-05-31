@@ -188,11 +188,7 @@ function filterPlaylistByPath(playlist, pathParts) {
 
 	let cur = pathParts[0]
 
-	if (!(cur.endsWith('/'))) {
-		cur = cur + '/'
-	}
-
-	const match = playlist.find(g => g[0] === cur && Array.isArray(g[1]))
+	const match = playlist.find(g => g[0] === cur || g[0] === cur + '/')
 
 	if (match) {
 		const groupContents = match[1]
@@ -277,21 +273,30 @@ function parsePathString(pathString) {
 }
 
 async function processArgv(argv, handlers) {
-	for (let i = 0; i < argv.length; i++) {
+	let i = 0
+
+	async function handleOpt(opt) {
+		if (opt in handlers) {
+			await handlers[opt]({
+				argv, index: i,
+				nextArg: function() {
+					i++
+					return argv[i]
+				},
+				alias: function(optionToRun) {
+					handleOpt(optionToRun)
+				}
+			})
+		} else {
+			console.warn('Option not understood: ' + opt)
+		}
+	}
+
+	for (; i < argv.length; i++) {
 		const cur = argv[i]
 		if (cur.startsWith('-')) {
 			const opt = cur.slice(1)
-			if (opt in handlers) {
-				await handlers[opt]({
-					argv, index: i,
-					nextArg: function() {
-						i++
-						return argv[i]
-					}
-				})
-			} else {
-				console.warn('Option not understood: ' + cur)
-			}
+			await handleOpt(opt)
 		}
 	}
 }
@@ -311,8 +316,8 @@ fs.readFile('./playlist.json', 'utf-8')
 		let willPlay = null
 
 		await processArgv(process.argv, {
-			'o': async function(util) {
-				// -o <file>
+			'-open': async function(util) {
+				// --open <file>  (alias: -o)
 				// Opens a separate playlist file.
 				// This sets the source playlist.
 
@@ -321,16 +326,20 @@ fs.readFile('./playlist.json', 'utf-8')
 				curPlaylist = openedPlaylist
 			},
 
-			'c': function(util) {
-				// -c
+			'o': util => util.alias('-open'),
+
+			'-clear': function(util) {
+				// --clear  (alias: -c)
 				// Clears the active playlist. This does not affect the source
 				// playlist.
 
 				curPlaylist = []
 			},
 
-			'k': function(util) {
-				// -k <groupPath>
+			'c': util => util.alias('-clear'),
+
+			'-keep': function(util) {
+				// --keep <groupPath>  (alias: -k)
 				// Keeps a group by loading it from the source playlist into the
 				// active playlist. This is usually useful after clearing the
 				// active playlist; it can also be used to keep a subgroup when
@@ -341,18 +350,10 @@ fs.readFile('./playlist.json', 'utf-8')
 				curPlaylist.push(group)
 			},
 
-			'g': function(util) {
-				// -g <groupPath>
-				// Filters the playlist so that only the tracks under the passed
-				// group path will play.
+			'k': util => util.alias('-keep'),
 
-				const pathString = util.nextArg()
-				console.log('Filtering according to path: ' + pathString)
-				curPlaylist = filterPlaylistByPathString(curPlaylist, pathString)[1]
-			},
-
-			'i': function(util) {
-				// -i <groupPath>
+			'-ignore': function(util) {
+				// --ignore <groupPath>  (alias: -i)
 				// Filters the playlist so that the given path is removed.
 
 				const pathString = util.nextArg()
@@ -360,10 +361,11 @@ fs.readFile('./playlist.json', 'utf-8')
 				ignoreGroupByPathString(curPlaylist, pathString)
 			},
 
-			'l': function(util) {
-				// -l
+			'i': util => util.alias('-ignore'),
+
+			'-list-groups': function(util) {
+				// --list-groups  (alias: -l, --list)
 				// Lists all groups in the playlist.
-				// Try -L (upper-case L) for a list including tracks.
 
 				console.log(getPlaylistTreeString(curPlaylist))
 
@@ -375,10 +377,12 @@ fs.readFile('./playlist.json', 'utf-8')
 				}
 			},
 
-			'L': function(util) {
-				// -L
-				// Lists all groups AND tracks in the playlist.
-				// Try -l (lower-case L) for a list that doesn't include tracks.
+			'-list': util => util.alias('-list-groups'),
+			'l': util => util.alias('-list-groups'),
+
+			'-list-all': function(util) {
+				// --list-all  (alias: --list-tracks, -L)
+				// Lists all groups and tracks in the playlist.
 
 				console.log(getPlaylistTreeString(curPlaylist, true))
 
@@ -389,19 +393,26 @@ fs.readFile('./playlist.json', 'utf-8')
 				}
 			},
 
-			'p': function(util) {
-				// -p
+			'-list-tracks': util => util.alias('-list-all'),
+			'L': util => util.alias('-list-all'),
+
+			'-play': function(util) {
+				// --play  (alias: -p)
 				// Forces the playlist to actually play.
 
 				willPlay = true
 			},
 
-			'np': function(util) {
-				// -np
+			'p': util => util.alias('-play'),
+
+			'-no-play': function(util) {
+				// --no-play  (alias: -np)
 				// Forces the playlist not to play.
 
 				willPlay = false
 			},
+
+			'np': util => util.alias('-no-play'),
 
 			'-debug-list': function(util) {
 				// --debug-list
