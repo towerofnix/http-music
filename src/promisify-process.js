@@ -1,6 +1,9 @@
 'use strict'
 
 module.exports = function promisifyProcess(proc, showLogging = true) {
+  // Takes a process (from child_process) and returns a promise that resolves
+  // when the process exits.
+
   return new Promise((resolve, reject) => {
     if (showLogging) {
       proc.stdout.pipe(process.stdout)

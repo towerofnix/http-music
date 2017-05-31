@@ -3,6 +3,9 @@
 const { flattenPlaylist } = require('./playlist-utils')
 
 function makeOrderedPlaylistPicker(playlist) {
+  // Ordered playlist picker - this plays all the tracks in a playlist in
+  // order, after flattening it.
+
   const allSongs = flattenPlaylist(playlist)
   let index = 0
 
@@ -18,6 +21,9 @@ function makeOrderedPlaylistPicker(playlist) {
 }
 
 function makeShufflePlaylistPicker(playlist) {
+  // Shuffle playlist picker - this selects a random track at any index in
+  // the playlist, after flattening it.
+
   const allSongs = flattenPlaylist(playlist)
 
   return function() {

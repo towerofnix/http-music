@@ -7,6 +7,10 @@ const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const pickers = require('./pickers')
 
+const {
+  filterPlaylistByPathString, ignoreGroupByPathString, getPlaylistTreeString
+} = require('./playlist-utils')
+
 const readFile = promisify(fs.readFile)
 
 readFile('./playlist.json', 'utf-8')
@@ -29,7 +33,8 @@ readFile('./playlist.json', 'utf-8')
         // Opens a separate playlist file.
         // This sets the source playlist.
 
-        const openedPlaylist = JSON.parse(await readFile(util.nextArg(), 'utf-8'))
+        const playlistText = await readFile(util.nextArg(), 'utf-8')
+        const openedPlaylist = JSON.parse(playlistText)
         sourcePlaylist = openedPlaylist
         curPlaylist = openedPlaylist
       },

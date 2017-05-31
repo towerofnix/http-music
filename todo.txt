@@ -63,3 +63,7 @@ TODO: Make crawl-itunes.js a bit more general, more command-line
 
 TODO: Play-in-order track picker.
       (Done!)
+
+TODO: Volume controls. Who knows how to do this? It might have to be an
+      argument passed to `play`. Being able to change the volume while it's
+      playing would be nice, but I'm not sure if that's really possible.

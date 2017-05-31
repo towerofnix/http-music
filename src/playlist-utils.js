@@ -1,6 +1,10 @@
 'use strict'
 
 function flattenPlaylist(playlist) {
+  // Flattens a playlist, taking all of the non-group items (tracks) at all
+  // levels in the playlist tree and returns them as a single-level array of
+  // tracks.
+
   const groups = playlist.filter(x => Array.isArray(x[1]))
   const nonGroups = playlist.filter(x => x[1] && !(Array.isArray(x[1])))
   return groups.map(g => flattenPlaylist(g[1]))
@@ -8,12 +12,16 @@ function flattenPlaylist(playlist) {
 }
 
 function filterPlaylistByPathString(playlist, pathString) {
+  // Calls filterPlaylistByPath, taking a path string, rather than a parsed
+  // path.
+
   return filterPlaylistByPath(playlist, parsePathString(pathString))
 }
 
 function filterPlaylistByPath(playlist, pathParts) {
-  // Note this can be used as a utility function, rather than just as
-  // a function for use by the argv-handler!
+  // Finds a group by following the given group path and returns it. If the
+  // function encounters an item in the group path that is not found, it logs
+  // a warning message and returns the group found up to that point.
 
   let cur = pathParts[0]
 
@@ -33,13 +41,14 @@ function filterPlaylistByPath(playlist, pathParts) {
   }
 }
 
-function ignoreGroupByPathString(playlist, pathString) {
-  const pathParts = parsePathString(pathString)
-  return ignoreGroupByPath(playlist, pathParts)
+function removeGroupByPathString(playlist, pathString) {
+  // Calls removeGroupByPath, taking a path string, rather than a parsed path.
+
+  return removeGroupByPath(playlist, parsePathString(pathString))
 }
 
-function ignoreGroupByPath(playlist, pathParts) {
-  // TODO: Ideally this wouldn't mutate the given playlist.
+function removeGroupByPath(playlist, pathParts) {
+  // Removes the group at the given path from the given playlist.
 
   const groupToRemove = filterPlaylistByPath(playlist, pathParts)
 
@@ -80,7 +89,10 @@ function getPlaylistTreeString(playlist, showTracks = false) {
       }
     }).join('\n')
 
-    const tracksString = (showTracks ? nonGroups.map(g => g[0]).join('\n') : '')
+    let trackString = ''
+    if (showTracks) {
+      trackString = nonGroups.map(g => g[0]).join('\n')
+    }
 
     if (tracksString && childrenString) {
       return tracksString + '\n' + childrenString
