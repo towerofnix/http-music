@@ -29,7 +29,7 @@ module.exports = async function loopPlay(fn) {
     console.log(`Downloading ${title}..\n${href}`)
 
     const wavDir = tempy.directory()
-    const wavFile = wavDir + `.${sanitize(title)}.wav`
+    const wavFile = wavDir + `/.${sanitize(title)}.wav`
     const downloadFile = tempy.file()
 
     const res = await fetch(href)
