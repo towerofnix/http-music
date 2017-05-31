@@ -75,6 +75,7 @@ const sanitize = require('sanitize-filename')
 
 const writeFile = util.promisify(fs.writeFile)
 const readFile = util.promisify(fs.readFile)
+const unlink = util.promisify(fs.unlink)
 
 function promisifyProcess(proc, showLogging = true) {
 	return new Promise((resolve, reject) => {
@@ -168,7 +169,7 @@ async function loopPlay(fn) {
 			return await downloadNext()
 		}
 
-		await fs.unlink('./.temp-track')
+		await unlink('./.temp-track')
 
 		return wavFile
 	}
@@ -178,7 +179,7 @@ async function loopPlay(fn) {
 	while (wavFile) {
 		const nextPromise = downloadNext()
 		await playFile(wavFile)
-		await fs.unlink(wavFile)
+		await unlink(wavFile)
 		wavFile = await nextPromise
 	}
 }
