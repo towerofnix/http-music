@@ -1,0 +1,65 @@
+TODO: Get `avconv` working. Oftentimes `play` won't be able to play
+      some tracks due to an unsupported format; we'll need to use
+      `avconv` to convert them (to WAV).
+      (Done!)
+
+TODO: Get `play` working.
+      (Done!)
+
+TODO: Get play-next working; probably just act like a shuffle. Will
+      need to keep an eye out for the `play` process finishing.
+      (Done!)
+
+TODO: Preemptively download and process the next track, while the
+      current one is playing, to eliminate the silent time between
+      tracks.
+      (Done!)
+
+TODO: Delete old tracks! Since we aren't overwriting files, we
+      need to manually delete files once we're done with them.
+      (Done!)
+
+TODO: Clean up on SIGINT.
+
+TODO: Get library filter path from stdin.
+      (Done!)
+
+TODO: Show library tree. Do this AFTER filtering, so that people
+      can e.g. see all albums by a specific artist.
+      (Done!)
+
+TODO: Ignore .DS_Store.
+      (Done!)
+
+TODO: Have a download timeout, somehow.
+
+TODO: Fix the actual group format. Often times we get single-letter
+      files being downloaded (which don't exist); I'm guessing that's
+      related to folder names (which are just strings, not title-href
+      arrays) still being in the group array. (Update: that's defin-
+      itely true; 'Saucey Sounds'[0] === 'S', and 'Unofficial'[0]
+      === 'U', which are the two "files" it crashes on while playing
+      -g 'Jake Chudnow'.)
+      (Done!)
+
+TODO: A way to exclude a specific group path.
+      (Done!)
+
+TODO: Better argv handling.
+      (Done!)
+
+TODO: Option to include a specific path from the source playlist.
+      (Done!)
+
+TODO: Make a playlist generator that parses http://billwurtz.com
+      instrumentals.html.
+      (Done!)
+
+TODO: Make crawl-itunes.js a bit more general, more command-line
+      friendly (i.e. don't require editing the script itself), and
+      make it use the getHTMLLinks function defined in the new
+      crawl-links.js script.
+      (Done!)
+
+TODO: Play-in-order track picker.
+      (Done!)
