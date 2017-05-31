@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",
-    "mz": "^2.6.0",
     "node-fetch": "^1.7.0",
     "sanitize-filename": "^1.6.1"
   }

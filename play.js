@@ -66,10 +66,15 @@
 
 'use strict'
 
-const fs = require('mz/fs')
+const fs = require('fs')
+const util = require('util')
+const { spawn } = require('child_process')
+
 const fetch = require('node-fetch')
 const sanitize = require('sanitize-filename')
-const { spawn } = require('child_process')
+
+const writeFile = util.promisify(fs.writeFile)
+const readFile = util.promisify(fs.readFile)
 
 function promisifyProcess(proc, showLogging = true) {
 	return new Promise((resolve, reject) => {
@@ -152,7 +157,7 @@ async function loopPlay(fn) {
 
 		const res = await fetch(href)
 		const buffer = await res.buffer()
-		await fs.writeFile('./.temp-track', buffer)
+		await writeFile('./.temp-track', buffer)
 
 		try {
 			await convert('./.temp-track', wavFile)
@@ -301,7 +306,7 @@ async function processArgv(argv, handlers) {
 	}
 }
 
-fs.readFile('./playlist.json', 'utf-8')
+readFile('./playlist.json', 'utf-8')
 	.then(plText => JSON.parse(plText))
 	.then(async playlist => {
 		let sourcePlaylist = playlist
@@ -321,7 +326,7 @@ fs.readFile('./playlist.json', 'utf-8')
 				// Opens a separate playlist file.
 				// This sets the source playlist.
 
-				const openedPlaylist = JSON.parse(await fs.readFile(util.nextArg(), 'utf-8'))
+				const openedPlaylist = JSON.parse(await readFile(util.nextArg(), 'utf-8'))
 				sourcePlaylist = openedPlaylist
 				curPlaylist = openedPlaylist
 			},
