@@ -69,3 +69,4 @@ TODO: Volume controls. Who knows how to do this? It might have to be an
       playing would be nice, but I'm not sure if that's really possible.
 
 TODO: Tempfiles, maybe?
+      (Done!)
