@@ -3,6 +3,7 @@
 const MAX_DOWNLOAD_ATTEMPTS = 5
 
 const fetch = require('node-fetch')
+const $ = require('cheerio')
 
 function crawl(absURL, attempts = 0) {
   // Recursively crawls a given URL, following every link to a deeper path and
@@ -21,33 +22,34 @@ function crawl(absURL, attempts = 0) {
           if (href.endsWith('/')) {
             // It's a directory!
 
-            if (verbose) console.log('[Dir] ' + absURL + href)
+            if (verbose) console.log("[Dir] " + absURL + href)
             return crawl(absURL + href)
               .then(res => [title, res])
           } else {
             // It's a file!
 
-            if (verbose) console.log('[File] ' + absURL + href)
+            if (verbose) console.log("[File] " + absURL + href)
             return Promise.resolve([title, absURL + href])
           }
         }))
       }),
 
       err => {
-        console.error('Failed to download: ' + absURL)
+        console.warn("Failed to download: " + absURL)
 
         if (attempts < MAX_DOWNLOAD_ATTEMPTS) {
-          console.error(
-            'Trying again. Attempt ' + (attempts + 1) +
-            '/' + MAX_DOWNLOAD_ATTEMPTS + '...'
+          console.warn(
+            "Trying again. Attempt " + (attempts + 1) +
+            "/" + MAX_DOWNLOAD_ATTEMPTS + "..."
           )
+
           return crawl(absURL, attempts + 1)
         } else {
           console.error(
-            'We\'ve hit the download attempt limit (' +
-            MAX_DOWNLOAD_ATTEMPTS + '). Giving up on ' +
-            'this path.'
+            "We've hit the download attempt limit (" +
+            MAX_DOWNLOAD_ATTEMPTS + "). Giving up on this path."
           )
+
           throw 'FAILED_DOWNLOAD'
         }
       }
@@ -72,7 +74,7 @@ function getHTMLLinks(text) {
 }
 
 if (process.argv.length === 2) {
-  console.log('Usage: crawl-recursive http://example.com/example/path')
+  console.log("Usage: crawl-recursive http://example.com/example/path")
 } else {
   let url = process.argv[2]
 

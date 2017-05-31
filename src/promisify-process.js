@@ -2,7 +2,8 @@
 
 module.exports = function promisifyProcess(proc, showLogging = true) {
   // Takes a process (from child_process) and returns a promise that resolves
-  // when the process exits.
+  // when the process exits (or rejects with a warning, if the exit code is
+  // non-zero).
 
   return new Promise((resolve, reject) => {
     if (showLogging) {
@@ -14,7 +15,7 @@ module.exports = function promisifyProcess(proc, showLogging = true) {
       if (code === 0) {
         resolve()
       } else {
-        console.error('Process failed!', proc.spawnargs)
+        console.error("Process failed!", proc.spawnargs)
         reject(code)
       }
     })

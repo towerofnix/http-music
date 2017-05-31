@@ -34,7 +34,7 @@ module.exports = async function processArgv(argv, handlers) {
         }
       })
     } else {
-      console.warn('Option not understood: ' + opt)
+      console.warn("Option not understood: " + opt)
     }
   }
 

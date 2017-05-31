@@ -37,8 +37,8 @@ module.exports = async function loopPlay(fn) {
     try {
       await convert('./.temp-track', wavFile)
     } catch(err) {
-      console.warn('Failed to convert ' + title)
-      console.warn('Selecting a new track\n')
+      console.warn("Failed to convert " + title)
+      console.warn("Selecting a new track\n")
 
       return await downloadNext()
     }

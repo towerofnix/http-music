@@ -5,9 +5,10 @@ function flattenPlaylist(playlist) {
   // levels in the playlist tree and returns them as a single-level array of
   // tracks.
 
-  const groups = playlist.filter(x => Array.isArray(x[1]))
-  const nonGroups = playlist.filter(x => x[1] && !(Array.isArray(x[1])))
-  return groups.map(g => flattenPlaylist(g[1]))
+  const groups = playlist.filter(x => isGroup(x))
+  const nonGroups = playlist.filter(x => !isGroup(x))
+
+  return groups.map(g => flattenPlaylist(getGroupContents(g)))
     .reduce((a, b) => a.concat(b), nonGroups)
 }
 
@@ -25,13 +26,15 @@ function filterPlaylistByPath(playlist, pathParts) {
 
   let cur = pathParts[0]
 
-  const match = playlist.find(g => g[0] === cur || g[0] === cur + '/')
+  const match = playlist.find(group => {
+    const title = getGroupTitle(group)
+    return title === cur || title === cur + '/'
+  })
 
   if (match) {
-    const groupContents = match[1]
     if (pathParts.length > 1) {
       const rest = pathParts.slice(1)
-      return filterPlaylistByPath(groupContents, rest)
+      return filterPlaylistByPath(getGroupContents(match), rest)
     } else {
       return match
     }
@@ -58,7 +61,7 @@ function removeGroupByPath(playlist, pathParts) {
   if (parentPath.length === 0) {
     parent = playlist
   } else {
-    parent = filterPlaylistByPath(playlist, pathParts.slice(0, -1))
+    parent = getGroupContents(filterPlaylistByPath(playlist, parentPath))
   }
 
   const index = parent.indexOf(groupToRemove)
@@ -67,31 +70,32 @@ function removeGroupByPath(playlist, pathParts) {
     parent.splice(index, 1)
   } else {
     console.error(
-      'Group ' + pathParts.join('/') + ' doesn\'t exist, so we can\'t ' +
-      'explicitly ignore it.'
+      `Group ${pathParts.join('/')} doesn't exist, so we can't explicitly ` +
+      "ignore it."
     )
   }
 }
 
 function getPlaylistTreeString(playlist, showTracks = false) {
   function recursive(group) {
-    const groups = group.filter(x => Array.isArray(x[1]))
-    const nonGroups = group.filter(x => x[1] && !(Array.isArray(x[1])))
+    const groups = group.filter(x => isGroup(x))
+    const nonGroups = group.filter(x => !isGroup(x))
 
-    const childrenString = groups.map(g => {
-      const groupString = recursive(g[1])
+    const childrenString = groups.map(group => {
+      const title = getGroupTitle(group)
+      const groupString = recursive(getGroupContents(group))
 
       if (groupString) {
         const indented = groupString.split('\n').map(l => '| ' + l).join('\n')
-        return '\n' + g[0] + '\n' + indented
+        return '\n' + title + '\n' + indented
       } else {
-        return g[0]
+        return title
       }
     }).join('\n')
 
-    let trackString = ''
+    let tracksString = ''
     if (showTracks) {
-      trackString = nonGroups.map(g => g[0]).join('\n')
+      tracksString = nonGroups.map(g => getGroupTitle(g)).join('\n')
     }
 
     if (tracksString && childrenString) {
@@ -113,9 +117,23 @@ function parsePathString(pathString) {
   return pathParts
 }
 
+function getGroupTitle(group) {
+  return group[0]
+}
+
+function getGroupContents(group) {
+  return group[1]
+}
+
+function isGroup(array) {
+  return Array.isArray(array[1])
+}
+
 module.exports = {
   flattenPlaylist,
   filterPlaylistByPathString, filterPlaylistByPath,
-  ignoreGroupByPathString, ignoreGroupByPath,
-  parsePathString
+  removeGroupByPathString, removeGroupByPath,
+  getPlaylistTreeString,
+  parsePathString,
+  getGroupTitle, getGroupContents
 }

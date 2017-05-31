@@ -8,7 +8,7 @@ const processArgv = require('./process-argv')
 const pickers = require('./pickers')
 
 const {
-  filterPlaylistByPathString, ignoreGroupByPathString, getPlaylistTreeString
+  filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
@@ -56,7 +56,7 @@ readFile('./playlist.json', 'utf-8')
         // Keeps a group by loading it from the source playlist into the
         // active playlist. This is usually useful after clearing the
         // active playlist; it can also be used to keep a subgroup when
-        // you've ignored an entire parent group, e.g. `-i foo -k foo/baz`.
+        // you've removed an entire parent group, e.g. `-r foo -k foo/baz`.
 
         const pathString = util.nextArg()
         const group = filterPlaylistByPathString(sourcePlaylist, pathString)
@@ -65,16 +65,17 @@ readFile('./playlist.json', 'utf-8')
 
       'k': util => util.alias('-keep'),
 
-      '-ignore': function(util) {
-        // --ignore <groupPath>  (alias: -i)
+      '-remove': function(util) {
+        // --remove <groupPath>  (alias: -r, -x)
         // Filters the playlist so that the given path is removed.
 
         const pathString = util.nextArg()
-        console.log('Ignoring path: ' + pathString)
-        ignoreGroupByPathString(curPlaylist, pathString)
+        console.log("Ignoring path: " + pathString)
+        removeGroupByPathString(curPlaylist, pathString)
       },
 
-      'i': util => util.alias('-ignore'),
+      'r': util => util.alias('-remove'),
+      'x': util => util.alias('-remove'),
 
       '-list-groups': function(util) {
         // --list-groups  (alias: -l, --list)
@@ -127,13 +128,6 @@ readFile('./playlist.json', 'utf-8')
 
       'np': util => util.alias('-no-play'),
 
-      '-debug-list': function(util) {
-        // --debug-list
-        // Prints out the JSON representation of the active playlist.
-
-        console.log(JSON.stringify(curPlaylist, null, 2))
-      },
-
       '-picker': function(util) {
         // --picker <shuffle|ordered>
         // Selects the mode that the song to play is picked.
@@ -141,19 +135,26 @@ readFile('./playlist.json', 'utf-8')
         // playlist.
 
         pickerType = util.nextArg()
+      },
+
+      '-debug-list': function(util) {
+        // --debug-list
+        // Prints out the JSON representation of the active playlist.
+
+        console.log(JSON.stringify(curPlaylist, null, 2))
       }
     })
 
     if (willPlay || (willPlay === null && shouldPlay)) {
       let picker
       if (pickerType === 'shuffle') {
-        console.log('Using shuffle picker')
+        console.log("Using shuffle picker.")
         picker = pickers.makeShufflePlaylistPicker(curPlaylist)
       } else if (pickerType === 'ordered') {
-        console.log('Using ordered picker')
+        console.log("Using ordered picker.")
         picker = pickers.makeOrderedPlaylistPicker(curPlaylist)
       } else {
-        console.error('Invalid picker type: ' + pickerType)
+        console.error("Invalid picker type: " + pickerType)
       }
 
       return loopPlay(picker)
