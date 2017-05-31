@@ -5,6 +5,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",
     "node-fetch": "^1.7.0",
-    "sanitize-filename": "^1.6.1"
+    "sanitize-filename": "^1.6.1",
+    "tempy": "^0.1.0"
   }
 }

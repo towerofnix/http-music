@@ -1,5 +1,3 @@
-/.*.wav
-/.temp-track
 .DS_Store
 node_modules
 playlist.json

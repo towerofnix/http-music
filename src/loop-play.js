@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs')
+const tempy = require('tempy')
 
 const { spawn } = require('child_process')
 const { promisify } = require('util')
@@ -9,7 +10,6 @@ const sanitize = require('sanitize-filename')
 const promisifyProcess = require('./promisify-process')
 
 const writeFile = promisify(fs.writeFile)
-const unlink = promisify(fs.unlink)
 
 module.exports = async function loopPlay(fn) {
   // Looping play function. Takes one argument, the "pick" function,
@@ -28,22 +28,22 @@ module.exports = async function loopPlay(fn) {
     const [ title, href ] = picked
     console.log(`Downloading ${title}..\n${href}`)
 
-    const wavFile = `.${sanitize(title)}.wav`
+    const wavDir = tempy.directory()
+    const wavFile = wavDir + `.${sanitize(title)}.wav`
+    const downloadFile = tempy.file()
 
     const res = await fetch(href)
     const buffer = await res.buffer()
-    await writeFile('./.temp-track', buffer)
+    await writeFile(downloadFile, buffer)
 
     try {
-      await convert('./.temp-track', wavFile)
+      await convert(downloadFile, wavFile)
     } catch(err) {
       console.warn("Failed to convert " + title)
       console.warn("Selecting a new track\n")
 
       return await downloadNext()
     }
-
-    await unlink('./.temp-track')
 
     return wavFile
   }
@@ -53,7 +53,6 @@ module.exports = async function loopPlay(fn) {
   while (wavFile) {
     const nextPromise = downloadNext()
     await playFile(wavFile)
-    await unlink(wavFile)
     wavFile = await nextPromise
   }
 }
