@@ -2,6 +2,14 @@
   "name": "http-music",
   "version": "0.0.1",
   "main": "src/play.js",
+  "scripts": {
+    "play": "node src/play.js",
+    "crawl-recursive": "node src/crawl-recursive"
+  },
+  "bin": {
+    "http-music": "./src/play.js",
+    "http-music-crawl-recursive": "./src/crawl-recursive.js"
+  },
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",
     "node-fetch": "^1.7.0",

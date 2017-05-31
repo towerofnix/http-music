@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict'
 
 const MAX_DOWNLOAD_ATTEMPTS = 5
@@ -74,7 +76,8 @@ function getHTMLLinks(text) {
 }
 
 if (process.argv.length === 2) {
-  console.log("Usage: crawl-recursive http://example.com/example/path")
+  console.log("Usage: http-music-crawl-recursive http://.../example/path/")
+  console.log("..or, npm run crawl-recursive -- http://...")
 } else {
   let url = process.argv[2]
 
