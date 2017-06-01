@@ -12,7 +12,7 @@ const sanitize = require('sanitize-filename')
 
 const writeFile = promisify(fs.writeFile)
 
-module.exports = async function loopPlay(fn, playArgs = []) {
+module.exports = async function loopPlay(picker, downloader, playArgs = []) {
   // Looping play function. Takes one argument, the "pick" function,
   // which returns a track to play. Preemptively downloads the next
   // track while the current one is playing for seamless continuation
@@ -21,22 +21,20 @@ module.exports = async function loopPlay(fn, playArgs = []) {
   // used as arguments to the `play` process (before the file name).
 
   async function downloadNext() {
-    const picked = fn()
+    const picked = picker()
 
     if (picked == null) {
       return false
     }
 
-    const [ title, href ] = picked
-    console.log(`Downloading ${title}..\n${href}`)
+    const [ title, downloaderArg ] = picked
+    console.log(`Downloading ${title}..\nDownloader arg: ${downloaderArg}`)
 
     const tempDir = tempy.directory()
     const wavFile = tempDir + `/.${sanitize(title)}.wav`
-    const downloadFile = tempDir + '/.dl-' + path.basename(href)
+    const downloadFile = tempDir + '/.dl-' + path.basename(downloaderArg)
 
-    const res = await fetch(href)
-    const buffer = await res.buffer()
-    await writeFile(downloadFile, buffer)
+    await downloader(downloaderArg, downloadFile)
 
     try {
       await convert(downloadFile, wavFile)

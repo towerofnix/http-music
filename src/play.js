@@ -7,6 +7,8 @@ const fs = require('fs')
 const { promisify } = require('util')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
+
+const downloaders = require('./downloaders')
 const pickers = require('./pickers')
 
 const {
@@ -22,6 +24,7 @@ readFile('./playlist.json', 'utf-8')
     let curPlaylist = playlist
 
     let pickerType = 'shuffle'
+    let downloaderType = 'http'
     let playOpts = []
 
     // WILL play says whether the user has forced playback via an argument.
@@ -132,12 +135,19 @@ readFile('./playlist.json', 'utf-8')
       'np': util => util.alias('-no-play'),
 
       '-picker': function(util) {
-        // --picker <shuffle|ordered>
+        // --picker <picker type>
         // Selects the mode that the song to play is picked.
-        // This should be used after finishing modifying the active
-        // playlist.
+        // See pickers.js.
 
         pickerType = util.nextArg()
+      },
+
+      '-downloader': function(util) {
+        // --downloader <downloader type>
+        // Selects the mode that songs will be downloaded with.
+        // See downloaders.js.
+
+        downloaderType = util.nextArg()
       },
 
       '-play-opts': function(util) {
@@ -165,9 +175,22 @@ readFile('./playlist.json', 'utf-8')
         picker = pickers.makeOrderedPlaylistPicker(curPlaylist)
       } else {
         console.error("Invalid picker type: " + pickerType)
+        return
       }
 
-      return loopPlay(picker, playOpts)
+      let downloader
+      if (downloaderType === 'http') {
+        console.log("Using HTTP downloader.")
+        downloader = downloaders.makeHTTPDownloader()
+      } else if (downloaderType === 'youtube') {
+        console.log("Using YouTube downloader.")
+        downloader = downloaders.makeYouTubeDownloader()
+      } else {
+        console.error("Invalid downloader type: " + downloaderType)
+        return
+      }
+
+      return loopPlay(picker, downloader, playOpts)
     } else {
       return curPlaylist
     }
