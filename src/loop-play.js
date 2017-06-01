@@ -6,8 +6,9 @@ const tempy = require('tempy')
 const { spawn } = require('child_process')
 const { promisify } = require('util')
 const fetch = require('node-fetch')
-const sanitize = require('sanitize-filename')
+const path = require('path')
 const promisifyProcess = require('./promisify-process')
+const sanitize = require('sanitize-filename')
 
 const writeFile = promisify(fs.writeFile)
 
@@ -28,9 +29,9 @@ module.exports = async function loopPlay(fn) {
     const [ title, href ] = picked
     console.log(`Downloading ${title}..\n${href}`)
 
-    const wavDir = tempy.directory()
-    const wavFile = wavDir + `/.${sanitize(title)}.wav`
-    const downloadFile = tempy.file()
+    const tempDir = tempy.directory()
+    const wavFile = tempDir + `/.${sanitize(title)}.wav`
+    const downloadFile = tempDir + '/.dl-' + path.basename(href)
 
     const res = await fetch(href)
     const buffer = await res.buffer()
