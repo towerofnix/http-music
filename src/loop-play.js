@@ -12,12 +12,13 @@ const sanitize = require('sanitize-filename')
 
 const writeFile = promisify(fs.writeFile)
 
-module.exports = async function loopPlay(fn) {
+module.exports = async function loopPlay(fn, playArgs = []) {
   // Looping play function. Takes one argument, the "pick" function,
   // which returns a track to play. Preemptively downloads the next
   // track while the current one is playing for seamless continuation
   // from one song to the next. Stops when the result of the pick
-  // function is null (or similar).
+  // function is null (or similar). Optionally takes a second argument
+  // used as arguments to the `play` process (before the file name).
 
   async function downloadNext() {
     const picked = fn()
@@ -53,7 +54,7 @@ module.exports = async function loopPlay(fn) {
 
   while (wavFile) {
     const nextPromise = downloadNext()
-    await playFile(wavFile)
+    await playFile(wavFile, playArgs)
     wavFile = await nextPromise
   }
 }
@@ -63,7 +64,7 @@ function convert(fromFile, toFile) {
   return promisifyProcess(avconv, false)
 }
 
-function playFile(file) {
-  const play = spawn('play', [file])
+function playFile(file, opts = []) {
+  const play = spawn('play', [...opts, file])
   return promisifyProcess(play)
 }

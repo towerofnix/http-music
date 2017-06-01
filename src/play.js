@@ -22,6 +22,7 @@ readFile('./playlist.json', 'utf-8')
     let curPlaylist = playlist
 
     let pickerType = 'shuffle'
+    let playOpts = []
 
     // WILL play says whether the user has forced playback via an argument.
     // SHOULD play says whether the program has automatically decided to play
@@ -139,6 +140,13 @@ readFile('./playlist.json', 'utf-8')
         pickerType = util.nextArg()
       },
 
+      '-play-opts': function(util) {
+        // --play-opts <opts>
+        // Sets command line options passed to the `play` command.
+
+        playOpts = util.nextArg().split(' ')
+      },
+
       '-debug-list': function(util) {
         // --debug-list
         // Prints out the JSON representation of the active playlist.
@@ -159,7 +167,7 @@ readFile('./playlist.json', 'utf-8')
         console.error("Invalid picker type: " + pickerType)
       }
 
-      return loopPlay(picker)
+      return loopPlay(picker, playOpts)
     } else {
       return curPlaylist
     }
