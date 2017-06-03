@@ -30,7 +30,7 @@ module.exports = async function processArgv(argv, handlers) {
         alias: function(optionToRun) {
           // Runs the given option's handler.
 
-          handleOpt(optionToRun)
+          return handleOpt(optionToRun)
         }
       })
     } else {
