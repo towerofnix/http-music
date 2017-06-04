@@ -17,8 +17,14 @@ const {
 
 const readFile = promisify(fs.readFile)
 
-readFile('./playlist.json', 'utf-8')
-  .then(plText => JSON.parse(plText))
+function setupDefaultPlaylist(file) {
+  return readFile(file, 'utf-8').then(
+    text => JSON.parse(text),
+    err => null
+  )
+}
+
+setupDefaultPlaylist('./playlist.json')
   .then(async playlist => {
     let sourcePlaylist = playlist
     let curPlaylist = playlist
@@ -32,6 +38,14 @@ readFile('./playlist.json', 'utf-8')
     // or not, if the user hasn't set WILL play.
     let shouldPlay = true
     let willPlay = null
+
+    function requiresOpenPlaylist() {
+      if (curPlaylist === null) {
+        throw new Error(
+          "This action requires an open playlist - try --open (file)"
+        )
+      }
+    }
 
     await processArgv(process.argv, {
       '-open': async function(util) {
@@ -52,6 +66,8 @@ readFile('./playlist.json', 'utf-8')
         // Clears the active playlist. This does not affect the source
         // playlist.
 
+        requiresOpenPlaylist()
+
         curPlaylist = []
       },
 
@@ -64,6 +80,8 @@ readFile('./playlist.json', 'utf-8')
         // active playlist; it can also be used to keep a subgroup when
         // you've removed an entire parent group, e.g. `-r foo -k foo/baz`.
 
+        requiresOpenPlaylist()
+
         const pathString = util.nextArg()
         const group = filterPlaylistByPathString(sourcePlaylist, pathString)
         curPlaylist.push(group)
@@ -74,6 +92,8 @@ readFile('./playlist.json', 'utf-8')
       '-remove': function(util) {
         // --remove <groupPath>  (alias: -r, -x)
         // Filters the playlist so that the given path is removed.
+
+        requiresOpenPlaylist()
 
         const pathString = util.nextArg()
         console.log("Ignoring path: " + pathString)
@@ -86,6 +106,8 @@ readFile('./playlist.json', 'utf-8')
       '-list-groups': function(util) {
         // --list-groups  (alias: -l, --list)
         // Lists all groups in the playlist.
+
+        requiresOpenPlaylist()
 
         console.log(getPlaylistTreeString(curPlaylist))
 
@@ -103,6 +125,8 @@ readFile('./playlist.json', 'utf-8')
       '-list-all': function(util) {
         // --list-all  (alias: --list-tracks, -L)
         // Lists all groups and tracks in the playlist.
+
+        requiresOpenPlaylist()
 
         console.log(getPlaylistTreeString(curPlaylist, true))
 
@@ -161,9 +185,17 @@ readFile('./playlist.json', 'utf-8')
         // --debug-list
         // Prints out the JSON representation of the active playlist.
 
+        requiresOpenPlaylist()
+
         console.log(JSON.stringify(curPlaylist, null, 2))
       }
     })
+
+    if (curPlaylist === null) {
+      throw new Error(
+        "Cannot play - no open playlist. Try --open <playlist file>?"
+      )
+    }
 
     if (willPlay || (willPlay === null && shouldPlay)) {
       let picker

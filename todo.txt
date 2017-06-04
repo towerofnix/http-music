@@ -79,3 +79,4 @@ TODO: Recursive local file playlist crawler.
 
 TODO: *Requiring* a literal `playlist.json` file doesn't seem quite right,
       especially since there's the `--open` option.
+      (Done!)
