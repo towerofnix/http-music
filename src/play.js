@@ -27,7 +27,7 @@ function setupDefaultPlaylist(file) {
 setupDefaultPlaylist('./playlist.json')
   .then(async playlist => {
     let sourcePlaylist = playlist
-    let curPlaylist = playlist
+    let activePlaylist = playlist
 
     let pickerType = 'shuffle'
     let downloaderType = 'http'
@@ -40,7 +40,7 @@ setupDefaultPlaylist('./playlist.json')
     let willPlay = null
 
     function requiresOpenPlaylist() {
-      if (curPlaylist === null) {
+      if (activePlaylist === null) {
         throw new Error(
           "This action requires an open playlist - try --open (file)"
         )
@@ -56,7 +56,7 @@ setupDefaultPlaylist('./playlist.json')
         const playlistText = await readFile(util.nextArg(), 'utf-8')
         const openedPlaylist = JSON.parse(playlistText)
         sourcePlaylist = openedPlaylist
-        curPlaylist = openedPlaylist
+        activePlaylist = openedPlaylist
       },
 
       'o': util => util.alias('-open'),
@@ -68,7 +68,7 @@ setupDefaultPlaylist('./playlist.json')
 
         requiresOpenPlaylist()
 
-        curPlaylist = []
+        activePlaylist = []
       },
 
       'c': util => util.alias('-clear'),
@@ -84,7 +84,7 @@ setupDefaultPlaylist('./playlist.json')
 
         const pathString = util.nextArg()
         const group = filterPlaylistByPathString(sourcePlaylist, pathString)
-        curPlaylist.push(group)
+        activePlaylist.push(group)
       },
 
       'k': util => util.alias('-keep'),
@@ -97,7 +97,7 @@ setupDefaultPlaylist('./playlist.json')
 
         const pathString = util.nextArg()
         console.log("Ignoring path: " + pathString)
-        removeGroupByPathString(curPlaylist, pathString)
+        removeGroupByPathString(activePlaylist, pathString)
       },
 
       'r': util => util.alias('-remove'),
@@ -109,7 +109,7 @@ setupDefaultPlaylist('./playlist.json')
 
         requiresOpenPlaylist()
 
-        console.log(getPlaylistTreeString(curPlaylist))
+        console.log(getPlaylistTreeString(activePlaylist))
 
         // If this is the last item in the argument list, the user probably
         // only wants to get the list, so we'll mark the 'should run' flag
@@ -128,7 +128,7 @@ setupDefaultPlaylist('./playlist.json')
 
         requiresOpenPlaylist()
 
-        console.log(getPlaylistTreeString(curPlaylist, true))
+        console.log(getPlaylistTreeString(activePlaylist, true))
 
         // As with -l, if this is the last item in the argument list, we
         // won't actually be playing the playlist.
@@ -187,11 +187,11 @@ setupDefaultPlaylist('./playlist.json')
 
         requiresOpenPlaylist()
 
-        console.log(JSON.stringify(curPlaylist, null, 2))
+        console.log(JSON.stringify(activePlaylist, null, 2))
       }
     })
 
-    if (curPlaylist === null) {
+    if (activePlaylist === null) {
       throw new Error(
         "Cannot play - no open playlist. Try --open <playlist file>?"
       )
@@ -201,10 +201,10 @@ setupDefaultPlaylist('./playlist.json')
       let picker
       if (pickerType === 'shuffle') {
         console.log("Using shuffle picker.")
-        picker = pickers.makeShufflePlaylistPicker(curPlaylist)
+        picker = pickers.makeShufflePlaylistPicker(activePlaylist)
       } else if (pickerType === 'ordered') {
         console.log("Using ordered picker.")
-        picker = pickers.makeOrderedPlaylistPicker(curPlaylist)
+        picker = pickers.makeOrderedPlaylistPicker(activePlaylist)
       } else {
         console.error("Invalid picker type: " + pickerType)
         return
@@ -227,7 +227,7 @@ setupDefaultPlaylist('./playlist.json')
 
       return loopPlay(picker, downloader, playOpts)
     } else {
-      return curPlaylist
+      return activePlaylist
     }
   })
   .catch(err => console.error(err))
