@@ -7,18 +7,20 @@ const { spawn } = require('child_process')
 const { promisify } = require('util')
 
 const writeFile = promisify(fs.writeFile)
-const rename = promisify(fs.rename)
 
 function makeHTTPDownloader() {
-  return function(arg, out) {
+  return function(arg) {
+    const out = tempy.file()
+
     return fetch(arg)
       .then(response => response.buffer())
       .then(buffer => writeFile(out, buffer))
+      .then(() => out)
   }
 }
 
 function makeYouTubeDownloader() {
-  return function(arg, out) {
+  return function(arg) {
     const tempDir = tempy.directory()
 
     const opts = [
@@ -29,20 +31,15 @@ function makeYouTubeDownloader() {
     ]
 
     return promisifyProcess(spawn('youtube-dl', opts), false)
-      .then(() => rename(tempDir + '/dl.wav', out))
+      .then(() => tempDir + '/dl.wav')
   }
 }
 
 function makeLocalDownloader() {
-  return function(arg, out) {
-    const read = fs.createReadStream(arg)
-    const write = fs.createWriteStream(out)
-
-    return new Promise((resolve, reject) => {
-      write.on('error', err => reject(err))
-      write.on('close', () => resolve())
-      read.pipe(write)
-    })
+  return function(arg) {
+    // Since we're grabbing the file from the local file system, there's no
+    // need to download or copy it!
+    return arg
   }
 }
 

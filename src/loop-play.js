@@ -30,11 +30,10 @@ module.exports = async function loopPlay(picker, downloader, playArgs = []) {
     const [ title, downloaderArg ] = picked
     console.log(`Downloading ${title}..\nDownloader arg: ${downloaderArg}`)
 
+    const downloadFile = await downloader(downloaderArg)
+
     const tempDir = tempy.directory()
     const wavFile = tempDir + `/.${sanitize(title)}.wav`
-    const downloadFile = tempDir + '/.dl-' + path.basename(downloaderArg)
-
-    await downloader(downloaderArg, downloadFile)
 
     try {
       await convert(downloadFile, wavFile)
