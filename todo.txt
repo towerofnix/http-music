@@ -80,3 +80,7 @@ TODO: Recursive local file playlist crawler.
 TODO: *Requiring* a literal `playlist.json` file doesn't seem quite right,
       especially since there's the `--open` option.
       (Done!)
+
+TODO: Make local downlaoder sort more natural - that is, 10 comes immediately
+      after 9, not 1. (1, 5, 9, 10, 12; not 1, 10, 12, 5, 9.)
+      (Done!)
