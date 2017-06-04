@@ -185,6 +185,9 @@ readFile('./playlist.json', 'utf-8')
       } else if (downloaderType === 'youtube') {
         console.log("Using YouTube downloader.")
         downloader = downloaders.makeYouTubeDownloader()
+      } else if (downloaderType === 'local') {
+        console.log("Using local file downloader.")
+        downloader = downloaders.makeLocalDownloader()
       } else {
         console.error("Invalid downloader type: " + downloaderType)
         return

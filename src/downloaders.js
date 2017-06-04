@@ -33,4 +33,21 @@ function makeYouTubeDownloader() {
   }
 }
 
-module.exports = {makeHTTPDownloader, makeYouTubeDownloader}
+function makeLocalDownloader() {
+  return function(arg, out) {
+    const read = fs.createReadStream(arg)
+    const write = fs.createWriteStream(out)
+
+    return new Promise((resolve, reject) => {
+      write.on('error', err => reject(err))
+      write.on('close', () => resolve())
+      read.pipe(write)
+    })
+  }
+}
+
+module.exports = {
+  makeHTTPDownloader,
+  makeYouTubeDownloader,
+  makeLocalDownloader
+}

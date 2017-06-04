@@ -70,3 +70,12 @@ TODO: Volume controls. Who knows how to do this? It might have to be an
 
 TODO: Tempfiles, maybe?
       (Done!)
+
+TODO: Use NOT the internet as its source, so that it's a bit more general
+      purpose. This would only take adding a new downloader.
+      (Done!)
+
+TODO: Recursive local file playlist crawler.
+
+TODO: *Requiring* a literal `playlist.json` file doesn't seem quite right,
+      especially since there's the `--open` option.
