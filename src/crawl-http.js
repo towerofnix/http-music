@@ -6,6 +6,8 @@ const MAX_DOWNLOAD_ATTEMPTS = 5
 
 const fetch = require('node-fetch')
 const $ = require('cheerio')
+const url = require('url')
+const path = require('path')
 
 function crawl(absURL, attempts = 0) {
   // Recursively crawls a given URL, following every link to a deeper path and
@@ -20,18 +22,19 @@ function crawl(absURL, attempts = 0) {
 
         return Promise.all(links.map(link => {
           const [ title, href ] = link
+          const linkURL = url.format(new url.URL(href, absURL))
 
           if (href.endsWith('/')) {
             // It's a directory!
 
-            if (verbose) console.log("[Dir] " + absURL + href)
-            return crawl(absURL + href)
+            if (verbose) console.log("[Dir] " + linkURL)
+            return crawl(linkURL)
               .then(res => [title, res])
           } else {
             // It's a file!
 
-            if (verbose) console.log("[File] " + absURL + href)
-            return Promise.resolve([title, absURL + href])
+            if (verbose) console.log("[File] " + linkURL)
+            return Promise.resolve([title, linkURL])
           }
         }))
       }),
@@ -80,10 +83,6 @@ if (process.argv.length === 2) {
   console.log("..or, npm run crawl-http -- http://.../example/path/")
 } else {
   let url = process.argv[2]
-
-  if (!(url.endsWith('/'))) {
-    url = url + '/'
-  }
 
   crawl(url)
     .then(res => console.log(JSON.stringify(res, null, 2)))
