@@ -76,8 +76,8 @@ function getHTMLLinks(text) {
 }
 
 if (process.argv.length === 2) {
-  console.log("Usage: http-music-crawl-recursive http://.../example/path/")
-  console.log("..or, npm run crawl-recursive -- http://...")
+  console.log("Usage: http-music-crawl-http http://.../example/path/")
+  console.log("..or, npm run crawl-http -- http://.../example/path/")
 } else {
   let url = process.argv[2]
 

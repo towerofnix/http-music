@@ -76,6 +76,7 @@ TODO: Use NOT the internet as its source, so that it's a bit more general
       (Done!)
 
 TODO: Recursive local file playlist crawler.
+      (Done!)
 
 TODO: *Requiring* a literal `playlist.json` file doesn't seem quite right,
       especially since there's the `--open` option.
