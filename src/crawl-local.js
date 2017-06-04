@@ -10,8 +10,14 @@ const readDir = promisify(fs.readdir)
 const stat = promisify(fs.stat)
 
 function crawl(dirPath) {
-  return readDir(dirPath).then(
-    res => Promise.all(res.map(item => {
+  return readDir(dirPath).then(items => {
+    items.sort((a, b) => {
+      const aUp = a.toUpperCase()
+      const bUp = b.toUpperCase()
+      return (aUp < bUp) ? -1 : (aUp == bUp) ? 0 : 1
+    })
+
+    return Promise.all(items.map(item => {
       const itemPath = path.join(dirPath, item)
 
       return stat(itemPath).then(stats => {
@@ -25,8 +31,8 @@ function crawl(dirPath) {
           return track
         }
       })
-    })
-  ))
+    }))
+  })
 }
 
 if (process.argv.length === 2) {
