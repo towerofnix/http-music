@@ -84,3 +84,10 @@ TODO: *Requiring* a literal `playlist.json` file doesn't seem quite right,
 TODO: Make local downlaoder sort more natural - that is, 10 comes immediately
       after 9, not 1. (1, 5, 9, 10, 12; not 1, 10, 12, 5, 9.)
       (Done!)
+
+TODO: Make a way to skip tracks while playing. Currently the only way is to
+      kill and restart the http-music process; this is bad for numerous
+      reasons, particularly because it gets rid of the pre-downloaded track and
+      forces the user to wait for another one to be downloaded.
+
+TODO: Make a --help/-h/-? option that directs helpless users to the man page.
