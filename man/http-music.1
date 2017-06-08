@@ -34,6 +34,11 @@ Sets the downloader type used for actually retrieving track files.
 The default is \fBhttp\fR.
 
 .TP
+.BR \-h ", " \-? ", " \-\-help
+Presents a help message, directing the user to the \fBman\fR page.
+If this is the last option used, nothing plays (see \fB\-\-play\fR).
+
+.TP
 .BR \-k ", " \-\-keep " \fIgroupPath\fR"
 Keeps a group by adding it from the source playlist.
 This is usually useful after clearing the active playlist (\fB\-\-clear\fR); it can also be used to keep a sub-group after removing an entire parent group, e.g. \fB-r foo -k foo/baz\fR.

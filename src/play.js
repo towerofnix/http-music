@@ -48,6 +48,20 @@ setupDefaultPlaylist('./playlist.json')
     }
 
     await processArgv(process.argv, {
+      '-help': function(util) {
+        // --help  (alias: -h, -?)
+        // Presents a help message.
+
+        console.log('http-music\nTry man http-music!')
+
+        if (util.index === util.argv.length - 1) {
+          shouldPlay = false
+        }
+      },
+
+      'h': util => util.alias('-help'),
+      '?': util => util.alias('-help'),
+
       '-open': async function(util) {
         // --open <file>  (alias: -o)
         // Opens a separate playlist file.

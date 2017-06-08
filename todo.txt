@@ -91,3 +91,4 @@ TODO: Make a way to skip tracks while playing. Currently the only way is to
       forces the user to wait for another one to be downloaded.
 
 TODO: Make a --help/-h/-? option that directs helpless users to the man page.
+      (Done!)
