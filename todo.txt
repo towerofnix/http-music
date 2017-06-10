@@ -92,3 +92,7 @@ TODO: Make a way to skip tracks while playing. Currently the only way is to
 
 TODO: Make a --help/-h/-? option that directs helpless users to the man page.
       (Done!)
+
+TODO: Make a way to write the current playlist to a file. I think just renaming
+      the debug-playlist-log option could work, since you could pipe that to a
+      file through your shell.
