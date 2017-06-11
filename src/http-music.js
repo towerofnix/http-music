@@ -246,6 +246,7 @@ setupDefaultPlaylist('./playlist.json')
 
       process.stdin.on('data', data => {
         if (Buffer.from('s').equals(data)) {
+          // clearConsoleLine()
           // console.log(
           //   "Skipping the track that's currently playing. " +
           //   "(Press I for track info!)"
@@ -255,12 +256,21 @@ setupDefaultPlaylist('./playlist.json')
         }
 
         if (Buffer.from([0x7f]).equals(data)) { // Delete
+          clearConsoleLine()
           console.log(
             "Skipping the track that's up next. " +
             "(Press I for track info!)"
           )
 
           play.skipUpNext()
+        }
+
+        if (
+          Buffer.from('i').equals(data) ||
+          Buffer.from('t').equals(data)
+        ) {
+          clearConsoleLine()
+          play.logTrackInfo()
         }
 
         if (
@@ -272,13 +282,6 @@ setupDefaultPlaylist('./playlist.json')
           process.stdout.write('\n')
           process.exit(0)
         }
-
-        if (
-          Buffer.from('i').equals(data) ||
-          Buffer.from('t').equals(data)
-        ) {
-          play.logTrackInfo()
-        }
       })
 
       return play.promise
@@ -287,3 +290,7 @@ setupDefaultPlaylist('./playlist.json')
     }
   })
   .catch(err => console.error(err))
+
+function clearConsoleLine() {
+  process.stdout.write('\x1b[1K\r')
+}

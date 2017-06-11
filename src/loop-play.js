@@ -13,16 +13,30 @@ class DownloadController extends EventEmitter {
 
     this.pickedTrack = null
     this.process = null
-    this.requestingSkipUpNext = false
     this.isDownloading = false
 
     this.picker = picker
     this.downloader = downloader
+
+    this._downloadNext = null
   }
 
-  async downloadNext() {
-    this.requestingSkipUpNext = false
+  downloadNext() {
+    this.downloadNextHelper()
+
+    return new Promise(resolve => {
+      this.once('downloadFinished', resolve)
+    })
+  }
+
+  async downloadNextHelper() {
     this.isDownloading = true
+
+    let wasDestroyed = false
+
+    this._destroyDownload = () => {
+      wasDestroyed = true
+    }
 
     // We need to actually pick something to download; we'll use the picker
     // (given in the DownloadController constructor) for that.
@@ -91,41 +105,32 @@ class DownloadController extends EventEmitter {
       // isn't any guarding against a situation like that here.)
 
       // Usually we'll log a warning message saying that the convertion failed,
-      // but if we're requesting a skip-up-next, it's expected for the avconv
+      // but if this download was destroyed, it's expected for the avconv
       // process to fail; so in that case we don't bother warning the user.
-      if (!this.requestingSkipUpNext) {
+      if (!wasDestroyed) {
         console.warn("Failed to convert " + title)
         console.warn("Selecting a new track")
-      }
 
-      return await this.downloadNext()
+        return await this.downloadNext()
+      }
     }
 
-    // If we were requested to skip the up-next track that's currently being
-    // downloaded (probably by the user), we'll have to do that now.
-    if (this.requestingSkipUpNext) return await this.downloadNext()
+    // If this download was destroyed, we quit now; we don't want to emit that
+    // the download was finished if the finished download was the destroyed
+    // one!
+    if (wasDestroyed) {
+      return
+    }
 
-    // We successfully downloaded something, and so the downloadNext function
-    // is done. We mark that here, so that skipUpNext will know that it'll need
-    // to start a whole new downloadNext to have any effect.
-    this.isDownloading = false
+    this.emit('downloadFinished')
   }
 
   skipUpNext() {
-    // If we're already in the process of downloading the up-next track, we'll
-    // set the requestingSkipUpNext flag to true. downloadNext will use this to
-    // cancel its current download and begin new.
-    if (this.isDownloading) {
-      this.requestingSkipUpNext = true
-      this.killProcess()
+    if (this._destroyDownload) {
+      this._destroyDownload()
     }
 
-    // If we aren't currently downloading a track, downloadNext won't
-    // automatically be called from the start again, so we need to do that
-    // here.
-    if (!this.isDownloading) {
-      this.downloadNext()
-    }
+    this.downloadNextHelper()
   }
 
   killProcess() {
@@ -145,7 +150,6 @@ class PlayController {
     this.downloadController = downloadController
 
     this.downloadController.on('trackPicked', track => {
-      console.log('Changed:', track[0])
       this.upNextTrack = track
     })
   }
@@ -158,6 +162,7 @@ class PlayController {
 
     while (this.downloadController.wavFile) {
       this.currentTrack = this.downloadController.pickedTrack
+
 
       const file = this.downloadController.wavFile
       const playProcess = spawn('play', [...this.playArgs, file])
@@ -180,6 +185,8 @@ class PlayController {
     if (this.process) {
       this.process.kill()
     }
+
+    this.currentTrack = null
   }
 }
 
