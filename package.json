@@ -1,14 +1,14 @@
 {
   "name": "http-music",
   "version": "0.0.1",
-  "main": "src/play.js",
+  "main": "src/http-music.js",
   "scripts": {
-    "play": "node src/play.js",
+    "play": "node src/http-music.js",
     "crawl-http": "node src/crawl-http",
     "crawl-local": "node src/crawl-local"
   },
   "bin": {
-    "http-music": "./src/play.js",
+    "http-music": "./src/http-music.js",
     "http-music-crawl-http": "./src/crawl-http.js",
     "http-music-crawl-local": "./src/crawl-local.js"
   },

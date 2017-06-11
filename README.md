@@ -18,7 +18,7 @@ $ node .  # Go!
 ```
 
 **Zomg command line arguments documentation????** — Yes; read the end of the
-`play.js` file. There's a bunch of JS-comment-based documentation there.
+`http-music.js` file. There's a bunch of JS-comment-based documentation there.
 
 There's actually three proper ways to run `http-music`:
 
