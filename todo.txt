@@ -102,8 +102,12 @@ TODO: Figure out a less "hacky" way to kill the process. Ideally we shouldn't
       broken, since we aren't using the shell's normal way of handling any
       keyboard controls such as those!
 
-TODO: A way to kill the up-next song.
-
 TODO: Separate the code in loop-play.js to be a bit nicer.
+      (Done!)
 
 TODO: Cleaning up http-music.js would be nice as well!
+
+TODO: A way to kill the up-next song.
+
+TODO: A way to see information about the currently playing song, as well as
+      the up-next song.
