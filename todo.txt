@@ -112,3 +112,5 @@ TODO: A way to kill the up-next song.
 
 TODO: A way to see information about the currently playing song, as well as
       the up-next song.
+
+TODO: A way to see the previously played songs, and to skip back (or forwards).

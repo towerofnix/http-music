@@ -3,9 +3,9 @@
 const { Writable } = require('stream')
 
 module.exports = function promisifyProcess(proc) {
-  // Takes a process (from the child_process module) and returns a promise that
-  // resolves when the process exits (or rejects with a warning, if the exit
-  // code is non-zero).
+  // Takes a process (from the child_process module) and returns a promise
+  // that resolves when the process exits (or rejects, if the exit code is
+  // non-zero).
 
   return new Promise((resolve, reject) => {
     proc.stdout.pipe(process.stdout)
@@ -15,7 +15,6 @@ module.exports = function promisifyProcess(proc) {
       if (code === 0) {
         resolve()
       } else {
-        console.error("Process failed!", proc.spawnargs)
         reject(code)
       }
     })

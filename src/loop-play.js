@@ -5,8 +5,13 @@ const promisifyProcess = require('./promisify-process')
 const sanitize = require('sanitize-filename')
 const tempy = require('tempy')
 
-class DownloadController {
+const EventEmitter = require('events')
+
+class DownloadController extends EventEmitter {
   constructor(picker, downloader) {
+    super()
+
+    this.pickedTrack = null
     this.process = null
     this.requestingSkipUpNext = false
     this.isDownloading = false
@@ -31,6 +36,11 @@ class DownloadController {
       return false
     }
 
+    // Having the picked song being available is handy, for UI stuff (i.e. for
+    // being displayed to the user through the console).
+    this.pickedTrack = picked
+    this.emit('trackPicked', picked)
+
     // The picked result is an array containing the title of the track (only
     // really used to display to the user) and an argument to be passed to the
     // downloader. The downloader argument doesn't have to be anything in
@@ -38,19 +48,20 @@ class DownloadController {
     // It's up to the downloader to decide what to do with it.
     const [ title, downloaderArg ] = picked
 
-    console.log(`Downloading ${title}..\nDownloader arg: ${downloaderArg}`)
-
-    // The "from" file is downloaded by the downloader (given in the
-    // DownloadController constructor) using the downloader argument we just
-    // got.
-    const from = await this.downloader(downloaderArg)
-
     // The "to" file is simply a WAV file. We give this WAV file a specific
     // name - the title of the track we got earlier, sanitized to be file-safe
     // - so that when `play` outputs the name of the song, it's obvious to the
     // user what's being played.
     const tempDir = tempy.directory()
     const to = tempDir + `/.${sanitize(title)}.wav`
+
+    // We'll use this wav file later, to actually play the track.
+    this.wavFile = to
+
+    // The "from" file is downloaded by the downloader (given in the
+    // DownloadController constructor) using the downloader argument we just
+    // got.
+    const from = await this.downloader(downloaderArg)
 
     // Now that we've got the `to` and `from` file names, we can actually do
     // the convertion. We don't want any output from `avconv` at all, since the
@@ -60,10 +71,9 @@ class DownloadController {
       '-loglevel', 'quiet', '-i', from, to
     ])
 
-    // It's handy to store the output WAV file (the "to" file) and the `avconv`
-    // process; the WAV file is used later to be played, and the convert
-    // process is stored so it can be killed before it finishes.
-    this.wavFile = to
+    // We store the convert process so that we can kill it before it finishes,
+    // if that's most convenient (e.g. if skipping the current song or quitting
+    // the entire program).
     this.process = convertProcess
 
     // Now it's only a matter of time before the process is finished.
@@ -72,9 +82,6 @@ class DownloadController {
     try {
       await promisifyProcess(convertProcess)
     } catch(err) {
-      console.warn("Failed to convert " + title)
-      console.warn("Selecting a new track\n")
-
       // There's a chance we'll fail, though. That could happen if the passed
       // "from" file doesn't actually contain audio data. In that case, we
       // have to attempt this whole process over again, so that we get a
@@ -82,6 +89,15 @@ class DownloadController {
       // file; if that's the case, and the convert process is failing on it,
       // we could end up in an infinite loop. That would be bad, since there
       // isn't any guarding against a situation like that here.)
+
+      // Usually we'll log a warning message saying that the convertion failed,
+      // but if we're requesting a skip-up-next, it's expected for the avconv
+      // process to fail; so in that case we don't bother warning the user.
+      if (!this.requestingSkipUpNext) {
+        console.warn("Failed to convert " + title)
+        console.warn("Selecting a new track")
+      }
+
       return await this.downloadNext()
     }
 
@@ -121,10 +137,17 @@ class DownloadController {
 
 class PlayController {
   constructor(downloadController) {
+    this.currentTrack = null
+    this.upNextTrack = null
     this.playArgs = []
     this.process = null
 
     this.downloadController = downloadController
+
+    this.downloadController.on('trackPicked', track => {
+      console.log('Changed:', track[0])
+      this.upNextTrack = track
+    })
   }
 
   async loopPlay() {
@@ -134,17 +157,19 @@ class PlayController {
     await this.downloadController.downloadNext()
 
     while (this.downloadController.wavFile) {
-      const nextPromise = this.downloadController.downloadNext()
+      this.currentTrack = this.downloadController.pickedTrack
 
       const file = this.downloadController.wavFile
       const playProcess = spawn('play', [...this.playArgs, file])
       const playPromise = promisifyProcess(playProcess)
       this.process = playProcess
 
+      const nextPromise = this.downloadController.downloadNext()
+
       try {
         await playPromise
       } catch(err) {
-        console.warn(err)
+        console.warn(err + '\n')
       }
 
       await nextPromise
@@ -187,6 +212,22 @@ module.exports = function loopPlay(picker, downloader, playArgs = []) {
     kill: function() {
       playController.killProcess()
       downloadController.killProcess()
+    },
+
+    logTrackInfo: function() {
+      if (playController.currentTrack) {
+        const [ curTitle, curArg ] = playController.currentTrack
+        console.log(`Playing: \x1b[1m${curTitle} \x1b[2m${curArg}\x1b[0m`)
+      } else {
+        console.log("No song currently playing.")
+      }
+
+      if (playController.upNextTrack) {
+        const [ nextTitle, nextArg ] = playController.upNextTrack
+        console.log(`Up next: \x1b[1m${nextTitle} \x1b[2m${nextArg}\x1b[0m`)
+      } else {
+        console.log("No song up next.")
+      }
     }
   }
 }

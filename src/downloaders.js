@@ -24,13 +24,14 @@ function makeYouTubeDownloader() {
     const tempDir = tempy.directory()
 
     const opts = [
+      '--quiet',
       '--extract-audio',
       '--audio-format', 'wav',
       '--output', tempDir + '/dl.%(ext)s',
       arg
     ]
 
-    return promisifyProcess(spawn('youtube-dl', opts), false)
+    return promisifyProcess(spawn('youtube-dl', opts))
       .then(() => tempDir + '/dl.wav')
   }
 }
