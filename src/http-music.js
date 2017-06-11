@@ -239,7 +239,28 @@ setupDefaultPlaylist('./playlist.json')
         return
       }
 
-      return loopPlay(picker, downloader, playOpts)
+      const play = loopPlay(picker, downloader, playOpts)
+
+      // We're looking to gather standard input one keystroke at a time.
+      process.stdin.setRawMode(true)
+
+      process.stdin.on('data', data => {
+        if (Buffer.from('s').equals(data)) {
+          play.skip()
+        }
+
+        if (
+          Buffer.from('q').equals(data) ||
+          Buffer.from([0x03]).equals(data) || // ^C
+          Buffer.from([0x04]).equals(data) // ^D
+        ) {
+          play.kill()
+          process.stdout.write('\n')
+          process.exit(0)
+        }
+      })
+
+      return play.promise
     } else {
       return activePlaylist
     }
