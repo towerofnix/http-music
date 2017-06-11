@@ -246,7 +246,11 @@ setupDefaultPlaylist('./playlist.json')
 
       process.stdin.on('data', data => {
         if (Buffer.from('s').equals(data)) {
-          play.skip()
+          play.skipCurrent()
+        }
+
+        if (Buffer.from([0x7f]).equals(data)) { // Delete
+          play.skipUpNext()
         }
 
         if (

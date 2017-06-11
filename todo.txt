@@ -108,6 +108,7 @@ TODO: Separate the code in loop-play.js to be a bit nicer.
 TODO: Cleaning up http-music.js would be nice as well!
 
 TODO: A way to kill the up-next song.
+      (Done!)
 
 TODO: A way to see information about the currently playing song, as well as
       the up-next song.
