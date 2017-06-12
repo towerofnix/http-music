@@ -122,3 +122,9 @@ TODO: Figure out how to attempt to avoid being forced to convert every file..
       converting a 10MB MP3 into an 80MB WAV is never good, even if we're
       storing it as a tempfile!
       (Done!)
+
+TODO: Let playlist filter match things lowercase. '72 Minutes Of Fame' should
+      be matched if '72 Minutes of Fame' can't be! (However, it would also be
+      best to prioritize a case-sensitive match before a non-case-sensitive
+      one. Given the input 'FoObAR', prioritize 'FoObAR' over 'Foobar'.)
+      (Done!)

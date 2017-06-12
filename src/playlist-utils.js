@@ -24,12 +24,25 @@ function filterPlaylistByPath(playlist, pathParts) {
   // function encounters an item in the group path that is not found, it logs
   // a warning message and returns the group found up to that point.
 
-  let cur = pathParts[0]
+  const titleMatch = (group, caseInsensitive = false) => {
+    let a = getGroupTitle(group)
+    let b = cur
 
-  const match = playlist.find(group => {
-    const title = getGroupTitle(group)
-    return title === cur || title === cur + '/'
-  })
+    if (caseInsensitive) {
+      a = a.toLowerCase()
+      b = b.toLowerCase()
+    }
+
+    return a === b
+  }
+
+  const cur = pathParts[0]
+
+  let match = playlist.find(g => titleMatch(g, false))
+
+  if (!match) {
+    match = playlist.find(g => titleMatch(g, true))
+  }
 
   if (match) {
     if (pathParts.length > 1) {
