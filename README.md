@@ -17,8 +17,8 @@ $ npm run crawl-recursive -- <server_ip> > playlist.json
 $ node .  # Go!
 ```
 
-**Zomg command line arguments documentation????** — Yes; read the end of the
-`http-music.js` file. There's a bunch of JS-comment-based documentation there.
+**Zomg command line arguments documentation????** — Yes; read the docs! There's
+a man page for a reason: `man man/http-music.1` (or `man http-music`).
 
 There's actually three proper ways to run `http-music`:
 
