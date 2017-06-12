@@ -62,27 +62,57 @@ class DownloadController extends EventEmitter {
     // It's up to the downloader to decide what to do with it.
     const [ title, downloaderArg ] = picked
 
+    // The "from" file is downloaded by the downloader (given in the
+    // DownloadController constructor) using the downloader argument we just
+    // got.
+    const fromFile = await this.downloader(downloaderArg)
+
+    // Before we convert the file, we'll check if it's already an audio file.
+    // This goes on the assumption that if avprobe understands a file, play
+    // also does; which is probably true almost all the time.
+    let probeCode
+
+    try {
+      // Well, lovely. avprobe ALWAYS outputs "# avprobe output" - even if
+      // its loglevel is set to silent! Blasphemy, but whatever. We're forced
+      // to not pipe to stdout (which we do by passing false to
+      // promisifyProcess).
+      await promisifyProcess(spawn('avprobe', [fromFile]), false)
+    } catch(errorCode) {
+      probeCode = errorCode
+    }
+
+    // We'll use this wav file later, to actually play the track.
+    if (probeCode > 0) {
+      this.wavFile = await this.convert(picked, fromFile)
+    } else {
+      this.wavFile = fromFile
+    }
+
+    // If this download was destroyed, we quit now; we don't want to emit that
+    // the download was finished if the finished download was the destroyed
+    // one!
+    if (wasDestroyed) {
+      return
+    }
+
+    this.emit('downloadFinished')
+  }
+
+  async convert(picked, fromFile) {
     // The "to" file is simply a WAV file. We give this WAV file a specific
     // name - the title of the track we got earlier, sanitized to be file-safe
     // - so that when `play` outputs the name of the song, it's obvious to the
     // user what's being played.
     const tempDir = tempy.directory()
-    const to = tempDir + `/.${sanitize(title)}.wav`
-
-    // We'll use this wav file later, to actually play the track.
-    this.wavFile = to
-
-    // The "from" file is downloaded by the downloader (given in the
-    // DownloadController constructor) using the downloader argument we just
-    // got.
-    const from = await this.downloader(downloaderArg)
+    const toFile = tempDir + `/.${sanitize(title)}.wav`
 
     // Now that we've got the `to` and `from` file names, we can actually do
     // the convertion. We don't want any output from `avconv` at all, since the
     // output of `play` will usually be displayed while `avconv` is running,
     // so we pass `-loglevel quiet` into `avconv`.
     const convertProcess = spawn('avconv', [
-      '-loglevel', 'quiet', '-i', from, to
+      '-loglevel', 'quiet', '-i', fromFile, toFile
     ])
 
     // We store the convert process so that we can kill it before it finishes,
@@ -115,14 +145,7 @@ class DownloadController extends EventEmitter {
       }
     }
 
-    // If this download was destroyed, we quit now; we don't want to emit that
-    // the download was finished if the finished download was the destroyed
-    // one!
-    if (wasDestroyed) {
-      return
-    }
-
-    this.emit('downloadFinished')
+    return to
   }
 
   skipUpNext() {
