@@ -4,6 +4,7 @@ const { spawn } = require('child_process')
 const promisifyProcess = require('./promisify-process')
 const sanitize = require('sanitize-filename')
 const tempy = require('tempy')
+const path = require('path')
 
 const EventEmitter = require('events')
 
@@ -46,7 +47,7 @@ class DownloadController extends EventEmitter {
     // If the picker returns null, nothing was picked; that means that we
     // should stop now. No point in trying to play nothing!
     if (picked == null) {
-      this.wavFile = null
+      this.playFile = null
       return false
     }
 
@@ -67,26 +68,18 @@ class DownloadController extends EventEmitter {
     // got.
     const fromFile = await this.downloader(downloaderArg)
 
-    // Before we convert the file, we'll check if it's already an audio file.
-    // This goes on the assumption that if avprobe understands a file, play
-    // also does; which is probably true almost all the time.
-    let probeCode
+    // Ignore the '.' at the start.
+    const format = path.extname(fromFile).slice(1)
 
-    try {
-      // Well, lovely. avprobe ALWAYS outputs "# avprobe output" - even if
-      // its loglevel is set to silent! Blasphemy, but whatever. We're forced
-      // to not pipe to stdout (which we do by passing false to
-      // promisifyProcess).
-      await promisifyProcess(spawn('avprobe', [fromFile]), false)
-    } catch(errorCode) {
-      probeCode = errorCode
-    }
+    // We'll only want to convert the "from" file if it's not already supported
+    // by SoX; so we check the supported format list.
 
-    // We'll use this wav file later, to actually play the track.
-    if (probeCode > 0) {
-      this.wavFile = await this.convert(picked, fromFile)
+    const supportedFormats = await this.getSupportedFormats()
+
+    if (supportedFormats.includes(format)) {
+      this.playFile = fromFile
     } else {
-      this.wavFile = fromFile
+      this.playFile = await this.convert(picked, fromFile)
     }
 
     // If this download was destroyed, we quit now; we don't want to emit that
@@ -99,13 +92,62 @@ class DownloadController extends EventEmitter {
     this.emit('downloadFinished')
   }
 
+  async getSupportedFormats() {
+    // Gets the formats supported by SoX (i.e., the `play` command) by
+    // searching the help output for the line that starts with
+    // 'AUDIO FILE FORMATS:'. This seems to be the only way to list the formats
+    // that any installation of SoX accepts; in the documentation, this is also
+    // the recommended way (though it's not particularly suggested to be parsed
+    // automatically): "To see if SoX has support for an optional format or
+    // device, enter sox −h and look for its name under the list: 'AUDIO FILE
+    // FORMATS' or 'AUDIO DEVICE DRIVERS'."
+
+    if (this._supportedSoXFormats) {
+      return this._supportedSoXFormats
+    }
+
+    const sox = spawn('sox', ['-h'])
+
+    const buffers = []
+
+    sox.stdout.on('data', buf => {
+      buffers.push(buf)
+    })
+
+    await promisifyProcess(sox, false)
+
+    const str = Buffer.concat(buffers).toString()
+
+    const lines = str.split('\n')
+
+    const prefix = 'AUDIO FILE FORMATS: '
+
+    const formatsLine = lines.find(line => line.startsWith(prefix))
+
+    const formats = formatsLine.slice(prefix.length).split(' ')
+
+    this._supportedSoXFormats = formats
+
+    return formats
+  }
+
   async convert(picked, fromFile) {
-    // The "to" file is simply a WAV file. We give this WAV file a specific
+    // The "to" file is simply an MP3 file. We give this MP3 file a specific
     // name - the title of the track we got earlier, sanitized to be file-safe
     // - so that when `play` outputs the name of the song, it's obvious to the
     // user what's being played.
+    //
+    // Previously a WAV file was used here. Converting to a WAV file is
+    // considerably faster than converting to an MP3; however, the file sizes
+    // of WAVs tend to be drastically larger than MP3s. When saving disk space
+    // is one of the greatest concerns (it's essentially the point of
+    // http-music!), it's better to opt for an MP3. Additionally, most audio
+    // convertion is done in the background, while another track is already
+    // playing, so an extra few seconds of background time can hardly be
+    // noticed.
+    const title = picked[1]
     const tempDir = tempy.directory()
-    const toFile = tempDir + `/.${sanitize(title)}.wav`
+    const toFile = tempDir + `/.${sanitize(title)}.mp3`
 
     // Now that we've got the `to` and `from` file names, we can actually do
     // the convertion. We don't want any output from `avconv` at all, since the
@@ -145,7 +187,7 @@ class DownloadController extends EventEmitter {
       }
     }
 
-    return to
+    return toFile
   }
 
   skipUpNext() {
@@ -183,11 +225,11 @@ class PlayController {
 
     await this.downloadController.downloadNext()
 
-    while (this.downloadController.wavFile) {
+    while (this.downloadController.playFile) {
       this.currentTrack = this.downloadController.pickedTrack
 
 
-      const file = this.downloadController.wavFile
+      const file = this.downloadController.playFile
       const playProcess = spawn('play', [...this.playArgs, file])
       const playPromise = promisifyProcess(playProcess)
       this.process = playProcess
