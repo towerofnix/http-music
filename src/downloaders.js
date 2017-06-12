@@ -2,6 +2,7 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 const promisifyProcess = require('./promisify-process')
 const tempy = require('tempy')
+const path = require('path')
 
 const { spawn } = require('child_process')
 const { promisify } = require('util')
@@ -10,7 +11,8 @@ const writeFile = promisify(fs.writeFile)
 
 function makeHTTPDownloader() {
   return function(arg) {
-    const out = tempy.file()
+    const dir = tempy.directory()
+    const out = dir + '/' + path.basename(arg)
 
     return fetch(arg)
       .then(response => response.buffer())
