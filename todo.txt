@@ -114,3 +114,10 @@ TODO: A way to see information about the currently playing song, as well as
       the up-next song.
 
 TODO: A way to see the previously played songs, and to skip back (or forwards).
+
+TODO: Exit on loop-play end. (Since it listens to stdin for input right now,
+      it won't automatically stop.)
+
+TODO: Figure out how to attempt to avoid being forced to convert every file..
+      converting a 10MB MP3 into an 80MB WAV is never good, even if we're
+      storing it as a tempfile!
