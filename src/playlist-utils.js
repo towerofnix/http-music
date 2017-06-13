@@ -33,7 +33,7 @@ function filterPlaylistByPath(playlist, pathParts) {
       b = b.toLowerCase()
     }
 
-    return a === b
+    return a === b || a === b + '/'
   }
 
   const cur = pathParts[0]
