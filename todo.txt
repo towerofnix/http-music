@@ -128,3 +128,10 @@ TODO: Let playlist filter match things lowercase. '72 Minutes Of Fame' should
       best to prioritize a case-sensitive match before a non-case-sensitive
       one. Given the input 'FoObAR', prioritize 'FoObAR' over 'Foobar'.)
       (Done!)
+
+TODO: Figure out why written track files (when using HTTP downloader) are
+      URL-encoded. It's probably writing a file based on the href-file name,
+      rather than the title. That's alright, but maybe we should URL-decode
+      and then sanitize the href-file name, so that we get 'Foo Bar.mp3'
+      instead of 'Foo%20Bar.mp3'.
+      (Done!)
