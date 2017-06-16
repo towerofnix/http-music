@@ -89,6 +89,7 @@ TODO: Make a way to skip tracks while playing. Currently the only way is to
       kill and restart the http-music process; this is bad for numerous
       reasons, particularly because it gets rid of the pre-downloaded track and
       forces the user to wait for another one to be downloaded.
+      (Done!)
 
 TODO: Make a --help/-h/-? option that directs helpless users to the man page.
       (Done!)
@@ -135,3 +136,6 @@ TODO: Figure out why written track files (when using HTTP downloader) are
       and then sanitize the href-file name, so that we get 'Foo Bar.mp3'
       instead of 'Foo%20Bar.mp3'.
       (Done!)
+
+TODO: Make max download attempts variable by the user (without requiring
+      source editing, obviously).
