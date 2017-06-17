@@ -12,7 +12,10 @@
     "http-music-crawl-http": "./src/crawl-http.js",
     "http-music-crawl-local": "./src/crawl-local.js"
   },
-  "man": "./man/http-music.1",
+  "man": {
+    "http-music": "./man/http-music.1",
+    "http-music-crawl-http": "./man/http-music-crawl-http.1"
+  },
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",
     "node-fetch": "^1.7.0",
