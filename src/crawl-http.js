@@ -2,14 +2,13 @@
 
 'use strict'
 
-const MAX_DOWNLOAD_ATTEMPTS = 5
-
 const fetch = require('node-fetch')
 const $ = require('cheerio')
 const url = require('url')
 const path = require('path')
+const processArgv = require('./process-argv')
 
-function crawl(absURL, attempts = 0) {
+function crawl(absURL, maxAttempts = 5, attempts = 0) {
   // Recursively crawls a given URL, following every link to a deeper path and
   // recording all links in a tree (in the same format playlists use). Makes
   // multiple attempts to download failed paths.
@@ -28,7 +27,7 @@ function crawl(absURL, attempts = 0) {
             // It's a directory!
 
             if (verbose) console.log("[Dir] " + linkURL)
-            return crawl(linkURL)
+            return crawl(linkURL, maxAttempts)
               .then(res => [title, res])
           } else {
             // It's a file!
@@ -42,17 +41,16 @@ function crawl(absURL, attempts = 0) {
       err => {
         console.warn("Failed to download: " + absURL)
 
-        if (attempts < MAX_DOWNLOAD_ATTEMPTS) {
+        if (attempts < maxAttempts) {
           console.warn(
-            "Trying again. Attempt " + (attempts + 1) +
-            "/" + MAX_DOWNLOAD_ATTEMPTS + "..."
+            `Trying again. Attempt ${attempts + 1}/${maxAttempts}...`
           )
 
-          return crawl(absURL, attempts + 1)
+          return crawl(absURL, maxAttempts, attempts + 1)
         } else {
           console.error(
-            "We've hit the download attempt limit (" +
-            MAX_DOWNLOAD_ATTEMPTS + "). Giving up on this path."
+            "We've hit the download attempt limit (" + maxAttempts + "). " +
+            "Giving up on this path."
           )
 
           throw 'FAILED_DOWNLOAD'
@@ -78,13 +76,32 @@ function getHTMLLinks(text) {
   })
 }
 
-if (process.argv.length === 2) {
-  console.log("Usage: http-music-crawl-http http://.../example/path/")
-  console.log("..or, npm run crawl-http -- http://.../example/path/")
-} else {
+async function main() {
   let url = process.argv[2]
 
-  crawl(url)
-    .then(res => console.log(JSON.stringify(res, null, 2)))
+  let maxDownloadAttempts = 5
+
+  await processArgv(process.argv.slice(3), {
+    '-max-download-attempts': function(util) {
+      // --max-download-attempts <max>  (alias: -m)
+      // Sets the maximum number of times to attempt downloading the index for
+      // any one directory. Defaults to 5.
+
+      maxDownloadAttempts = util.nextArg()
+      console.log(maxDownloadAttempts)
+    },
+
+    'm': util => util.alias('-max-download-attempts')
+  })
+
+  const downloadedPlaylist = await crawl(url, maxDownloadAttempts)
+
+  return JSON.stringify(res, null, 2)
+}
+
+if (process.argv.length === 2) {
+  console.log("Usage: http-music-crawl-http http://.../example/path/ [opts]")
+} else {
+  main()
     .catch(err => console.error(err))
 }

@@ -1,0 +1,78 @@
+.TH http-music-crawl-http 1
+
+
+.SH NAME
+http-music-crawl-http - create a playlist file using an HTTP-based directory listing
+
+
+.SH SYNOPSIS
+.B http-music-crawl-http
+\fIdownloadURL\fR
+[opts...]
+
+
+.SH DESCRIPTION
+\fBhttp-music-crawl-http\fR is a (convolutedly-named) command line utility used to generate playlist files for \fBhttp-music\fR by crawling the directory listing found at a given URL.
+http-music uses playlist files as its source of music; without a playlist file, the program simply does not know what to play!
+
+.PP
+The resulting playlist file is structured as a tree that represents the path that the crawler follows.
+For instance, if the links of a directory listing give the following tree:
+
+.PP
+.nf
+.RS
+http://example.com/
+  Rainbows/
+    Sunlight.mp3
+    Rainbows.mp3
+    Pineapples.mp3
+  Cool Author 72/
+    Good Album/
+      Hello world!.mp3
+  Bad News/
+    Bad News - Single/
+      Bad News.mp3
+    Irony/
+      Rahhhh!!.mp3
+.RE
+.fi
+
+.PP
+\[char46]\[char46]then the following playlist file is generated:
+
+.PP
+.nf
+.RS
+[
+  ['Rainbows', [
+    ['Sunlight', 'http://example.com/Rainbows/Sunlight.mp3'],
+    ['Rainbows', 'http://example.com/Rainbows/Rainbows.mp3'],
+    ['Pineapples', 'http://example.com/Rainbows/Pineapples.mp3']
+  ]],
+  ['Cool Author 72', [
+    ['Good Album', [
+      ['Hello World!', 'http://example.com/Cool%20Author%2072/Good%20Album/Hello%20World.mp3'],
+    ]]
+  ]],
+  ['Bad News', [
+    ['Bad News - Single', [
+      ['Bad News', 'http://example.com/Bad%20News/Bad%20News%20-%20Single/Bad%20News.mp3']
+    ]],
+    ['Irony', [
+      ['Rahhhh!!', 'http://example.com/Bad%20News/Irony/Rahhhh!!.mp3']
+    ]]
+  ]]
+]
+.RE
+.fi
+
+.PP
+As you can see, the resulting playlist file follows the same structure as the directory listing.
+
+
+.SH OPTIONS
+.TP
+.BR -m ", " --max-download-attempts
+Sets the maximum number of times any single directory will be attempted to be downloaded, when the HTTP download request fails.
+Defaults to 5.
