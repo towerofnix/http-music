@@ -3,39 +3,95 @@
 'use strict'
 
 const fetch = require('node-fetch')
-const $ = require('cheerio')
+const cheerio = require('cheerio')
 const url = require('url')
 const path = require('path')
 const processArgv = require('./process-argv')
 
-function crawl(absURL, maxAttempts = 5, attempts = 0) {
+function crawl(absURL, opts = {}, internals = {}) {
   // Recursively crawls a given URL, following every link to a deeper path and
   // recording all links in a tree (in the same format playlists use). Makes
   // multiple attempts to download failed paths.
+
+  const {
+    verbose = false,
+
+    maxAttempts = 5,
+
+    keepSeparateHosts = true,
+
+    keepAnyFileType = false,
+    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov'],
+
+    filterRegex = null
+  } = opts
+
+  if (!internals.attempts) internals.attempts = 0
+  if (!internals.allURLs) internals.allURLs = []
+
+  const verboseLog = text => {
+    if (verbose) {
+      console.log(text)
+    }
+  }
+
+  const absURLObj = new url.URL(absURL)
 
   return fetch(absURL)
     .then(
       res => res.text().then(text => {
         const links = getHTMLLinks(text)
-        const verbose = process.argv.includes('--verbose')
 
         return Promise.all(links.map(link => {
           const [ title, href ] = link
-          const linkURL = url.format(new url.URL(href, absURL))
+          const urlObj = new url.URL(href, absURL)
+          const linkURL = url.format(urlObj)
+
+          if (internals.allURLs.includes(linkURL)) {
+            verboseLog("[Ignored] Already done this URL: " + linkURL)
+
+            return false
+          }
+
+          internals.allURLs.push(linkURL)
+
+          if (filterRegex && !(filterRegex.test(linkURL))) {
+            verboseLog("[Ignored] Failed regex: " + linkURL)
+
+            return false
+          }
+
+          if (!keepSeparateHosts && urlObj.host !== absURLObj.host) {
+            verboseLog("[Ignored] Inconsistent host: " + linkURL)
+
+            return false
+          }
 
           if (href.endsWith('/')) {
             // It's a directory!
 
-            if (verbose) console.log("[Dir] " + linkURL)
-            return crawl(linkURL, maxAttempts)
+            verboseLog("[Dir] " + linkURL)
+
+            return crawl(linkURL, opts, Object.assign({}, internals))
               .then(res => [title, res])
           } else {
             // It's a file!
 
-            if (verbose) console.log("[File] " + linkURL)
+            const extensions = fileTypes.map(t => '.' + t)
+
+            if (
+              !keepAnyFileType &&
+              !(extensions.includes(path.extname(href)))
+            ) {
+              verboseLog("[Ignored] Bad extension: " + linkURL)
+
+              return false
+            }
+
+            verboseLog("[File] " + linkURL)
             return Promise.resolve([title, linkURL])
           }
-        }))
+        }).filter(Boolean))
       }),
 
       err => {
@@ -46,7 +102,9 @@ function crawl(absURL, maxAttempts = 5, attempts = 0) {
             `Trying again. Attempt ${attempts + 1}/${maxAttempts}...`
           )
 
-          return crawl(absURL, maxAttempts, attempts + 1)
+          return crawl(absURL, opts, Object.assign({}, internals, {
+            attempts: internals.attempts + 1
+          }))
         } else {
           console.error(
             "We've hit the download attempt limit (" + maxAttempts + "). " +
@@ -69,10 +127,11 @@ function crawl(absURL, maxAttempts = 5, attempts = 0) {
 
 function getHTMLLinks(text) {
   // Never parse HTML with a regex!
+  const $ = cheerio.load(text)
 
-  return $(text).find('a').get().map(a => {
-    const $a = $(a)
-    return [$a.text(), $a.attr('href')]
+  return $('a').get().map(el => {
+    const $el = $(el)
+    return [$el.text(), $el.attr('href')]
   })
 }
 
@@ -80,6 +139,8 @@ async function main() {
   let url = process.argv[2]
 
   let maxDownloadAttempts = 5
+  let verbose = false
+  let filterRegex = null
 
   await processArgv(process.argv.slice(3), {
     '-max-download-attempts': function(util) {
@@ -88,15 +149,41 @@ async function main() {
       // any one directory. Defaults to 5.
 
       maxDownloadAttempts = util.nextArg()
-      console.log(maxDownloadAttempts)
     },
 
-    'm': util => util.alias('-max-download-attempts')
+    'm': util => util.alias('-max-download-attempts'),
+
+    '-regex': function(util) {
+      // --regex <regex>  (alias: -r)
+      // Sets the regular expression string used for filtering specific URLs.
+      // This regex is tested against every crawled URL. If the test matches,
+      // the URL it is given is kept; otherwise it is skipped. Defaults to no
+      // regex.
+
+      filterRegex = new RegExp(util.nextArg())
+    },
+
+    'r': util => util.alias('-regex'),
+
+    '-verbose': function(util) {
+      // --verbose  (alias: -v)
+      // Logs out extra verbose data about what files are being crawled and
+      // such. Defaults to false.
+
+      verbose = true
+      console.log('Outputting verbosely.')
+    },
+
+    'v': util => util.alias('-verbose'),
   })
 
-  const downloadedPlaylist = await crawl(url, maxDownloadAttempts)
+  const downloadedPlaylist = await crawl(url, {
+    maxAttempts: maxDownloadAttempts,
+    verbose: verbose,
+    filterRegex: filterRegex
+  })
 
-  return JSON.stringify(res, null, 2)
+  console.log(JSON.stringify(downloadedPlaylist, null, 2))
 }
 
 if (process.argv.length === 2) {

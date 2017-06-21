@@ -140,3 +140,6 @@ TODO: Figure out why written track files (when using HTTP downloader) are
 TODO: Make max download attempts variable by the user (without requiring
       source editing, obviously).
       (Done!)
+
+TODO: Update HTTP crawl man page to include new options, and maybe update
+      the HTTP crawler itself to reveal more options to the command line.
