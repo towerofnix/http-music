@@ -70,5 +70,17 @@ module.exports = {
   makeHTTPDownloader,
   makeYouTubeDownloader,
   makeLocalDownloader,
-  makePowerfulDownloader
+  makePowerfulDownloader,
+
+  getDownloader: downloaderType => {
+    if (downloaderType === 'http') {
+      return makeHTTPDownloader()
+    } else if (downloaderType === 'youtube') {
+      return makeYouTubeDownloader()
+    } else if (downloaderType === 'local') {
+      return makeLocalDownloader()
+    } else {
+      return null
+    }
+  }
 }

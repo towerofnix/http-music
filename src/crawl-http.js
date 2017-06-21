@@ -97,9 +97,9 @@ function crawl(absURL, opts = {}, internals = {}) {
       err => {
         console.warn("Failed to download: " + absURL)
 
-        if (attempts < maxAttempts) {
+        if (internals.attempts < maxAttempts) {
           console.warn(
-            `Trying again. Attempt ${attempts + 1}/${maxAttempts}...`
+            `Trying again. Attempt ${internals.attempts + 1}/${maxAttempts}...`
           )
 
           return crawl(absURL, opts, Object.assign({}, internals, {
