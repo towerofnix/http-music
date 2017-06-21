@@ -33,10 +33,10 @@ class DownloadController extends EventEmitter {
   async downloadNextHelper() {
     this.isDownloading = true
 
-    let wasDestroyed = false
+    const destroyedObj = {wasDestroyed: false}
 
     this._destroyDownload = () => {
-      wasDestroyed = true
+      destroyedObj.wasDestroyed = true
     }
 
     // We need to actually pick something to download; we'll use the picker
@@ -79,13 +79,13 @@ class DownloadController extends EventEmitter {
     if (supportedFormats.includes(format)) {
       this.playFile = fromFile
     } else {
-      this.playFile = await this.convert(picked, fromFile)
+      this.playFile = await this.convert(picked, fromFile, destroyedObj)
     }
 
     // If this download was destroyed, we quit now; we don't want to emit that
     // the download was finished if the finished download was the destroyed
     // one!
-    if (wasDestroyed) {
+    if (destroyedObj.wasDestroyed) {
       return
     }
 
@@ -131,7 +131,7 @@ class DownloadController extends EventEmitter {
     return formats
   }
 
-  async convert(picked, fromFile) {
+  async convert(picked, fromFile, destroyedObj) {
     // The "to" file is simply an MP3 file. We give this MP3 file a specific
     // name - the title of the track we got earlier, sanitized to be file-safe
     // - so that when `play` outputs the name of the song, it's obvious to the
@@ -179,7 +179,7 @@ class DownloadController extends EventEmitter {
       // Usually we'll log a warning message saying that the convertion failed,
       // but if this download was destroyed, it's expected for the avconv
       // process to fail; so in that case we don't bother warning the user.
-      if (!wasDestroyed) {
+      if (!destroyedObj.wasDestroyed) {
         console.warn("Failed to convert " + title)
         console.warn("Selecting a new track")
 
