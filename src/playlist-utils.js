@@ -130,6 +130,7 @@ function parsePathString(pathString) {
   return pathParts
 }
 
+// TODO: Are these two functions actually useful??
 function getGroupTitle(group) {
   return group[0]
 }
@@ -142,11 +143,16 @@ function isGroup(array) {
   return Array.isArray(array[1])
 }
 
+function isTrack(array) {
+  return typeof array[1] === 'string'
+}
+
 module.exports = {
   flattenPlaylist,
   filterPlaylistByPathString, filterPlaylistByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
   parsePathString,
-  getGroupTitle, getGroupContents
+  getGroupTitle, getGroupContents,
+  isGroup, isTrack
 }

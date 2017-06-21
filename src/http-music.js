@@ -224,17 +224,8 @@ setupDefaultPlaylist('./playlist.json')
         return
       }
 
-      let downloader
-      if (downloaderType === 'http') {
-        console.log("Using HTTP downloader.")
-        downloader = downloaders.makeHTTPDownloader()
-      } else if (downloaderType === 'youtube') {
-        console.log("Using YouTube downloader.")
-        downloader = downloaders.makeYouTubeDownloader()
-      } else if (downloaderType === 'local') {
-        console.log("Using local file downloader.")
-        downloader = downloaders.makeLocalDownloader()
-      } else {
+      let downloader = downloaders.getDownloader(downloaderType)
+      if (!downloader) {
         console.error("Invalid downloader type: " + downloaderType)
         return
       }
