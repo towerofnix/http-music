@@ -1,3 +1,5 @@
+'use strict'
+
 const fs = require('fs')
 const fetch = require('node-fetch')
 const promisifyProcess = require('./promisify-process')
@@ -47,8 +49,26 @@ function makeLocalDownloader() {
   }
 }
 
+function makePowerfulDownloader(downloader, maxAttempts = 5) {
+  // This should totally be named better..
+
+  return async function recursive(arg, attempts = 0) {
+    try {
+      return await downloader(arg)
+    } catch(err) {
+      if (attempts < maxAttempts) {
+        console.warn('Failed - attempting again:', arg)
+        return await recursive(arg, attempts + 1)
+      } else {
+        throw err
+      }
+    }
+  }
+}
+
 module.exports = {
   makeHTTPDownloader,
   makeYouTubeDownloader,
-  makeLocalDownloader
+  makeLocalDownloader,
+  makePowerfulDownloader
 }
