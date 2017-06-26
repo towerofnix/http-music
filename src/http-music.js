@@ -48,8 +48,41 @@ Promise.resolve()
       }
 
       const openedPlaylist = JSON.parse(playlistText)
-      sourcePlaylist = openedPlaylist
-      activePlaylist = openedPlaylist
+
+      // Playlists can be in two formats...
+      if (Array.isArray(openedPlaylist)) {
+        // ..the first, a simple array of tracks and groups;
+
+        sourcePlaylist = openedPlaylist
+        activePlaylist = openedPlaylist
+      } else if (typeof openedPlaylist === 'object') {
+        // ..or an object including metadata and configuration as well as the
+        // array described in the first.
+
+        if (!('tracks' in openedPlaylist)) {
+          throw new Error(
+            "Trackless object-type playlist (requires 'tracks' property)"
+          )
+        }
+
+        sourcePlaylist = openedPlaylist.tracks
+        activePlaylist = openedPlaylist.tracks
+
+        // What's handy about the object-type playlist is that you can pass
+        // options that will be run every time the playlist is opened:
+        if ('options' in openedPlaylist) {
+          if (Array.isArray(openedPlaylist.options)) {
+            processArgv(openedPlaylist.options, optionFunctions)
+          } else {
+            throw new Error(
+              "Invalid 'options' property (expected array): " + file
+            )
+          }
+        }
+      } else {
+        // Otherwise something's gone horribly wrong..!
+        throw new Error("Invalid playlist file contents: " + file)
+      }
     }
 
     function requiresOpenPlaylist() {
