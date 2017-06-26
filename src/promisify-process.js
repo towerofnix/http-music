@@ -1,7 +1,5 @@
 'use strict'
 
-const { Writable } = require('stream')
-
 module.exports = function promisifyProcess(proc, showLogging = true) {
   // Takes a process (from the child_process module) and returns a promise
   // that resolves when the process exits (or rejects, if the exit code is
