@@ -17,17 +17,12 @@ const {
 
 const readFile = promisify(fs.readFile)
 
-function setupDefaultPlaylist(file) {
-  return readFile(file, 'utf-8').then(
-    text => JSON.parse(text),
-    err => null
-  )
-}
+Promise.resolve()
+  .then(async () => {
+    let sourcePlaylist = null
+    let activePlaylist = null
 
-setupDefaultPlaylist('./playlist.json')
-  .then(async playlist => {
-    let sourcePlaylist = playlist
-    let activePlaylist = playlist
+    await openPlaylist('./playlist.json')
 
     let pickerType = 'shuffle'
     let downloaderType = 'http'
@@ -39,6 +34,24 @@ setupDefaultPlaylist('./playlist.json')
     let shouldPlay = true
     let willPlay = null
 
+    async function openPlaylist(file, silent = false) {
+      let playlistText
+
+      try {
+        playlistText = await readFile(file, 'utf-8')
+      } catch(err) {
+        if (silent) {
+          console.error("Failed to read playlist file: " + file)
+        }
+
+        return false
+      }
+
+      const openedPlaylist = JSON.parse(playlistText)
+      sourcePlaylist = openedPlaylist
+      activePlaylist = openedPlaylist
+    }
+
     function requiresOpenPlaylist() {
       if (activePlaylist === null) {
         throw new Error(
@@ -47,7 +60,7 @@ setupDefaultPlaylist('./playlist.json')
       }
     }
 
-    await processArgv(process.argv, {
+    const optionFunctions = {
       '-help': function(util) {
         // --help  (alias: -h, -?)
         // Presents a help message.
@@ -67,10 +80,7 @@ setupDefaultPlaylist('./playlist.json')
         // Opens a separate playlist file.
         // This sets the source playlist.
 
-        const playlistText = await readFile(util.nextArg(), 'utf-8')
-        const openedPlaylist = JSON.parse(playlistText)
-        sourcePlaylist = openedPlaylist
-        activePlaylist = openedPlaylist
+        await openPlaylist(util.nextArg())
       },
 
       'o': util => util.alias('-open'),
@@ -203,7 +213,9 @@ setupDefaultPlaylist('./playlist.json')
 
         console.log(JSON.stringify(activePlaylist, null, 2))
       }
-    })
+    }
+
+    await processArgv(process.argv, optionFunctions)
 
     if (activePlaylist === null) {
       throw new Error(
