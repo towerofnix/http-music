@@ -146,3 +146,5 @@ TODO: Update HTTP crawl man page to include new options, and maybe update
 
 TODO: Fix the bug in loop-play.js where wasDestroyed doesn't exist!
       (Done!)
+
+TODO: Use `mpv` instead of `play`!!!!!!!!! This would fix every problem ever.
