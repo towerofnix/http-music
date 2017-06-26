@@ -22,8 +22,6 @@ Promise.resolve()
     let sourcePlaylist = null
     let activePlaylist = null
 
-    await openPlaylist('./playlist.json')
-
     let pickerType = 'shuffle'
     let downloaderType = 'http'
     let playOpts = []
@@ -247,6 +245,8 @@ Promise.resolve()
         console.log(JSON.stringify(activePlaylist, null, 2))
       }
     }
+
+    await openPlaylist('./playlist.json')
 
     await processArgv(process.argv, optionFunctions)
 
