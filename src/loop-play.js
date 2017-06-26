@@ -6,6 +6,8 @@ const sanitize = require('sanitize-filename')
 const tempy = require('tempy')
 const path = require('path')
 
+const FIFO = require('fifo-js')
+
 const EventEmitter = require('events')
 
 class DownloadController extends EventEmitter {
@@ -93,6 +95,8 @@ class DownloadController extends EventEmitter {
   }
 
   async getSupportedFormats() {
+    // TODO: This is irrelevant with `mpv` instead of `play`.
+
     // Gets the formats supported by SoX (i.e., the `play` command) by
     // searching the help output for the line that starts with
     // 'AUDIO FILE FORMATS:'. This seems to be the only way to list the formats
@@ -228,27 +232,65 @@ class PlayController {
     while (this.downloadController.playFile) {
       this.currentTrack = this.downloadController.pickedTrack
 
+      await this.playFile(this.downloadController.playFile)
 
-      const file = this.downloadController.playFile
-      const playProcess = spawn('play', [...this.playArgs, file])
-      const playPromise = promisifyProcess(playProcess)
-      this.process = playProcess
-
-      const nextPromise = this.downloadController.downloadNext()
-
-      try {
-        await playPromise
-      } catch(err) {
-        console.warn(err + '\n')
-      }
-
-      await nextPromise
+      await this.downloadController.downloadNext()
     }
+  }
+
+  playFile(file) {
+    this.fifo = new FIFO()
+    this.process = spawn('mpv', ['--input-file=' + this.fifo.path, file])
+
+    this.process.stderr.on('data', data => {
+      const match = data.toString().match(
+        /(..):(..):(..) \/ (..):(..):(..) \(([0-9]+)%\)/
+      )
+
+      if (match) {
+        const [
+          curHour, curMin, curSec, // ##:##:##
+          lenHour, lenMin, lenSec, // ##:##:##
+          percent // ###%
+        ] = match.slice(1)
+
+        let curStr, lenStr
+
+        // We don't want to display hour counters if the total length is less
+        // than an hour.
+        if (parseInt(lenHour) > 0) {
+          curStr = `${curHour}:${curMin}:${curSec}`
+          lenStr = `${lenHour}:${lenMin}:${lenSec}`
+        } else {
+          curStr = `${curMin}:${curSec}`
+          lenStr = `${lenMin}:${lenSec}`
+        }
+
+        // Multiplication casts to numbers; addition prioritizes strings.
+        // Thanks, JavaScript!
+        const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
+        const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
+        const percentVal = (100 / lenSecTotal) * curSecTotal
+        const percentStr = (Math.trunc(percentVal * 100) / 100).toFixed(2)
+
+        process.stdout.write(
+          `\x1b[K~ (${percentStr}%) ${curStr} / ${lenStr}\r`
+        )
+      }
+    })
+
+    return new Promise(resolve => {
+      this.process.once('close', resolve)
+    })
   }
 
   killProcess() {
     if (this.process) {
       this.process.kill()
+    }
+
+    if (this.fifo) {
+      this.fifo.close()
     }
 
     this.currentTrack = null

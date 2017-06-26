@@ -82,6 +82,16 @@ entities@^1.1.1, entities@~1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/entities/-/entities-1.1.1.tgz#6e5c2d0a5621b5dadaecef80b90edfb5cd7772f0"
 
+es6-error@^3.0.1:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/es6-error/-/es6-error-3.2.0.tgz#e567cfdcb324d4e7ae5922a3700ada5de879a0ca"
+
+fifo-js:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/fifo-js/-/fifo-js-2.1.0.tgz#88405f21dea067362558189e7a07655dc0fe14be"
+  dependencies:
+    es6-error "^3.0.1"
+
 htmlparser2@^3.9.1:
   version "3.9.2"
   resolved "https://registry.yarnpkg.com/htmlparser2/-/htmlparser2-3.9.2.tgz#1bdf87acca0f3f9e53fa4fcceb0f4b4cbb00b338"
