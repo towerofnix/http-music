@@ -2,13 +2,11 @@
 
 'use strict'
 
-const fs = require('fs')
-
 const { promisify } = require('util')
+const fs = require('fs')
+const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
-
-const pickers = require('./pickers')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString
@@ -259,7 +257,10 @@ Promise.resolve()
         return
       }
 
-      const play = loopPlay(picker, playOpts)
+      const {
+        promise: playPromise,
+        controller: play
+      } = loopPlay(picker, playOpts)
 
       // We're looking to gather standard input one keystroke at a time.
       process.stdin.setRawMode(true)
@@ -303,11 +304,11 @@ Promise.resolve()
         }
 
         if (Buffer.from('s').equals(data)) {
-          // clearConsoleLine()
-          // console.log(
-          //   "Skipping the track that's currently playing. " +
-          //   "(Press I for track info!)"
-          // )
+          clearConsoleLine()
+          console.log(
+            "Skipping the track that's currently playing. " +
+            "(Press I for track info!)"
+          )
 
           play.skipCurrent()
         }
@@ -331,7 +332,7 @@ Promise.resolve()
         }
       })
 
-      return play.promise
+      return playPromise
     } else {
       return activePlaylist
     }

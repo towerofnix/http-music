@@ -1,13 +1,7 @@
 'use strict'
 
 const { spawn } = require('child_process')
-const promisifyProcess = require('./promisify-process')
-const sanitize = require('sanitize-filename')
-const tempy = require('tempy')
-const path = require('path')
-
 const FIFO = require('fifo-js')
-
 const EventEmitter = require('events')
 
 class PlayController {
@@ -84,7 +78,7 @@ class PlayController {
   }
 
   skipCurrent() {
-    this.killProcess()
+    this.kill()
   }
 
   seekAhead(secs) {
@@ -113,7 +107,7 @@ class PlayController {
     }
   }
 
-  killProcess() {
+  kill() {
     if (this.process) {
       this.process.kill()
     }
@@ -125,13 +119,20 @@ class PlayController {
 
     this.currentTrack = null
   }
+
+  logTrackInfo() {
+    if (this.currentTrack) {
+      const [ curTitle, curArg ] = this.currentTrack
+      console.log(`Playing: \x1b[1m${curTitle} \x1b[2m${curArg}\x1b[0m`)
+    } else {
+      console.log("No song currently playing.")
+    }
+  }
 }
 
 module.exports = function loopPlay(picker, playArgs = []) {
-  // Looping play function. Takes one argument, the "pick" function,
-  // which returns a track to play. Preemptively downloads the next
-  // track while the current one is playing for seamless continuation
-  // from one song to the next. Stops when the result of the pick
+  // Looping play function. Takes one argument, the "picker" function,
+  // which returns a track to play. Stops when the result of the picker
   // function is null (or similar). Optionally takes a second argument
   // used as arguments to the `play` process (before the file name).
 
@@ -142,25 +143,6 @@ module.exports = function loopPlay(picker, playArgs = []) {
 
   return {
     promise,
-
-    seekBack: secs => playController.seekBack(secs),
-    seekAhead: secs => playController.seekAhead(secs),
-    skipCurrent: () => playController.skipCurrent(),
-    volUp: amount => playController.volUp(amount),
-    volDown: amount => playController.volDown(amount),
-    togglePause: () => playController.togglePause(),
-
-    kill: function() {
-      playController.killProcess()
-    },
-
-    logTrackInfo: function() {
-      if (playController.currentTrack) {
-        const [ curTitle, curArg ] = playController.currentTrack
-        console.log(`Playing: \x1b[1m${curTitle} \x1b[2m${curArg}\x1b[0m`)
-      } else {
-        console.log("No song currently playing.")
-      }
-    }
+    controller: playController
   }
 }
