@@ -38,7 +38,7 @@ Promise.resolve()
       try {
         playlistText = await readFile(file, 'utf-8')
       } catch(err) {
-        if (silent) {
+        if (!silent) {
           console.error("Failed to read playlist file: " + file)
         }
 
@@ -246,7 +246,7 @@ Promise.resolve()
       }
     }
 
-    await openPlaylist('./playlist.json')
+    await openPlaylist('./playlist.json', true)
 
     await processArgv(process.argv, optionFunctions)
 
