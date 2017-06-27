@@ -281,6 +281,43 @@ Promise.resolve()
       process.stdin.setRawMode(true)
 
       process.stdin.on('data', data => {
+        const escModifier = Buffer.from('\x1b[')
+        const shiftModifier = Buffer.from('1;2')
+
+        const esc = num => Buffer.concat([escModifier, Buffer.from([num])])
+
+        const shiftEsc = num => (
+          Buffer.concat([escModifier, shiftModifier, Buffer.from([num])])
+        )
+
+        if (Buffer.from([0x20]).equals(data)) {
+          play.togglePause()
+        }
+
+        if (esc(0x43).equals(data)) {
+          play.seekAhead(5)
+        }
+
+        if (esc(0x44).equals(data)) {
+          play.seekBack(5)
+        }
+
+        if (shiftEsc(0x43).equals(data)) {
+          play.seekAhead(30)
+        }
+
+        if (shiftEsc(0x44).equals(data)) {
+          play.seekBack(30)
+        }
+
+        if (esc(0x41).equals(data)) {
+          play.volUp(10)
+        }
+
+        if (esc(0x42).equals(data)) {
+          play.volDown(10)
+        }
+
         if (Buffer.from('s').equals(data)) {
           // clearConsoleLine()
           // console.log(

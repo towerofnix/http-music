@@ -24,8 +24,26 @@ It can be used anywhere with a Node environment, requiring only two commonly ins
 
 .SH KEYBOARD CONTROLS
 .TP
-.BR <del>
-Assigns a new track to be played next, overwriting the current up-next track.
+.BR <left-arrow>
+Skips backwards 5 seconds in the currently playing track; hold shift to skip by
+30 seconds.
+
+.TP
+.BR <right-arrow>
+Skips forwards 5 seconds in the currently playing track; hold shift to skip by
+30 seconds.
+
+.TP
+.BR <up-arrow>
+Turns the volume up a 10%-notch.
+
+.TP
+.BR <down-arrow>
+Turns the volume down 10%.
+
+.TP
+.BR <space>
+Pauses (or plays) playback.
 
 .TP
 .BR i
@@ -40,6 +58,10 @@ Quits the http-music process and stops music currently being played.
 .TP
 .BR s
 Skips the currently playing track.
+
+.TP
+.BR <del>
+Assigns a new track to be played next, skipping the current up-next track.
 
 
 .SH OPTIONS

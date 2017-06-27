@@ -240,7 +240,11 @@ class PlayController {
 
   playFile(file) {
     this.fifo = new FIFO()
-    this.process = spawn('mpv', ['--input-file=' + this.fifo.path, file])
+    this.process = spawn('mpv', [
+      '--input-file=' + this.fifo.path,
+      '--no-audio-display',
+      file
+    ])
 
     this.process.stderr.on('data', data => {
       const match = data.toString().match(
@@ -284,6 +288,36 @@ class PlayController {
     })
   }
 
+  skipCurrent() {
+    this.killProcess()
+  }
+
+  seekAhead(secs) {
+    this.sendCommand(`seek +${parseFloat(secs)}`)
+  }
+
+  seekBack(secs) {
+    this.sendCommand(`seek -${parseFloat(secs)}`)
+  }
+
+  volUp(amount) {
+    this.sendCommand(`add volume +${parseFloat(amount)}`)
+  }
+
+  volDown(amount) {
+    this.sendCommand(`add volume -${parseFloat(amount)}`)
+  }
+
+  togglePause() {
+    this.sendCommand('cycle pause')
+  }
+
+  sendCommand(command) {
+    if (this.fifo) {
+      this.fifo.write(command)
+    }
+  }
+
   killProcess() {
     if (this.process) {
       this.process.kill()
@@ -291,6 +325,7 @@ class PlayController {
 
     if (this.fifo) {
       this.fifo.close()
+      delete this.fifo
     }
 
     this.currentTrack = null
@@ -315,13 +350,13 @@ module.exports = function loopPlay(picker, downloader, playArgs = []) {
   return {
     promise,
 
-    skipCurrent: function() {
-      playController.killProcess()
-    },
-
-    skipUpNext: function() {
-      downloadController.skipUpNext()
-    },
+    seekBack: secs => playController.seekBack(secs),
+    seekAhead: secs => playController.seekAhead(secs),
+    skipCurrent: () => playController.skipCurrent(),
+    skipUpNext: () => downloadController.skipUpNext(),
+    volUp: amount => playController.volUp(amount),
+    volDown: amount => playController.volDown(amount),
+    togglePause: () => playController.togglePause(),
 
     kill: function() {
       playController.killProcess()
