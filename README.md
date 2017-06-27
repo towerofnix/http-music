@@ -12,7 +12,7 @@ $ python3 -m http.server <some_port>
 
 # On the client; that is, the device with http-music:
 $ cd http-music
-$ yarn  # to install Node.js dependencies; you'll also need `avconv` and `play`/`sox`.
+$ yarn  # to install Node.js dependencies; you'll also need `avconv` and `mpv`.
 $ npm run crawl-http -- <server_ip> > playlist.json
 $ node .  # Go!
 ```
