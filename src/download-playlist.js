@@ -1,3 +1,7 @@
+// TODO: This almost definitely doesn't work, ever since downloaders were
+// removed! Maybe it's possible to make mpv only download (and not play) a
+// file?
+
 'use strict'
 
 const fs = require('fs')

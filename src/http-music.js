@@ -8,7 +8,6 @@ const { promisify } = require('util')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 
-const downloaders = require('./downloaders')
 const pickers = require('./pickers')
 
 const {
@@ -23,7 +22,6 @@ Promise.resolve()
     let activePlaylist = null
 
     let pickerType = 'shuffle'
-    let downloaderType = 'http'
     let playOpts = []
 
     // WILL play says whether the user has forced playback via an argument.
@@ -221,14 +219,6 @@ Promise.resolve()
         pickerType = util.nextArg()
       },
 
-      '-downloader': function(util) {
-        // --downloader <downloader type>
-        // Selects the mode that songs will be downloaded with.
-        // See downloaders.js.
-
-        downloaderType = util.nextArg()
-      },
-
       '-play-opts': function(util) {
         // --play-opts <opts>
         // Sets command line options passed to the `play` command.
@@ -269,13 +259,7 @@ Promise.resolve()
         return
       }
 
-      let downloader = downloaders.getDownloader(downloaderType)
-      if (!downloader) {
-        console.error("Invalid downloader type: " + downloaderType)
-        return
-      }
-
-      const play = loopPlay(picker, downloader, playOpts)
+      const play = loopPlay(picker, playOpts)
 
       // We're looking to gather standard input one keystroke at a time.
       process.stdin.setRawMode(true)
@@ -326,16 +310,6 @@ Promise.resolve()
           // )
 
           play.skipCurrent()
-        }
-
-        if (Buffer.from([0x7f]).equals(data)) { // Delete
-          clearConsoleLine()
-          console.log(
-            "Skipping the track that's up next. " +
-            "(Press I for track info!)"
-          )
-
-          play.skipUpNext()
         }
 
         if (

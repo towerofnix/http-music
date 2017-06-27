@@ -59,10 +59,6 @@ Quits the http-music process and stops music currently being played.
 .BR s
 Skips the currently playing track.
 
-.TP
-.BR <del>
-Assigns a new track to be played next, skipping the current up-next track.
-
 
 .SH OPTIONS
 .TP
@@ -70,10 +66,6 @@ Assigns a new track to be played next, skipping the current up-next track.
 Clears the active playlist.
 This does not effect the source playlist, so specific groups can be selected using \fB\-\-keep\fR.
 
-.TP
-.BR \-\-downloader " \fIdownloaderType\fR"
-Sets the downloader type used for actually retrieving track files.
-The default is \fBhttp\fR.
 
 .TP
 .BR \-h ", " \-? ", " \-\-help
@@ -157,16 +149,6 @@ Generate a playlist from the local file system:
 .nf
 .RS
 $ http-music-crawl-local /example/path > playlist.json
-.RE
-.fi
-
-.PP
-Play music from a playlist generated from local file system:
-
-.PP
-.nf
-.RS
-$ http-music --downloader local
 .RE
 .fi
 

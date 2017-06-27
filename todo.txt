@@ -148,7 +148,14 @@ TODO: Fix the bug in loop-play.js where wasDestroyed doesn't exist!
       (Done!)
 
 TODO: Use `mpv` instead of `play`!!!!!!!!! This would fix every problem ever.
+      (Done!)
 
 TODO: It looks like up-next doesn't seem to work properly when using the
       YouTube downloader; though it's possible we'll be scrapping downloaders
       altogether..
+      (Done! - Removed downloaders.)
+
+TODO: The results of pressing key commands aren't very clear currently. Useful
+      things that come to mind would be presenting the volume when it's
+      changed; making it clear that a song is being skipped when it is; and
+      having "paused" be part of the status bar.
