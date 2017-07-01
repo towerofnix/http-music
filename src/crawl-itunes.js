@@ -88,7 +88,7 @@ async function crawl(libraryXML) {
 }
 
 async function main() {
-  const libraryPath = process.argv[3] || (
+  const libraryPath = process.argv[2] || (
     `${process.env.HOME}/Music/iTunes/iTunes Music Library.xml`
   )
 
