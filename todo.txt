@@ -163,3 +163,6 @@ TODO: The results of pressing key commands aren't very clear currently. Useful
 TODO: Figure out a way to make the same mpv process be reused, so that options
       such as volume can be remembered. (At the moment volume is reset to the
       default whenever a new track is played!)
+
+TODO: Figure out how to stream audio data directly, or at least at a lower
+      level (and stupider, as in "man git" stupid).
