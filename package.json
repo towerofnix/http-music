@@ -10,7 +10,8 @@
   "bin": {
     "http-music": "./src/http-music.js",
     "http-music-crawl-http": "./src/crawl-http.js",
-    "http-music-crawl-local": "./src/crawl-local.js"
+    "http-music-crawl-local": "./src/crawl-local.js",
+    "http-music-crawl-itunes": "./src/crawl-itunes.js"
   },
   "man": [
     "./man/http-music.1",
@@ -23,6 +24,7 @@
     "node-fetch": "^1.7.0",
     "node-natural-sort": "^0.8.6",
     "sanitize-filename": "^1.6.1",
-    "tempy": "^0.1.0"
+    "tempy": "^0.1.0",
+    "xmldoc": "^1.1.0"
   }
 }
