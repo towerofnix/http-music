@@ -210,12 +210,14 @@ Promise.resolve()
       'np': util => util.alias('-no-play'),
 
       '-picker': function(util) {
-        // --picker <picker type>
+        // --picker <picker type>  (alias: --selector)
         // Selects the mode that the song to play is picked.
         // See pickers.js.
 
         pickerType = util.nextArg()
       },
+
+      '-selector': util => util.alias('-picker'),
 
       '-play-opts': function(util) {
         // --play-opts <opts>
