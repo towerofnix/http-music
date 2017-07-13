@@ -7,12 +7,30 @@ const fs = require('fs')
 const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
+const fetch = require('node-fetch')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
+
+function downloadPlaylistFromURL(url) {
+  return fetch(url).then(res => res.text())
+}
+
+function downloadPlaylistFromLocalPath(path) {
+  return readFile(path)
+}
+
+function downloadPlaylistFromOptionValue(arg) {
+  // TODO: Verify things!
+  if (arg.startsWith('http://') || arg.startsWith('https://')) {
+    return downloadPlaylistFromURL(arg)
+  } else {
+    return downloadPlaylistFromLocalPath(arg)
+  }
+}
 
 Promise.resolve()
   .then(async () => {
@@ -28,14 +46,19 @@ Promise.resolve()
     let shouldPlay = true
     let willPlay = null
 
-    async function openPlaylist(file, silent = false) {
+    async function openPlaylist(arg, silent = false) {
       let playlistText
 
+      if (!silent) {
+        console.log("Opening playlist from: " + arg)
+      }
+
       try {
-        playlistText = await readFile(file, 'utf-8')
+        playlistText = await downloadPlaylistFromOptionValue(arg)
       } catch(err) {
         if (!silent) {
-          console.error("Failed to read playlist file: " + file)
+          console.error("Failed to open playlist file: " + arg)
+          console.error(err)
         }
 
         return false
