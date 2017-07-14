@@ -166,3 +166,11 @@ TODO: Figure out a way to make the same mpv process be reused, so that options
 
 TODO: Figure out how to stream audio data directly, or at least at a lower
       level (and stupider, as in "man git" stupid).
+
+TODO: Validate paths in getDownloaderFor, maybe?
+
+TODO: Figure out the horrible, evil cause of the max listeners warning
+      I'm getting lately.. current repro: play a bunch of files locally.
+      Skipping tracks still leads to issue. Wait for them to start playing
+      before skipping, though.
+

@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs')
+const fse = require('fs-extra')
 const fetch = require('node-fetch')
 const promisifyProcess = require('./promisify-process')
 const tempy = require('tempy')
@@ -11,6 +12,7 @@ const { spawn } = require('child_process')
 const { promisify } = require('util')
 
 const writeFile = promisify(fs.writeFile)
+const copyFile = fse.copy
 
 function makeHTTPDownloader() {
   return function(arg) {
@@ -42,6 +44,32 @@ function makeYouTubeDownloader() {
 }
 
 function makeLocalDownloader() {
+  // Usually we'd just return the given argument in a local
+  // downloader, which is efficient, since there's no need to
+  // copy a file from one place on the hard drive to another.
+  // But reading from a separate drive (e.g. a USB stick or a
+  // CD) can take a lot longer than reading directly from the
+  // computer's own drive, so this downloader copies the file
+  // to a temporary file on the computer's drive.
+  // Ideally, we'd be able to check whether a file is on the
+  // computer's main drive mount or not before going through
+  // the steps to copy, but I'm not sure if there's a way to
+  // do that (and it's even less likely there'd be a cross-
+  // platform way).
+
+  return function(arg) {
+    const dir = tempy.directory()
+    // TODO: Is it necessary to sanitize here?
+    // haha, the answer to "should I sanitize" is probably always
+    // YES..
+    const base = path.basename(arg, path.extname(arg))
+    const file = dir + '/' + sanitize(base) + '.mp3'
+    return copyFile(arg, file)
+      .then(() => file)
+  }
+}
+
+function makeLocalEchoDownloader() {
   return function(arg) {
     // Since we're grabbing the file from the local file system, there's no
     // need to download or copy it!
@@ -72,7 +100,7 @@ module.exports = {
   makeLocalDownloader,
   makePowerfulDownloader,
 
-  getDownloader: downloaderType => {
+  getDownloaderFor: downloaderType => {
     if (downloaderType === 'http') {
       return makeHTTPDownloader()
     } else if (downloaderType === 'youtube') {
@@ -81,6 +109,18 @@ module.exports = {
       return makeLocalDownloader()
     } else {
       return null
+    }
+  },
+
+  getDownloaderFor(arg) {
+    if (arg.startsWith('http://') || arg.startsWith('https://')) {
+      if (arg.includes('youtube.com')) {
+        return makeYouTubeDownloader()
+      } else {
+        return makeHTTPDownloader()
+      }
+    } else {
+      return makeLocalDownloader()
     }
   }
 }
