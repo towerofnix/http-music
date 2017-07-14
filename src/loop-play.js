@@ -27,7 +27,7 @@ class DownloadController extends EventEmitter {
     // which would void the result of the old download.)
 
     let canceled = false
-    this.once('skipped', () => {
+    this.once('canceled', () => {
       canceled = true
     })
 
@@ -43,7 +43,7 @@ class DownloadController extends EventEmitter {
     // waitForDownload promises, though -- you'll need to start
     // a new download to resolve those.
 
-    this.emit('skipped')
+    this.emit('canceled')
   }
 }
 
@@ -57,39 +57,47 @@ class PlayController {
   }
 
   async loopPlay() {
-    let next
+    let nextFile
+
+    // Null would imply there's NO up-next track, but really
+    // we just haven't set it yet.
+    this.nextTrack = undefined
 
     let downloadNext = () => {
-      if (this.startNextDownload() !== null) {
-        return this.downloadController.waitForDownload().then(_next => {
-          next = _next
+      this.nextTrack = this.startNextDownload()
+      if (this.nextTrack !== null) {
+        return this.downloadController.waitForDownload().then(file => {
+          nextFile = file
         })
       } else {
-        next = null
+        nextFile = null
         return Promise.resolve()
       }
     }
 
     await downloadNext()
 
-    while (next) {
+    while (this.nextTrack) {
+      this.currentTrack = this.nextTrack
       await Promise.all([
-        this.playFile(next),
+        this.playFile(nextFile),
         downloadNext()
       ])
     }
   }
 
   startNextDownload() {
-    // TODO: Is there a method for this?
     // TODO: Handle/test null return from picker.
-    const arg = this.picker()[1]
+    const picked = this.picker()
 
-    if (arg === null) {
+    if (picked === null) {
       return null
     } else {
+      // TODO: Is there a function for this?
+      const arg = picked[1]
       const downloader = getDownloaderFor(arg)
       this.downloadController.download(downloader, arg)
+      return picked
     }
   }
 
@@ -170,7 +178,7 @@ class PlayController {
     })
   }
 
-  skipCurrent() {
+  skip() {
     this.kill()
   }
 
@@ -215,10 +223,17 @@ class PlayController {
 
   logTrackInfo() {
     if (this.currentTrack) {
-      const [ curTitle, curArg ] = this.currentTrack
-      console.log(`Playing: \x1b[1m${curTitle} \x1b[2m${curArg}\x1b[0m`)
+      const [ title, arg ] = this.currentTrack
+      console.log(`Playing: \x1b[1m${title} \x1b[2m${arg}\x1b[0m`)
     } else {
       console.log("No song currently playing.")
+    }
+
+    if (this.nextTrack) {
+      const [ title, arg ] = this.nextTrack
+      console.log(`Up next: \x1b[1m${title} \x1b[2m${arg}\x1b[0m`)
+    } else {
+      console.log("No song up next.")
     }
   }
 }
@@ -237,6 +252,7 @@ module.exports = function loopPlay(picker, playArgs = []) {
 
   return {
     promise,
-    controller: playController
+    playController,
+    downloadController
   }
 }

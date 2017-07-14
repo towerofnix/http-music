@@ -284,7 +284,8 @@ Promise.resolve()
 
       const {
         promise: playPromise,
-        controller: play
+        playController: play,
+        downloadController
       } = loopPlay(picker, playOpts)
 
       // We're looking to gather standard input one keystroke at a time.
@@ -335,7 +336,20 @@ Promise.resolve()
             "(Press I for track info!)"
           )
 
-          play.skipCurrent()
+          play.skip()
+        }
+
+        if (Buffer.from([0x7f]).equals(data)) {
+          clearConsoleLine()
+          console.log(
+            "Skipping the track that's up next. " +
+            "(Press I for track info!)"
+          )
+
+          // TODO: It would be nice to have this as a method of
+          // PlayController.
+          downloadController.cancel()
+          play.startNextDownload()
         }
 
         if (

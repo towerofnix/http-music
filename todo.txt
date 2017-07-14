@@ -174,3 +174,12 @@ TODO: Figure out the horrible, evil cause of the max listeners warning
       Skipping tracks still leads to issue. Wait for them to start playing
       before skipping, though.
 
+TODO: Something's requesting avprobe, and I'm not sure why.
+      (While playing flora.json/YouTube videos.) Perhaps
+      it's youtube-dl..?
+
+TODO: Re-implement skip.
+      (Done!)
+
+TODO: Re-implement skip and view up-next track.
+      (Done!)

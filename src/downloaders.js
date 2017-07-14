@@ -33,13 +33,13 @@ function makeYouTubeDownloader() {
     const opts = [
       '--quiet',
       '--extract-audio',
-      '--audio-format', 'wav',
+      '--audio-format', 'mp3',
       '--output', tempDir + '/dl.%(ext)s',
       arg
     ]
 
     return promisifyProcess(spawn('youtube-dl', opts))
-      .then(() => tempDir + '/dl.wav')
+      .then(() => tempDir + '/dl.mp3')
   }
 }
 
