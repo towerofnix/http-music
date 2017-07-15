@@ -5,17 +5,21 @@
   "scripts": {
     "play": "node src/http-music.js",
     "crawl-http": "node src/crawl-http",
-    "crawl-local": "node src/crawl-local"
+    "crawl-local": "node src/crawl-local",
+    "crawl-itunes": "node src/crawl-itunes",
+    "download-playlist": "node src/download-playlist"
   },
   "bin": {
     "http-music": "./src/http-music.js",
     "http-music-crawl-http": "./src/crawl-http.js",
     "http-music-crawl-local": "./src/crawl-local.js",
-    "http-music-crawl-itunes": "./src/crawl-itunes.js"
+    "http-music-crawl-itunes": "./src/crawl-itunes.js",
+    "http-music-download-playlist": "./src/download-playlist.js"
   },
   "man": [
     "./man/http-music.1",
-    "./man/http-music-crawl-http.1"
+    "./man/http-music-crawl-http.1",
+    "./man/http-music-crawl-itunes.1"
   ],
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",

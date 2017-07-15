@@ -1,12 +1,12 @@
 'use strict'
 
-const { flattenPlaylist } = require('./playlist-utils')
+const { flattenGrouplike } = require('./playlist-utils')
 
-function makeOrderedPlaylistPicker(playlist) {
-  // Ordered playlist picker - this plays all the tracks in a playlist in
+function makeOrderedPlaylistPicker(grouplike) {
+  // Ordered playlist picker - this plays all the tracks in a group in
   // order, after flattening it.
 
-  const allSongs = flattenPlaylist(playlist)
+  const allSongs = flattenGrouplike(groupContents)
   let index = 0
 
   return function() {
@@ -20,15 +20,15 @@ function makeOrderedPlaylistPicker(playlist) {
   }
 }
 
-function makeShufflePlaylistPicker(playlist) {
+function makeShufflePlaylistPicker(grouplike) {
   // Shuffle playlist picker - this selects a random track at any index in
   // the playlist, after flattening it.
 
-  const allSongs = flattenPlaylist(playlist)
+  const flatGroup = flattenGrouplike(grouplike)
 
   return function() {
-    const index = Math.floor(Math.random() * allSongs.length)
-    const picked = allSongs[index]
+    const index = Math.floor(Math.random() * flatGroup.items.length)
+    const picked = flatGroup.items[index]
     return picked
   }
 }

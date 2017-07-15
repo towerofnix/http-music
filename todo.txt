@@ -167,7 +167,7 @@ TODO: Figure out a way to make the same mpv process be reused, so that options
 TODO: Figure out how to stream audio data directly, or at least at a lower
       level (and stupider, as in "man git" stupid).
 
-TODO: Validate paths in getDownloaderFor, maybe?
+TODO: Validate local file paths in getDownloaderFor, maybe?
 
 TODO: Figure out the horrible, evil cause of the max listeners warning
       I'm getting lately.. current repro: play a bunch of files locally.
@@ -183,3 +183,23 @@ TODO: Re-implement skip.
 
 TODO: Re-implement skip and view up-next track.
       (Done!)
+
+TODO: In the playlist downloader, we can't guarantee filenames - the OS likes
+      to do its own verification, e.g. by removing colons. Maybe we can use
+      sanitize file name?
+      (Done!)
+
+TODO: In the playlist downloader, it would be nice if we skipped past existing
+      files before trying to do any old files, so that the 'percent complete'
+      status is more accurate. After all, we might skip 20% of the total track
+      count because 20% were downloaded, and then we'd download one track,
+      which makes up 10%, and then the rest would still be downloaded, which
+      take up 70%. It would be better if we went from 0%, skipped ALL complete
+      tracks to get to 90%, then did the 10% for the downloaded tracks.
+
+TODO: Tracks should be able to contain more data than the title and downloader
+      argument, by being stored as objects instead of arrays. This would also
+      make it easier to implement things such as temporary state stored on
+      tracks by sticking Symbols onto the track objects. It'd be particularly
+      useful to store the original group path for tracks in flattenGroup, for
+      example.

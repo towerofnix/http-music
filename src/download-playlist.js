@@ -1,20 +1,18 @@
-// TODO: This almost definitely doesn't work, ever since downloaders were
-// removed! Maybe it's possible to make mpv only download (and not play) a
-// file?
+#!/usr/bin/env node
 
 'use strict'
 
 const fs = require('fs')
-const downloaders = require('./downloaders')
 const path = require('path')
-const processArgv = require('./process-argv')
 const sanitize = require('sanitize-filename')
+const promisifyProcess = require('./promisify-process')
 
 const {
-  isGroup, isTrack
+  isGroup, isTrack, flattenPlaylist, updatePlaylistFormat
 } = require('./playlist-utils')
 
 const { promisify } = require('util')
+const { spawn } = require('child_process')
 
 const access = promisify(fs.access)
 const mkdir = promisify(fs.mkdir)
@@ -22,107 +20,86 @@ const readFile = promisify(fs.readFile)
 const readdir = promisify(fs.readdir)
 const stat = promisify(fs.stat)
 const writeFile = promisify(fs.writeFile)
-const ncp = promisify(require('ncp').ncp)
 
-// It's typically bad to attempt to download or copy a million files at once,
-// so we create a "promise delayer" that forces only several promises to run at
-// at one time.
-let delayPromise
-{
-  const INTERVAL = 50
-  const MAX = 5
+async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
+  let doneCount = 0
+  let total = flattenPlaylist(topPlaylist).length
 
-  let active = 0
-
-  let queue = []
-
-  delayPromise = function(promiseMaker) {
-    return new Promise((resolve, reject) => {
-      queue.push([promiseMaker, resolve, reject])
-    })
+  const status = function() {
+    const percent = Math.trunc(doneCount / total * 10000) / 100
+    console.log(
+      `\x1b[1mDownload crawler - ${percent}% completed ` +
+      `(${doneCount}/${total} tracks)\x1b[0m`)
   }
 
-  setInterval(async () => {
-    if (active >= MAX) {
-      return
+  const recursive = async function(groupContents, outPath) {
+    // If the output folder doesn't exist, we should create it.
+    let doesExist = true
+    try {
+      doesExist = (await stat(outPath)).isDirectory()
+    } catch(err) {
+      doesExist = false
     }
 
-    const top = queue.pop()
+    if (!doesExist) {
+      await mkdir(outPath)
+    }
 
-    if (top) {
-      const [ promiseMaker, resolve, reject ] = top
+    let outPlaylist = []
 
-      active++
+    for (let item of groupContents) {
+      if (isGroup(item)) {
+        // TODO: Not sure if this is the best way to pick the next out dir.
+        const out = outPath + sanitize(item[0]) + '/'
 
-      console.log('Going - queue: ' + queue.length)
+        outPlaylist.push([item[0], await recursive(item[1], out)])
+      } else if (isTrack(item)) {
+        const base = sanitize(path.basename(item[0], path.extname(item[0])))
+        const out = outPath + sanitize(base) + '.mp3'
 
-      try {
-        resolve(await promiseMaker())
-      } catch(err) {
-        reject(err)
+        // If we've already downloaded a file at some point in previous time,
+        // there's no need to download it again!
+        //
+        // Since we can't guarantee the extension name of the file, we only
+        // compare bases.
+        //
+        // TODO: This probably doesn't work well with things like the YouTube
+        // downloader.
+        const items = await readdir(outPath)
+        const match = items.find(item => {
+          const itemBase = sanitize(path.basename(item, path.extname(item)))
+          return itemBase === base
+        })
+
+        if (match) {
+          console.log(`\x1b[32;2mAlready downloaded: ${out}\x1b[0m`)
+          outPlaylist.push([item[0], outPath + match])
+          doneCount++
+          status()
+          continue
+        }
+
+        console.log(`\x1b[2mDownloading: ${item[0]} - ${item[1]}\x1b[0m`)
+
+        console.log(out)
+
+        await promisifyProcess(spawn('mpv', [
+          '--no-audio-display',
+          item[1], '-o', out,
+          '-oac', 'libmp3lame'
+        ]))
+
+        outPlaylist.push([item[0], out])
+        doneCount++
+
+        status()
       }
-
-      active--
     }
-  }, INTERVAL)
-}
 
-async function downloadCrawl(playlist, downloader, outPath = './out/') {
-  // If the output folder doesn't exist, we should create it.
-  let doesExist = true
-  try {
-    doesExist = (await stat(outPath)).isDirectory()
-  } catch(err) {
-    doesExist = false
+    return outPlaylist
   }
 
-  if (!doesExist) {
-    await mkdir(outPath)
-  }
-
-  return Promise.all(playlist.map(async (item) => {
-    if (isGroup(item)) {
-      // TODO: Not sure if this is the best way to pick the next out dir.
-      const out = outPath + sanitize(item[0]) + '/'
-
-      return [item[0], await downloadCrawl(item[1], downloader, out)]
-    } else if (isTrack(item)) {
-      // TODO: How should we deal with songs that don't have an extension?
-      const ext = path.extname(item[1])
-      const base = path.basename(item[1], ext)
-      const out = outPath + base + ext
-
-      // If we've already downloaded a file at some point in previous time,
-      // there's no need to download it again!
-      //
-      // Since we can't guarantee the extension name of the file, we only
-      // compare bases.
-      //
-      // TODO: This probably doesn't work well with things like the YouTube
-      // downloader.
-      const items = await readdir(outPath)
-      const match = items.find(x => path.basename(x, path.extname(x)) === base)
-      if (match) {
-        console.log(`\x1b[32;2mAlready downloaded: ${out}\x1b[0m`)
-        return [item[0], outPath + match]
-      }
-
-      console.log(`\x1b[2mDownloading: ${item[0]} - ${item[1]}\x1b[0m`)
-
-      const downloadFile = await delayPromise(() => downloader(item[1]))
-      // console.log(downloadFile, path.resolve(out))
-
-      try {
-        await delayPromise(() => ncp(downloadFile, path.resolve(out)))
-        console.log(`\x1b[32;1mDownloaded: ${out}\x1b[0m`)
-        return [item[0], out]
-      } catch(err) {
-        console.error(`\x1b[31mFailed: ${out}\x1b[0m`)
-        console.error(err)
-        return false
-      }
-    }
-  })).then(p => p.filter(Boolean))
+  return recursive(topPlaylist.items, initialOutPath)
 }
 
 async function main() {
@@ -133,21 +110,11 @@ async function main() {
     return
   }
 
-  const playlist = JSON.parse(await readFile(process.argv[2]))
-
-  let downloaderType = 'http'
-
-  processArgv(process.argv.slice(3), {
-    '-downloader': util => {
-      downloaderType = util.nextArg()
-    }
-  })
-
-  const dl = downloaders.makePowerfulDownloader(
-    downloaders.getDownloader(downloaderType)
+  const playlist = updatePlaylistFormat(
+    JSON.parse(await readFile(process.argv[2]))
   )
 
-  const outPlaylist = await downloadCrawl(playlist, dl)
+  const outPlaylist = await downloadCrawl(playlist)
 
   await writeFile('out/playlist.json', JSON.stringify(outPlaylist, null, 2))
 

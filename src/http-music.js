@@ -10,7 +10,8 @@ const processArgv = require('./process-argv')
 const fetch = require('node-fetch')
 
 const {
-  filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString
+  filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
+  updatePlaylistFormat
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
@@ -35,7 +36,7 @@ function downloadPlaylistFromOptionValue(arg) {
 Promise.resolve()
   .then(async () => {
     let sourcePlaylist = null
-    let activePlaylist = null
+    let activePlaylistGroup = null
 
     let pickerType = 'shuffle'
     let playOpts = []
@@ -64,46 +65,16 @@ Promise.resolve()
         return false
       }
 
-      const openedPlaylist = JSON.parse(playlistText)
+      const openedPlaylist = updatePlaylistFormat(JSON.parse(playlistText))
 
-      // Playlists can be in two formats...
-      if (Array.isArray(openedPlaylist)) {
-        // ..the first, a simple array of tracks and groups;
+      sourcePlaylist = openedPlaylist
+      activePlaylistGroup = {items: openedPlaylist.items}
 
-        sourcePlaylist = openedPlaylist
-        activePlaylist = openedPlaylist
-      } else if (typeof openedPlaylist === 'object') {
-        // ..or an object including metadata and configuration as well as the
-        // array described in the first.
-
-        if (!('tracks' in openedPlaylist)) {
-          throw new Error(
-            "Trackless object-type playlist (requires 'tracks' property)"
-          )
-        }
-
-        sourcePlaylist = openedPlaylist.tracks
-        activePlaylist = openedPlaylist.tracks
-
-        // What's handy about the object-type playlist is that you can pass
-        // options that will be run every time the playlist is opened:
-        if ('options' in openedPlaylist) {
-          if (Array.isArray(openedPlaylist.options)) {
-            processArgv(openedPlaylist.options, optionFunctions)
-          } else {
-            throw new Error(
-              "Invalid 'options' property (expected array): " + file
-            )
-          }
-        }
-      } else {
-        // Otherwise something's gone horribly wrong..!
-        throw new Error("Invalid playlist file contents: " + file)
-      }
+      processArgv(openedPlaylist.options, optionFunctions)
     }
 
     function requiresOpenPlaylist() {
-      if (activePlaylist === null) {
+      if (activePlaylistGroup === null) {
         throw new Error(
           "This action requires an open playlist - try --open (file)"
         )
@@ -142,7 +113,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        activePlaylist = []
+        activePlaylistGroup = []
       },
 
       'c': util => util.alias('-clear'),
@@ -158,7 +129,7 @@ Promise.resolve()
 
         const pathString = util.nextArg()
         const group = filterPlaylistByPathString(sourcePlaylist, pathString)
-        activePlaylist.push(group)
+        activePlaylistGroup.push(group)
       },
 
       'k': util => util.alias('-keep'),
@@ -171,7 +142,7 @@ Promise.resolve()
 
         const pathString = util.nextArg()
         console.log("Ignoring path: " + pathString)
-        removeGroupByPathString(activePlaylist, pathString)
+        removeGroupByPathString(activePlaylistGroup, pathString)
       },
 
       'r': util => util.alias('-remove'),
@@ -183,7 +154,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        console.log(getPlaylistTreeString(activePlaylist))
+        console.log(getPlaylistTreeString(activePlaylistGroup))
 
         // If this is the last item in the argument list, the user probably
         // only wants to get the list, so we'll mark the 'should run' flag
@@ -202,7 +173,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        console.log(getPlaylistTreeString(activePlaylist, true))
+        console.log(getPlaylistTreeString(activePlaylistGroup, true))
 
         // As with -l, if this is the last item in the argument list, we
         // won't actually be playing the playlist.
@@ -255,7 +226,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        console.log(JSON.stringify(activePlaylist, null, 2))
+        console.log(JSON.stringify(activePlaylistGroup, null, 2))
       }
     }
 
@@ -263,7 +234,7 @@ Promise.resolve()
 
     await processArgv(process.argv, optionFunctions)
 
-    if (activePlaylist === null) {
+    if (activePlaylistGroup === null) {
       throw new Error(
         "Cannot play - no open playlist. Try --open <playlist file>?"
       )
@@ -273,10 +244,10 @@ Promise.resolve()
       let picker
       if (pickerType === 'shuffle') {
         console.log("Using shuffle picker.")
-        picker = pickers.makeShufflePlaylistPicker(activePlaylist)
+        picker = pickers.makeShufflePlaylistPicker(activePlaylistGroup)
       } else if (pickerType === 'ordered') {
         console.log("Using ordered picker.")
-        picker = pickers.makeOrderedPlaylistPicker(activePlaylist)
+        picker = pickers.makeOrderedPlaylistPicker(activePlaylistGroup)
       } else {
         console.error("Invalid picker type: " + pickerType)
         return
@@ -373,7 +344,7 @@ Promise.resolve()
 
       return playPromise
     } else {
-      return activePlaylist
+      return activePlaylistGroup
     }
   })
   .catch(err => console.error(err))

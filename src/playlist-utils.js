@@ -1,25 +1,134 @@
 'use strict'
 
-function flattenPlaylist(playlist) {
-  // Flattens a playlist, taking all of the non-group items (tracks) at all
-  // levels in the playlist tree and returns them as a single-level array of
+// TODO: Use this when loading playlists. Also grab things from http-music.js.
+function updatePlaylistFormat(playlist) {
+  const defaultPlaylist = {
+    items: [],
+    options: []
+  }
+
+  let playlistObj = {}
+
+  // Playlists can be in two formats...
+  if (Array.isArray(playlist)) {
+    // ..the first, a simple array of tracks and groups;
+
+    playlistObj = {items: playlist}
+  } else {
+    // ..or an object including metadata and configuration as well as the
+    // array described in the first.
+
+    playlistObj = playlist
+
+    // The 'tracks' property was used for a while, but it doesn't really make
+    // sense, since we also store groups in the 'tracks' property. So it was
+    // renamed to 'items'.
+    if ('tracks' in playlistObj) {
+      playlistObj.items = playlistObj.tracks
+      delete playlistObj.tracks
+    }
+  }
+
+  const fullPlaylistObj = Object.assign(defaultPlaylist, playlistObj)
+
+  const handleGroupContents = groupContents => {
+    return groupContents.map(item => {
+      if (Array.isArray(item[1])) {
+        return {name: item[0], items: handleGroupContents(item[1])}
+      } else {
+        return updateTrackFormat(item)
+      }
+    })
+  }
+
+  fullPlaylistObj.items = handleGroupContents(fullPlaylistObj.items)
+
+  return fullPlaylistObj
+}
+
+function updateTrackFormat(track) {
+  const defaultTrack = {
+    name: '',
+    downloaderArg: ''
+  }
+
+  let trackObj = {}
+
+  if (Array.isArray(track)) {
+    if (track.length === 2) {
+      trackObj = {name: track[0], downloaderArg: track[1]}
+    } else {
+      throw new Error("Unexpected non-length 2 array-format track")
+    }
+  } else {
+    trackObj = track
+  }
+
+  return Object.assign(defaultTrack, trackObj)
+}
+
+function updateGroupFormat(group) {
+  const defaultGroup = {
+    name: '',
+    items: []
+  }
+
+  let groupObj
+
+  if (Array.isArray(group)) {
+    if (group.length === 2) {
+      groupObj = {name: group[0], items: group[1]}
+    } else {
+      throw new Error("Unexpected non-length 2 array-format group")
+    }
+  } else {
+    groupObj = group
+  }
+
+  return Object.assign(defaultGroup, groupObj)
+}
+
+function mapGrouplikeItems(grouplike, handleTrack) {
+  if (typeof handleTrack === 'undefined') {
+    throw new Error("Missing track handler function")
+  }
+
+  return {
+    items: grouplike.items.map(item => {
+      if (isTrack(item)) {
+        return handleTrack(item)
+      } else if (isGroup(item)) {
+        return mapGrouplikeItems(item, handleTrack, handleGroup)
+      } else {
+        throw new Error('Non-track/group item')
+      }
+    })
+  }
+}
+
+function flattenGrouplike(grouplike) {
+  // Flattens a group-like, taking all of the non-group items (tracks) at all
+  // levels in the group tree and returns them as a new group containing those
   // tracks.
 
-  const groups = playlist.filter(x => isGroup(x))
-  const nonGroups = playlist.filter(x => !isGroup(x))
-
-  return groups.map(g => flattenPlaylist(getGroupContents(g)))
-    .reduce((a, b) => a.concat(b), nonGroups)
+  return {
+    items: grouplike.items.map(item => {
+      if (isGroup(item)) {
+        return flattenGrouplike(item).items
+      } else {
+        return [item]
+      }
+    }).reduce((a, b) => a.concat(b), [])
+  }
 }
 
 function filterPlaylistByPathString(playlist, pathString) {
-  // Calls filterPlaylistByPath, taking a path string, rather than a parsed
-  // path.
+  // Calls filterGroupContentsByPath, taking an unparsed path string.
 
-  return filterPlaylistByPath(playlist, parsePathString(pathString))
+  return filterGroupContentsByPath(playlist, parsePathString(pathString))
 }
 
-function filterPlaylistByPath(playlist, pathParts) {
+function filterGroupContentsByPath(groupContents, pathParts) {
   // Finds a group by following the given group path and returns it. If the
   // function encounters an item in the group path that is not found, it logs
   // a warning message and returns the group found up to that point.
@@ -38,22 +147,22 @@ function filterPlaylistByPath(playlist, pathParts) {
 
   const cur = pathParts[0]
 
-  let match = playlist.find(g => titleMatch(g, false))
+  let match = groupContents.find(g => titleMatch(g, false))
 
   if (!match) {
-    match = playlist.find(g => titleMatch(g, true))
+    match = groupContents.find(g => titleMatch(g, true))
   }
 
   if (match) {
     if (pathParts.length > 1) {
       const rest = pathParts.slice(1)
-      return filterPlaylistByPath(getGroupContents(match), rest)
+      return filterGroupContentsByPath(getGroupContents(match), rest)
     } else {
       return match
     }
   } else {
     console.warn(`Not found: "${cur}"`)
-    return playlist
+    return groupContents
   }
 }
 
@@ -139,17 +248,22 @@ function getGroupContents(group) {
   return group[1]
 }
 
-function isGroup(array) {
-  return Array.isArray(array[1])
+function isGroup(obj) {
+  return obj && obj.items
+
+  // return Array.isArray(array[1])
 }
 
-function isTrack(array) {
-  return typeof array[1] === 'string'
+function isTrack(obj) {
+  return obj && obj.downloaderArg
+
+  // return typeof array[1] === 'string'
 }
 
 module.exports = {
-  flattenPlaylist,
-  filterPlaylistByPathString, filterPlaylistByPath,
+  updatePlaylistFormat, updateTrackFormat,
+  flattenGrouplike,
+  filterPlaylistByPathString, filterGroupContentsByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
   parsePathString,

@@ -93,10 +93,8 @@ class PlayController {
     if (picked === null) {
       return null
     } else {
-      // TODO: Is there a function for this?
-      const arg = picked[1]
-      const downloader = getDownloaderFor(arg)
-      this.downloadController.download(downloader, arg)
+      const downloader = getDownloaderFor(picked.downloaderArg)
+      this.downloadController.download(downloader, picked.downloaderArg)
       return picked
     }
   }
@@ -223,15 +221,15 @@ class PlayController {
 
   logTrackInfo() {
     if (this.currentTrack) {
-      const [ title, arg ] = this.currentTrack
-      console.log(`Playing: \x1b[1m${title} \x1b[2m${arg}\x1b[0m`)
+      const t = this.currentTrack
+      console.log(`Playing: \x1b[1m${t.name} \x1b[2m${t.downloaderArg}\x1b[0m`)
     } else {
       console.log("No song currently playing.")
     }
 
     if (this.nextTrack) {
-      const [ title, arg ] = this.nextTrack
-      console.log(`Up next: \x1b[1m${title} \x1b[2m${arg}\x1b[0m`)
+      const t = this.nextTrack
+      console.log(`Up next: \x1b[1m${t.name} \x1b[2m${t.downloaderArg}\x1b[0m`)
     } else {
       console.log("No song up next.")
     }
