@@ -58,10 +58,17 @@ function makeLocalDownloader() {
   // platform way).
 
   return function(arg) {
+    // It's possible the downloader argument start with the "file://" protocol
+    // string; in that case we'll want to snip it off and URL-decode the
+    // string.
+    const fileProto = 'file://'
+    if (arg.startsWith(fileProto)) {
+      arg = decodeURIComponent(arg.slice(fileProto.length))
+    }
+
     const dir = tempy.directory()
     // TODO: Is it necessary to sanitize here?
-    // haha, the answer to "should I sanitize" is probably always
-    // YES..
+    // Haha, the answer to "should I sanitize" is probably always YES..
     const base = path.basename(arg, path.extname(arg))
     const file = dir + '/' + sanitize(base) + '.mp3'
     return copyFile(arg, file)
