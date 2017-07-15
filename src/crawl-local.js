@@ -20,11 +20,11 @@ function crawl(dirPath) {
       return stat(itemPath).then(stats => {
         if (stats.isDirectory()) {
           return crawl(itemPath).then(contents => {
-            const group = [item, contents]
+            const group = {name: item, items: contents}
             return group
           })
         } else if (stats.isFile()) {
-          const track = [item, itemPath]
+          const track = {name: item, downloaderArg: itemPath}
           return track
         }
       })
