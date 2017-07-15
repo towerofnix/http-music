@@ -125,17 +125,17 @@ function flattenGrouplike(grouplike) {
 function filterPlaylistByPathString(playlist, pathString) {
   // Calls filterGroupContentsByPath, taking an unparsed path string.
 
-  return filterGroupContentsByPath(playlist, parsePathString(pathString))
+  return filterGrouplikeByPath(playlist, parsePathString(pathString))
 }
 
-function filterGroupContentsByPath(groupContents, pathParts) {
+function filterGrouplikeByPath(grouplike, pathParts) {
   // Finds a group by following the given group path and returns it. If the
   // function encounters an item in the group path that is not found, it logs
   // a warning message and returns the group found up to that point.
 
   const titleMatch = (group, caseInsensitive = false) => {
-    let a = getGroupTitle(group)
-    let b = cur
+    let a = group.name
+    let b = pathParts[0]
 
     if (caseInsensitive) {
       a = a.toLowerCase()
@@ -145,24 +145,22 @@ function filterGroupContentsByPath(groupContents, pathParts) {
     return a === b || a === b + '/'
   }
 
-  const cur = pathParts[0]
-
-  let match = groupContents.find(g => titleMatch(g, false))
+  let match = grouplike.items.find(g => titleMatch(g, false))
 
   if (!match) {
-    match = groupContents.find(g => titleMatch(g, true))
+    match = grouplike.items.find(g => titleMatch(g, true))
   }
 
   if (match) {
     if (pathParts.length > 1) {
       const rest = pathParts.slice(1)
-      return filterGroupContentsByPath(getGroupContents(match), rest)
+      return filterGrouplikeByPath(match, rest)
     } else {
       return match
     }
   } else {
-    console.warn(`Not found: "${cur}"`)
-    return groupContents
+    console.warn(`Not found: "${pathParts[0]}"`)
+    return grouplike
   }
 }
 
@@ -175,7 +173,7 @@ function removeGroupByPathString(playlist, pathString) {
 function removeGroupByPath(playlist, pathParts) {
   // Removes the group at the given path from the given playlist.
 
-  const groupToRemove = filterPlaylistByPath(playlist, pathParts)
+  const groupToRemove = filterGrouplikeByPath(playlist, pathParts)
 
   const parentPath = pathParts.slice(0, pathParts.length - 1)
   let parent
@@ -183,13 +181,13 @@ function removeGroupByPath(playlist, pathParts) {
   if (parentPath.length === 0) {
     parent = playlist
   } else {
-    parent = getGroupContents(filterPlaylistByPath(playlist, parentPath))
+    parent = filterGrouplikeByPath(playlist, parentPath)
   }
 
-  const index = parent.indexOf(groupToRemove)
+  const index = parent.items.indexOf(groupToRemove)
 
   if (index >= 0) {
-    parent.splice(index, 1)
+    parent.items.splice(index, 1)
   } else {
     console.error(
       `Group ${pathParts.join('/')} doesn't exist, so we can't explicitly ` +
@@ -200,24 +198,24 @@ function removeGroupByPath(playlist, pathParts) {
 
 function getPlaylistTreeString(playlist, showTracks = false) {
   function recursive(group) {
-    const groups = group.filter(x => isGroup(x))
-    const nonGroups = group.filter(x => !isGroup(x))
+    const groups = group.items.filter(x => isGroup(x))
+    const nonGroups = group.items.filter(x => !isGroup(x))
 
     const childrenString = groups.map(group => {
-      const title = getGroupTitle(group)
-      const groupString = recursive(getGroupContents(group))
+      const name = group.name
+      const groupString = recursive(group)
 
       if (groupString) {
         const indented = groupString.split('\n').map(l => '| ' + l).join('\n')
-        return '\n' + title + '\n' + indented
+        return '\n' + name + '\n' + indented
       } else {
-        return title
+        return name
       }
     }).join('\n')
 
     let tracksString = ''
     if (showTracks) {
-      tracksString = nonGroups.map(g => getGroupTitle(g)).join('\n')
+      tracksString = nonGroups.map(g => g.name).join('\n')
     }
 
     if (tracksString && childrenString) {
@@ -239,15 +237,6 @@ function parsePathString(pathString) {
   return pathParts
 }
 
-// TODO: Are these two functions actually useful??
-function getGroupTitle(group) {
-  return group[0]
-}
-
-function getGroupContents(group) {
-  return group[1]
-}
-
 function isGroup(obj) {
   return obj && obj.items
 
@@ -263,10 +252,9 @@ function isTrack(obj) {
 module.exports = {
   updatePlaylistFormat, updateTrackFormat,
   flattenGrouplike,
-  filterPlaylistByPathString, filterGroupContentsByPath,
+  filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
   parsePathString,
-  getGroupTitle, getGroupContents,
   isGroup, isTrack
 }

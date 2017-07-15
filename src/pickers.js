@@ -27,9 +27,13 @@ function makeShufflePlaylistPicker(grouplike) {
   const flatGroup = flattenGrouplike(grouplike)
 
   return function() {
-    const index = Math.floor(Math.random() * flatGroup.items.length)
-    const picked = flatGroup.items[index]
-    return picked
+    if (flatGroup.items.length) {
+      const index = Math.floor(Math.random() * flatGroup.items.length)
+      const picked = flatGroup.items[index]
+      return picked
+    } else {
+      return null
+    }
   }
 }
 

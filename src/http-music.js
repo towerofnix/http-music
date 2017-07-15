@@ -113,7 +113,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        activePlaylistGroup = []
+        activePlaylistGroup = {items: []}
       },
 
       'c': util => util.alias('-clear'),
@@ -129,7 +129,7 @@ Promise.resolve()
 
         const pathString = util.nextArg()
         const group = filterPlaylistByPathString(sourcePlaylist, pathString)
-        activePlaylistGroup.push(group)
+        activePlaylistGroup.items.push(group)
       },
 
       'k': util => util.alias('-keep'),
