@@ -26,6 +26,10 @@ function getDictValue(dict, key) {
   return null
 }
 
+function findChild(grouplike, name) {
+  return grouplike.items.find(x => x.name === name)
+}
+
 async function crawl(libraryXML) {
   const document = new xmldoc.XmlDocument(libraryXML)
 
@@ -35,7 +39,7 @@ async function crawl(libraryXML) {
 
   const trackDicts = tracksDict.children.filter(child => child.name === 'dict')
 
-  const result = []
+  const resultGroup = {items: []}
 
   for (let trackDict of trackDicts) {
     let kind = getDictValue(trackDict, 'Kind')
@@ -68,26 +72,24 @@ async function crawl(libraryXML) {
 
     // console.log(`${artist} - ${name} (${album})`)
 
-    const group = (arr, title) => arr.find(g => g[0] === title)
-
-    let artistGroup = group(result, artist)
+    let artistGroup = findChild(resultGroup, artist)
 
     if (!artistGroup) {
-      artistGroup = [artist, []]
-      result.push(artistGroup)
+      artistGroup = {name: artist, items: []}
+      resultGroup.items.push(artistGroup)
     }
 
-    let albumGroup = group(artistGroup[1], album)
+    let albumGroup = findChild(artistGroup, album)
 
     if (!albumGroup) {
-      albumGroup = [album, []]
-      artistGroup[1].push(albumGroup)
+      albumGroup = {name: album, items: []}
+      artistGroup.items.push(albumGroup)
     }
 
-    albumGroup[1].push([name, location])
+    albumGroup.items.push({name, downloaderArg: location})
   }
 
-  return result
+  return resultGroup
 }
 
 async function main() {
@@ -95,7 +97,32 @@ async function main() {
     `${process.env.HOME}/Music/iTunes/iTunes Music Library.xml`
   )
 
-  const library = await readFile(libraryPath)
+  let library
+
+  try {
+    library = await readFile(libraryPath)
+  } catch(err) {
+    if (err.code === 'ENOENT') {
+      console.error(
+        "It looks like you aren't sharing the iTunes Library XML file."
+      )
+      console.error(
+        "To do that, just open up iTunes, select iTunes > Preferences from " +
+        "the menu bar, select the Advanced section, enable the " +
+        "\"Share iTunes Library XML with other applications\" checkbox, and " +
+        "click on OK."
+      )
+      console.error("Then run the crawl-itunes command again.")
+      console.error(
+        "(Or, if you're certain it *is* being shared, you could try " +
+        "entering the path to the file as an argument to crawl-itunes.)"
+      )
+      process.exit(1)
+      return
+    } else {
+      throw err
+    }
+  }
 
   const playlist = await crawl(library)
 
