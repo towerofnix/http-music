@@ -18,7 +18,7 @@ function crawl(absURL, opts = {}, internals = {}) {
 
     maxAttempts = 5,
 
-    keepSeparateHosts = true,
+    keepSeparateHosts = false,
 
     keepAnyFileType = false,
     fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov'],
@@ -27,6 +27,10 @@ function crawl(absURL, opts = {}, internals = {}) {
   } = opts
 
   if (!internals.attempts) internals.attempts = 0
+
+  // TODO: Should absURL initially be added into this array? I'd like to
+  // re-program this entire crawl function to make more sense - "internal"
+  // dictionaries aren't quite easy to reason about!
   if (!internals.allURLs) internals.allURLs = []
 
   const verboseLog = text => {
@@ -43,7 +47,7 @@ function crawl(absURL, opts = {}, internals = {}) {
         const links = getHTMLLinks(text)
 
         return Promise.all(links.map(link => {
-          const [ title, href ] = link
+          const [ name, href ] = link
           const urlObj = new url.URL(href, absURL)
           const linkURL = url.format(urlObj)
 
@@ -73,7 +77,7 @@ function crawl(absURL, opts = {}, internals = {}) {
             verboseLog("[Dir] " + linkURL)
 
             return crawl(linkURL, opts, Object.assign({}, internals))
-              .then(res => [title, res])
+              .then(items => ({name, items}))
           } else {
             // It's a file!
 
@@ -89,9 +93,9 @@ function crawl(absURL, opts = {}, internals = {}) {
             }
 
             verboseLog("[File] " + linkURL)
-            return Promise.resolve([title, linkURL])
+            return Promise.resolve({name, downloaderArg: linkURL})
           }
-        }).filter(Boolean))
+        }).filter(Boolean)).then(items => ({items}))
       }),
 
       err => {
