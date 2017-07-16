@@ -173,10 +173,10 @@ TODO: Figure out the horrible, evil cause of the max listeners warning
       I'm getting lately.. current repro: play a bunch of files locally.
       Skipping tracks still leads to issue. Wait for them to start playing
       before skipping, though.
+      (Done!)
 
-TODO: Something's requesting avprobe, and I'm not sure why.
-      (While playing flora.json/YouTube videos.) Perhaps
-      it's youtube-dl..?
+TODO: Something's requesting avprobe, and I'm not sure why. (While playing
+      flora.json/YouTube videos.) Perhaps it's youtube-dl..?
 
 TODO: Re-implement skip.
       (Done!)

@@ -33,6 +33,10 @@ function downloadPlaylistFromOptionValue(arg) {
   }
 }
 
+// Let this forever be of use to people who run into
+// maxlistenersexceededwarning.
+process.on('warning', e => console.warn(e.stack))
+
 Promise.resolve()
   .then(async () => {
     let sourcePlaylist = null

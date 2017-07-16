@@ -26,15 +26,27 @@ class DownloadController extends EventEmitter {
     // be canceled and replaced with a new download (see cancel)
     // which would void the result of the old download.)
 
+    this.cleanupListeners()
+
     let canceled = false
-    this.once('canceled', () => {
+
+    this._handleCanceled = () => {
       canceled = true
-    })
+      this.cleanupListeners()
+    }
+
+    this.once('canceled', this._handleCanceled)
 
     const file = await downloader(arg)
 
     if (!canceled) {
       this.emit('downloaded', file)
+    }
+  }
+
+  cleanupListeners() {
+    if (this._handleCanceled) {
+      this.removeListener('canceled', this._handleCanceled)
     }
   }
 
@@ -44,6 +56,7 @@ class DownloadController extends EventEmitter {
     // a new download to resolve those.
 
     this.emit('canceled')
+    this.cleanupListeners()
   }
 }
 
@@ -128,7 +141,7 @@ class PlayController {
       file
     ])
 
-    const handleData = data => {
+    this.process.stderr.on('data', data => {
       const match = data.toString().match(
         /(..):(..):(..) \/ (..):(..):(..) \(([0-9]+)%\)/
       )
@@ -163,12 +176,6 @@ class PlayController {
           `\x1b[K~ (${percentStr}%) ${curStr} / ${lenStr}\r`
         )
       }
-    }
-
-    this.process.stderr.on('data', handleData)
-
-    this.process.once('exit', () => {
-      this.process.stderr.removeListener('data', handleData)
     })
 
     return new Promise(resolve => {
