@@ -19,17 +19,15 @@ function crawl(dirPath) {
 
       return stat(itemPath).then(stats => {
         if (stats.isDirectory()) {
-          return crawl(itemPath).then(contents => {
-            const group = {name: item, items: contents}
-            return group
-          })
+          return crawl(itemPath)
+            .then(group => Object.assign(group, {name: item}))
         } else if (stats.isFile()) {
           const track = {name: item, downloaderArg: itemPath}
           return track
         }
       })
     }))
-  })
+  }).then(items => ({items}))
 }
 
 if (process.argv.length === 2) {
