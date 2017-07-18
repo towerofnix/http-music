@@ -63,7 +63,7 @@ class DownloadController extends EventEmitter {
 class PlayController {
   constructor(picker, downloadController) {
     this.currentTrack = null
-    this.playArgs = []
+    this.playOpts = []
     this.process = null
     this.picker = picker
     this.downloadController = downloadController
@@ -138,7 +138,8 @@ class PlayController {
     this.process = spawn('mpv', [
       '--input-file=' + this.fifo.path,
       '--no-audio-display',
-      file
+      file,
+      ...this.playOpts
     ])
 
     this.process.stderr.on('data', data => {
@@ -243,7 +244,7 @@ class PlayController {
   }
 }
 
-module.exports = function loopPlay(picker, playArgs = []) {
+module.exports = function loopPlay(picker, playOpts = []) {
   // Looping play function. Takes one argument, the "picker" function,
   // which returns a track to play. Stops when the result of the picker
   // function is null (or similar). Optionally takes a second argument
@@ -251,7 +252,7 @@ module.exports = function loopPlay(picker, playArgs = []) {
 
   const downloadController = new DownloadController()
   const playController = new PlayController(picker, downloadController)
-  playController.playArgs = playArgs
+  playController.playOpts = playOpts
 
   const promise = playController.loopPlay()
 
