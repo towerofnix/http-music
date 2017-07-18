@@ -23,6 +23,7 @@
   ],
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",
+    "clone": "^2.1.1",
     "fifo-js": "^2.1.0",
     "fs-extra": "^3.0.1",
     "ncp": "^2.0.0",

@@ -3,11 +3,12 @@
 'use strict'
 
 const { promisify } = require('util')
+const clone = require('clone')
 const fs = require('fs')
+const fetch = require('node-fetch')
 const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
-const fetch = require('node-fetch')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
@@ -40,7 +41,7 @@ process.on('warning', e => console.warn(e.stack))
 Promise.resolve()
   .then(async () => {
     let sourcePlaylist = null
-    let activePlaylistGroup = null
+    let activePlaylist = null
 
     let pickerType = 'shuffle'
     let playOpts = []
@@ -71,14 +72,17 @@ Promise.resolve()
 
       const openedPlaylist = updatePlaylistFormat(JSON.parse(playlistText))
 
+      // The active playlist is a clone of the source playlist; after all it's
+      // quite possible we'll be messing with the value of the active playlist,
+      // and we don't want to reflect those changes in the source playlist.
       sourcePlaylist = openedPlaylist
-      activePlaylistGroup = {items: openedPlaylist.items}
+      activePlaylist = clone(openedPlaylist)
 
       processArgv(openedPlaylist.options, optionFunctions)
     }
 
     function requiresOpenPlaylist() {
-      if (activePlaylistGroup === null) {
+      if (activePlaylist === null) {
         throw new Error(
           "This action requires an open playlist - try --open (file)"
         )
@@ -117,7 +121,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        activePlaylistGroup = {items: []}
+        activePlaylist.items = []
       },
 
       'c': util => util.alias('-clear'),
@@ -133,7 +137,7 @@ Promise.resolve()
 
         const pathString = util.nextArg()
         const group = filterPlaylistByPathString(sourcePlaylist, pathString)
-        activePlaylistGroup.items.push(group)
+        activePlaylist.items.push(group)
       },
 
       'k': util => util.alias('-keep'),
@@ -146,7 +150,7 @@ Promise.resolve()
 
         const pathString = util.nextArg()
         console.log("Ignoring path: " + pathString)
-        removeGroupByPathString(activePlaylistGroup, pathString)
+        removeGroupByPathString(activePlaylist, pathString)
       },
 
       'r': util => util.alias('-remove'),
@@ -158,7 +162,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        console.log(getPlaylistTreeString(activePlaylistGroup))
+        console.log(getPlaylistTreeString(activePlaylist))
 
         // If this is the last item in the argument list, the user probably
         // only wants to get the list, so we'll mark the 'should run' flag
@@ -177,7 +181,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        console.log(getPlaylistTreeString(activePlaylistGroup, true))
+        console.log(getPlaylistTreeString(activePlaylist, true))
 
         // As with -l, if this is the last item in the argument list, we
         // won't actually be playing the playlist.
@@ -230,7 +234,7 @@ Promise.resolve()
 
         requiresOpenPlaylist()
 
-        console.log(JSON.stringify(activePlaylistGroup, null, 2))
+        console.log(JSON.stringify(activePlaylist, null, 2))
       }
     }
 
@@ -238,7 +242,7 @@ Promise.resolve()
 
     await processArgv(process.argv, optionFunctions)
 
-    if (activePlaylistGroup === null) {
+    if (activePlaylist === null) {
       throw new Error(
         "Cannot play - no open playlist. Try --open <playlist file>?"
       )
@@ -248,10 +252,10 @@ Promise.resolve()
       let picker
       if (pickerType === 'shuffle') {
         console.log("Using shuffle picker.")
-        picker = pickers.makeShufflePlaylistPicker(activePlaylistGroup)
+        picker = pickers.makeShufflePlaylistPicker(activePlaylist)
       } else if (pickerType === 'ordered') {
         console.log("Using ordered picker.")
-        picker = pickers.makeOrderedPlaylistPicker(activePlaylistGroup)
+        picker = pickers.makeOrderedPlaylistPicker(activePlaylist)
       } else {
         console.error("Invalid picker type: " + pickerType)
         return
@@ -348,7 +352,7 @@ Promise.resolve()
 
       return playPromise
     } else {
-      return activePlaylistGroup
+      return activePlaylist
     }
   })
   .catch(err => console.error(err))
