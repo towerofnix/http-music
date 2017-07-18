@@ -97,6 +97,7 @@ TODO: Make a --help/-h/-? option that directs helpless users to the man page.
 TODO: Make a way to write the current playlist to a file. I think just renaming
       the debug-playlist-log option could work, since you could pipe that to a
       file through your shell.
+      (Done!)
 
 TODO: Figure out a less "hacky" way to kill the process. Ideally we shouldn't
       have to handle ^C and ^D ourselves; for instance right now ^Z is actually
@@ -207,5 +208,9 @@ TODO: Tracks should be able to contain more data than the title and downloader
 TODO: Piping the output of a crawl command into the http-music command would
       be nifty!
 
-TODO: Having all the HTTP-music commands be stuck into one main command might
+TODO: Having all the http-music commands be stuck into one main command might
       be nice, like the way git does it..
+
+TODO: Figure out how man pages work, and update the syntax in those files.
+      Particularly I'd like to make the number of blank lines between headings
+      more consistent, and figure out when to use '\-' or '-'.

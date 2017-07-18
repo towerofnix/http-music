@@ -16,6 +16,7 @@ const {
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
+const writeFile = promisify(fs.writeFile)
 
 function downloadPlaylistFromURL(url) {
   return fetch(url).then(res => res.text())
@@ -104,15 +105,64 @@ Promise.resolve()
       'h': util => util.alias('-help'),
       '?': util => util.alias('-help'),
 
-      '-open': async function(util) {
-        // --open <file>  (alias: -o)
+      '-open-playlist': async function(util) {
+        // --open-playlist <file>  (alias: --open, -o)
         // Opens a separate playlist file.
         // This sets the source playlist.
 
         await openPlaylist(util.nextArg())
       },
 
-      'o': util => util.alias('-open'),
+      '-open': util => util.alias('-open-playlist'),
+      'o': util => util.alias('-open-playlist'),
+
+      '-write-playlist': function(util) {
+        // --write-playlist <file>  (alias: --write, -w, --save)
+        // Writes the active playlist to a file. This file can later be used
+        // with --open <file>; you won't need to stick in all the filtering
+        // options again.
+
+        requiresOpenPlaylist()
+
+        const playlistString = JSON.stringify(activePlaylist, null, 2)
+        const file = util.nextArg()
+
+        console.log(`Saving playlist to file ${file}...`)
+
+        return writeFile(file, playlistString).then(() => {
+          console.log("Saved.")
+
+          // If this is the last option, the user probably doesn't actually
+          // want to play the playlist. (We need to check if this is len - 2
+          // rather than len - 1, because of the <file> option that comes
+          // after --write-playlist.)
+          if (util.index === util.argv.length - 2) {
+            shouldPlay = false
+          }
+        })
+      },
+
+      '-write': util => util.alias('-write-playlist'),
+      'w': util => util.alias('-write-playlist'),
+      '-save': util => util.alias('-write-playlist'),
+
+      '-print-playlist': function(util) {
+        // --print-playlist  (alias: --log-playlist, --json)
+        // Prints out the JSON representation of the active playlist.
+
+        requiresOpenPlaylist()
+
+        console.log(JSON.stringify(activePlaylist, null, 2))
+
+        // As with --write-playlist, the user probably doesn't want to actually
+        // play anything if this is the last option.
+        if (util.index === util.argv.length - 1) {
+          shouldPlay = false
+        }
+      },
+
+      '-log-playlist': util => util.alias('-print-playlist'),
+      '-json': util => util.alias('-print-playlist'),
 
       '-clear': function(util) {
         // --clear  (alias: -c)
@@ -226,15 +276,6 @@ Promise.resolve()
         // Sets command line options passed to the `play` command.
 
         playOpts = util.nextArg().split(' ')
-      },
-
-      '-debug-list': function(util) {
-        // --debug-list
-        // Prints out the JSON representation of the active playlist.
-
-        requiresOpenPlaylist()
-
-        console.log(JSON.stringify(activePlaylist, null, 2))
       }
     }
 

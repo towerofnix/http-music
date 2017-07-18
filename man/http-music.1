@@ -93,10 +93,10 @@ Forces the playlist not to play.
 See also \fB\-\-play\fR.
 
 .TP
-.BR \-o ", " \-\-open " \fIplaylistFile\fR"
+.BR \-o ", " \-\-open\-playlist ", " \-\-open " \fIplaylistFile\fR"
 Opens a specific file to be used as the playlist file.
 (This sets the source playlist.)
-The default playlist file used upon loading is playlist.json (in the same directory as \fBhttp-music\fR is being run in).
+The default playlist file used upon loading is \fBplaylist.json\fR (in the same directory as \fBhttp-music\fR is being run in).
 
 .TP
 .BR \-\-picker ", " \-\-selector " \fIpickerType\fR"
@@ -110,15 +110,20 @@ Forces the playlist to actually play, regardless of options such as \fB\-\-list\
 .TP
 .BR \-\-play\-opts
 Sets command line options passed to the \fBplay\fR command.
-For example, playback volume may be set to 30% by using \fB\-\-play\-opts '\-v 0.3'\fR.
+For example, playback volume may be set to 30% by using \fB\-\-play\-opts '\-\-volume 30'\fR.
+
+.TP
+.BR \-\-print\-playlist ", " \-\-log-playlist ", " \-\-json
+Prints the JSON representation of the active playlist to the console.
 
 .TP
 .BR \-r ", " \-\-remove ", " \-x " \fIgroupPath\fR"
 Removes a group from the (active) playlist.
 
 .TP
-.BR \-\-debug\-list
-Prints the JSON representation of the (active) playlist.
+.BR \-w ", " \-\-write\-playlist ", " \-\-write ", " \-\-save " \fIfilePath\fR"
+Writes the active playlist to a file.
+This file can later be used with \fB\-\-open\fR; you won't need to stick in all the filtering options again.
 
 
 
