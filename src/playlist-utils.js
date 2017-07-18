@@ -3,8 +3,8 @@
 // TODO: Use this when loading playlists. Also grab things from http-music.js.
 function updatePlaylistFormat(playlist) {
   const defaultPlaylist = {
-    items: [],
-    options: []
+    options: [],
+    items: []
   }
 
   let playlistObj = {}
