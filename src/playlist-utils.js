@@ -1,5 +1,7 @@
 'use strict'
 
+const parentSymbol = Symbol('parent')
+
 // TODO: Use this when loading playlists. Also grab things from http-music.js.
 function updatePlaylistFormat(playlist) {
   const defaultPlaylist = {
@@ -31,19 +33,40 @@ function updatePlaylistFormat(playlist) {
 
   const fullPlaylistObj = Object.assign(defaultPlaylist, playlistObj)
 
-  const handleGroupContents = groupContents => {
-    return groupContents.map(item => {
-      if (Array.isArray(item[1])) {
-        return {name: item[0], items: handleGroupContents(item[1])}
-      } else {
-        return updateTrackFormat(item)
-      }
-    })
+  return updateGroupFormat(fullPlaylistObj)
+}
+
+function updateGroupFormat(group) {
+  const defaultGroup = {
+    name: '',
+    items: []
   }
 
-  fullPlaylistObj.items = handleGroupContents(fullPlaylistObj.items)
+  let groupObj = {}
 
-  return fullPlaylistObj
+  if (Array.isArray(group[1])) {
+    groupObj = {name: group[0], items: group[1]}
+  } else {
+    groupObj = group
+  }
+
+  groupObj = Object.assign(defaultGroup, groupObj)
+
+  groupObj.items = groupObj.items.map(item => {
+    // Theoretically this wouldn't work on downloader-args where the value
+    // isn't a string..
+    if (typeof group[1] === 'string' || item.downloaderArg) {
+      item = updateTrackFormat(item)
+    } else {
+      item = updateGroupFormat(item)
+    }
+
+    item[parentSymbol] = groupObj
+
+    return item
+  })
+
+  return groupObj
 }
 
 function updateTrackFormat(track) {
@@ -65,27 +88,6 @@ function updateTrackFormat(track) {
   }
 
   return Object.assign(defaultTrack, trackObj)
-}
-
-function updateGroupFormat(group) {
-  const defaultGroup = {
-    name: '',
-    items: []
-  }
-
-  let groupObj
-
-  if (Array.isArray(group)) {
-    if (group.length === 2) {
-      groupObj = {name: group[0], items: group[1]}
-    } else {
-      throw new Error("Unexpected non-length 2 array-format group")
-    }
-  } else {
-    groupObj = group
-  }
-
-  return Object.assign(defaultGroup, groupObj)
 }
 
 function mapGrouplikeItems(grouplike, handleTrack) {
@@ -114,7 +116,9 @@ function flattenGrouplike(grouplike) {
   return {
     items: grouplike.items.map(item => {
       if (isGroup(item)) {
-        return flattenGrouplike(item).items
+        const flat = flattenGrouplike(item).items
+
+        return flat
       } else {
         return [item]
       }
@@ -232,6 +236,23 @@ function getPlaylistTreeString(playlist, showTracks = false) {
   return recursive(playlist)
 }
 
+function getItemPathString(item) {
+  // Gets the playlist path of an item by following its parent chain.
+  // Returns a string in format Foo/Bar/Baz, where Foo and Bar are group
+  // names, and Baz is the name of the item. Unnamed parents (except for the
+  // top one) are considered to have the name '(Unnamed)'.
+
+  if (item[parentSymbol]) {
+    if (item[parentSymbol].name || item[parentSymbol][parentSymbol]) {
+      return getItemPathString(item[parentSymbol]) + '/' + item.name
+    } else {
+      return item.name
+    }
+  } else {
+    return item.name || '(Unnamed)'
+  }
+}
+
 function parsePathString(pathString) {
   const pathParts = pathString.split('/')
   return pathParts
@@ -250,11 +271,13 @@ function isTrack(obj) {
 }
 
 module.exports = {
+  parentSymbol,
   updatePlaylistFormat, updateTrackFormat,
   flattenGrouplike,
   filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
+  getItemPathString,
   parsePathString,
   isGroup, isTrack
 }

@@ -114,6 +114,7 @@ TODO: A way to kill the up-next song.
 
 TODO: A way to see information about the currently playing song, as well as
       the up-next song.
+      (Done!)
 
 TODO: A way to see the previously played songs, and to skip back (or forwards).
 
@@ -204,6 +205,7 @@ TODO: Tracks should be able to contain more data than the title and downloader
       tracks by sticking Symbols onto the track objects. It'd be particularly
       useful to store the original group path for tracks in flattenGroup, for
       example.
+      (Done!)
 
 TODO: Piping the output of a crawl command into the http-music command would
       be nifty!
@@ -214,3 +216,5 @@ TODO: Having all the http-music commands be stuck into one main command might
 TODO: Figure out how man pages work, and update the syntax in those files.
       Particularly I'd like to make the number of blank lines between headings
       more consistent, and figure out when to use '\-' or '-'.
+
+TODO: Fix skip up-next..!

@@ -368,6 +368,7 @@ Promise.resolve()
 
           // TODO: It would be nice to have this as a method of
           // PlayController.
+          // Double TODO: This doesn't actually work!!
           downloadController.cancel()
           play.startNextDownload()
         }

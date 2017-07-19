@@ -4,6 +4,7 @@ const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
 const { getDownloaderFor } = require('./downloaders')
+const { getItemPathString } = require('./playlist-utils')
 
 class DownloadController extends EventEmitter {
   waitForDownload() {
@@ -228,16 +229,22 @@ class PlayController {
   }
 
   logTrackInfo() {
+    const getMessage = t => {
+      let path = getItemPathString(t)
+
+      return (
+        `\x1b[1m${t.name} \x1b[0m@ ${path} \x1b[2m${t.downloaderArg}\x1b[0m`
+      )
+    }
+
     if (this.currentTrack) {
-      const t = this.currentTrack
-      console.log(`Playing: \x1b[1m${t.name} \x1b[2m${t.downloaderArg}\x1b[0m`)
+      console.log(`Playing: ${getMessage(this.currentTrack)}`)
     } else {
       console.log("No song currently playing.")
     }
 
     if (this.nextTrack) {
-      const t = this.nextTrack
-      console.log(`Up next: \x1b[1m${t.name} \x1b[2m${t.downloaderArg}\x1b[0m`)
+      console.log(`Up next: ${getMessage(this.nextTrack)}`)
     } else {
       console.log("No song up next.")
     }
