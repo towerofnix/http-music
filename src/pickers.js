@@ -6,12 +6,12 @@ function makeOrderedPlaylistPicker(grouplike) {
   // Ordered playlist picker - this plays all the tracks in a group in
   // order, after flattening it.
 
-  const allSongs = flattenGrouplike(groupContents)
+  const flatGroup = flattenGrouplike(grouplike)
   let index = 0
 
   return function() {
-    if (index < allSongs.length) {
-      const picked = allSongs[index]
+    if (index < flatGroup.items.length) {
+      const picked = flatGroup.items[index]
       index++
       return picked
     } else {
