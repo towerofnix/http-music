@@ -1,204 +1,51 @@
 .TH HTTP-MUSIC 1
 
-
-
 .SH NAME
-http-music - play music through the internet
-
-
+http-music - play music through the internet (and other places)
 
 .SH SYNOPSIS
 .B http-music
+<command>
 [opts...]
-
-
 
 .SH DESCRIPTION
 \fBhttp-music\fR is an easy-to-use command line music player that uses the internet as its main source.
 It features several convenient options which make it powerful while still sticking to the idea of keeping the utility as usable as possible.
+
 .PP
 \fBhttp-music\fR is portable.
 It can be used anywhere with a Node environment, requiring only two commonly installed (and otherwise easy to get) utilities (\fBmpv\fR and \fBavconv\fR, optionally \fByoutube-dl\fR).
 
+.PP
+Playlists are stored as JSON files.
+See \fBhttp-music-crawl-http\fR(1) for an example of the playlist file structure.
 
 
-.SH KEYBOARD CONTROLS
-.TP
-.BR <left-arrow>
-Skips backwards 5 seconds in the currently playing track; hold shift to skip by
-30 seconds.
-
-.TP
-.BR <right-arrow>
-Skips forwards 5 seconds in the currently playing track; hold shift to skip by
-30 seconds.
+.SH SUB-COMMANDS
+The command line utility \fBhttp-music\fR is split into various sub-commands for convenience.
+They are as listed below; each sub-command also has its own \fBman\fR page (for example, \fBcrawl-http\fR's page is \fBhttp-music-crawl-http\fR(1).)
 
 .TP
-.BR <up-arrow>
-Turns the volume up a 10%-notch.
+.BR play
+Plays a playlist (from the playlist.json file, by default).
 
 .TP
-.BR <down-arrow>
-Turns the volume down 10%.
+.BR crawl-http
+Creates a playlist from each music file linked to from an HTML page online.
 
 .TP
-.BR <space>
-Pauses (or resumes) playback.
+.BR crawl-local
+Creates a playlist from a directory on the local machine.
 
 .TP
-.BR i
-Shows information (title, URL/path) on the currently playing track.
-(\fBt\fR also works.)
+.BR crawl-itunes
+Creates a playlist from the iTunes Shared Library.
 
 .TP
-.BR q
-Quits the http-music process and stops music currently being played.
-(\fB^C\fR and \fB^D\fR also work.)
-
-.TP
-.BR s
-Skips the currently playing track.
-
-
-.SH OPTIONS
-.TP
-.BR \-c ", " \-\-clear
-Clears the active playlist.
-This does not effect the source playlist, so specific groups can be selected using \fB\-\-keep\fR.
-
-
-.TP
-.BR \-h ", " \-? ", " \-\-help
-Presents a help message, directing the user to the \fBman\fR page.
-If this is the last option used, nothing plays (see \fB\-\-play\fR).
-
-.TP
-.BR \-k ", " \-\-keep " \fIgroupPath\fR"
-Keeps a group by adding it from the source playlist.
-This is usually useful after clearing the active playlist (\fB\-\-clear\fR); it can also be used to keep a sub-group after removing an entire parent group, e.g. \fB-r foo -k foo/baz\fR.
-
-.TP
-.BR \-l ", " \-\-list\-groups ", " \-\-list
-Lists all groups (but not tracks) in the (active) playlist.
-If this is the last option used, nothing plays (see \fB\-\-play\fR).
-
-.TP
-.BR \-L ", " \-\-list\-all ", " \-\-list\-tracks
-Lists all groups and tracks in the (active) playlist.
-If this is the last option used, nothing plays (see \fB\-\-play\fR).
-
-.TP
-.BR \-np ", " \-\-no\-play
-Forces the playlist not to play.
-See also \fB\-\-play\fR.
-
-.TP
-.BR \-o ", " \-\-open\-playlist ", " \-\-open " \fIplaylistFile\fR"
-Opens a specific file to be used as the playlist file.
-(This sets the source playlist.)
-The default playlist file used upon loading is \fBplaylist.json\fR (in the same directory as \fBhttp-music\fR is being run in).
-
-.TP
-.BR \-\-picker ", " \-\-selector " \fIpickerType\fR"
-Sets the picker type used for selecting tracks from the active playlist.
-The default is \fBshuffle\fR.
-
-.TP
-.BR \-p ", " \-\-play
-Forces the playlist to actually play, regardless of options such as \fB\-\-list\fR. See also \fB\-\-no\-play\fR.
-
-.TP
-.BR \-\-play\-opts
-Sets command line options passed to the \fBplay\fR command.
-For example, playback volume may be set to 30% by using \fB\-\-play\-opts '\-\-volume 30'\fR.
-
-.TP
-.BR \-\-print\-playlist ", " \-\-log-playlist ", " \-\-json
-Prints the JSON representation of the active playlist to the console.
-
-.TP
-.BR \-r ", " \-\-remove ", " \-x " \fIgroupPath\fR"
-Removes a group from the (active) playlist.
-
-.TP
-.BR \-w ", " \-\-write\-playlist ", " \-\-write ", " \-\-save " \fIfilePath\fR"
-Writes the active playlist to a file.
-This file can later be used with \fB\-\-open\fR; you won't need to stick in all the filtering options again.
+.BR download-playlist
+Downloads each item in a playlist into a directory.
 
 
 
 .SH EXAMPLES
-Basic usage:
-
-.PP
-.nf
-.RS
-$ http-music
-.RE
-.fi
-
-.PP
-Generate a playlist from an HTTP server:
-
-.PP
-.nf
-.RS
-$ http-music-crawl-http http://example.com/path > playlist.json
-.RE
-.fi
-
-.PP
-Generate a playlist from the local file system:
-
-.PP
-.nf
-.RS
-$ http-music-crawl-local /example/path > playlist.json
-.RE
-.fi
-
-.PP
-Open a specific playlist file:
-
-.PP
-.nf
-.RS
-$ http-music --open playlist2.json
-$ http-music -o playlist2.json
-.RE
-.fi
-
-.PP
-Only play music under a specific group:
-
-.PP
-.nf
-.RS
-$ http-music --clear --keep 'Cool Author 72'
-$ http-music -c -k 'Cool Author 72'
-$ http-music -c -k 'Cool Author 72/Good Album'
-.RE
-.fi
-
-.PP
-Don't play music under a specific group:
-
-.PP
-.nf
-.RS
-$ http-music --remove 'Bad News'
-$ http-music -r 'Bad News'
-$ http-music -x 'Bad News'
-.RE
-.fi
-
-.PP
-Don't play music under a specific group, except for a sub-group:
-
-.PP
-.nf
-.RS
-$ http-music --remove 'Bad News' --keep 'Bad News/Irony'
-$ http-music -x 'Cool Author 72' -k 'Cool Author 72/Good Album'
-.RE
-.fi
+See \fBhttp-music-play\fR(1).
