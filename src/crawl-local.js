@@ -30,13 +30,20 @@ function crawl(dirPath) {
   }).then(items => ({items}))
 }
 
-if (process.argv.length === 2) {
-  console.log("Usage: http-music-crawl-local /example/path..")
-  console.log("..or, npm run crawl-local /example/path")
-} else {
-  const path = process.argv[2]
+async function main(args) {
+  if (args.length === 0) {
+    console.log("Usage: crawl-local /example/path")
+  } else {
+    const path = args[0]
 
-  crawl(path)
-    .then(res => console.log(JSON.stringify(res, null, 2)))
+    const res = await crawl(path)
+    console.log(JSON.stringify(res, null, 2))
+  }
+}
+
+module.exports = main
+
+if (require.main === module) {
+  main(process.argv.slice(2))
     .catch(err => console.error(err))
 }

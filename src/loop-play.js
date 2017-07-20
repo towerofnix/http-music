@@ -1,3 +1,5 @@
+// This isn't actually the code for the `play` command! That's in `play.js`.
+
 'use strict'
 
 const { spawn } = require('child_process')

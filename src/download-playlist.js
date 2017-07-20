@@ -102,17 +102,15 @@ async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
   return recursive(topPlaylist.items, initialOutPath)
 }
 
-async function main() {
+async function main(args) {
   // TODO: Implement command line stuff here
 
-  if (process.argv.length === 2) {
+  if (args.length === 0) {
     console.error('Usage: download-playlist <playlistFile> [opts]')
     return
   }
 
-  const playlist = updatePlaylistFormat(
-    JSON.parse(await readFile(process.argv[2]))
-  )
+  const playlist = updatePlaylistFormat(JSON.parse(await readFile(args[0])))
 
   const outPlaylist = await downloadCrawl(playlist)
 
@@ -122,5 +120,7 @@ async function main() {
   process.exit(0)
 }
 
-main()
-  .catch(err => console.error(err))
+if (require.main === module) {
+  main(process.argv.slice(2))
+    .catch(err => console.error(err))
+}

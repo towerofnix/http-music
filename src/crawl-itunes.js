@@ -93,8 +93,8 @@ async function crawl(libraryXML) {
   return resultGroup
 }
 
-async function main() {
-  const libraryPath = process.argv[2] || (
+async function main(args) {
+  const libraryPath = args[0] || (
     `${process.env.HOME}/Music/iTunes/iTunes Music Library.xml`
   )
 
@@ -130,5 +130,9 @@ async function main() {
   console.log(JSON.stringify(playlist, null, 2))
 }
 
-main()
-  .catch(err => console.error(err))
+module.exports = main
+
+if (require.main === module) {
+  main(process.argv.slice(2))
+    .catch(err => console.error(err))
+}

@@ -139,14 +139,20 @@ function getHTMLLinks(text) {
   })
 }
 
-async function main() {
-  let url = process.argv[2]
+async function main(args) {
+  if (args.length === 0) {
+    console.log("Usage: crawl-http http://.../example/path/ [opts]")
+    process.exit(1)
+    return
+  }
+
+  let url = args[0]
 
   let maxDownloadAttempts = 5
   let verbose = false
   let filterRegex = null
 
-  await processArgv(process.argv.slice(3), {
+  await processArgv(args.slice(1), {
     '-max-download-attempts': function(util) {
       // --max-download-attempts <max>  (alias: -m)
       // Sets the maximum number of times to attempt downloading the index for
@@ -190,9 +196,9 @@ async function main() {
   console.log(JSON.stringify(downloadedPlaylist, null, 2))
 }
 
-if (process.argv.length === 2) {
-  console.log("Usage: http-music-crawl-http http://.../example/path/ [opts]")
-} else {
-  main()
+module.exports = main
+
+if (require.main === module) {
+  main(process.argv.slice(2))
     .catch(err => console.error(err))
 }
