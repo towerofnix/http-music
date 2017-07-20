@@ -2,7 +2,6 @@
 
 const parentSymbol = Symbol('parent')
 
-// TODO: Use this when loading playlists. Also grab things from http-music.js.
 function updatePlaylistFormat(playlist) {
   const defaultPlaylist = {
     options: [],
@@ -55,7 +54,7 @@ function updateGroupFormat(group) {
   groupObj.items = groupObj.items.map(item => {
     // Theoretically this wouldn't work on downloader-args where the value
     // isn't a string..
-    if (typeof group[1] === 'string' || item.downloaderArg) {
+    if (typeof item[1] === 'string' || item.downloaderArg) {
       item = updateTrackFormat(item)
     } else {
       item = updateGroupFormat(item)
