@@ -209,9 +209,11 @@ TODO: Tracks should be able to contain more data than the title and downloader
 
 TODO: Piping the output of a crawl command into the http-music command would
       be nifty!
+      (Done! - try '-o /dev/stdin'. This was apparently always a feature.)
 
 TODO: Having all the http-music commands be stuck into one main command might
       be nice, like the way git does it..
+      (Done!)
 
 TODO: Figure out how man pages work, and update the syntax in those files.
       Particularly I'd like to make the number of blank lines between headings
