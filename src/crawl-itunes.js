@@ -66,7 +66,8 @@ async function crawl(libraryXML) {
     album = album && album.val
     album = album || 'Unknown Album'
 
-    let artist = getDictValue(trackDict, 'Artist')
+    let artist = getDictValue(trackDict, 'Album Artist')
+    artist = artist || getDictValue(trackDict, 'Artist')
     artist = artist && artist.val
     artist = artist || 'Unknown Artist'
 
