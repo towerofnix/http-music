@@ -1,23 +1,20 @@
 {
   "name": "http-music",
   "version": "0.0.1",
-  "main": "src/http-music.js",
+  "main": "src/cli.js",
   "scripts": {
-    "play": "node src/http-music.js",
+    "play": "node src/play",
     "crawl-http": "node src/crawl-http",
     "crawl-local": "node src/crawl-local",
     "crawl-itunes": "node src/crawl-itunes",
     "download-playlist": "node src/download-playlist"
   },
   "bin": {
-    "http-music": "./src/http-music.js",
-    "http-music-crawl-http": "./src/crawl-http.js",
-    "http-music-crawl-local": "./src/crawl-local.js",
-    "http-music-crawl-itunes": "./src/crawl-itunes.js",
-    "http-music-download-playlist": "./src/download-playlist.js"
+    "http-music": "./src/cli.js"
   },
   "man": [
     "./man/http-music.1",
+    "./man/http-music-play.1",
     "./man/http-music-crawl-http.1",
     "./man/http-music-crawl-itunes.1"
   ],
