@@ -16,7 +16,8 @@
     "./man/http-music.1",
     "./man/http-music-play.1",
     "./man/http-music-crawl-http.1",
-    "./man/http-music-crawl-itunes.1"
+    "./man/http-music-crawl-itunes.1",
+    "./man/http-music-crawl-youtube.1"
   ],
   "dependencies": {
     "cheerio": "^1.0.0-rc.1",

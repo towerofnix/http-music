@@ -142,7 +142,6 @@ function getHTMLLinks(text) {
 async function main(args) {
   if (args.length === 0) {
     console.log("Usage: crawl-http http://.../example/path/ [opts]")
-    process.exit(1)
     return
   }
 

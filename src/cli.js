@@ -18,6 +18,7 @@ async function main(args) {
     case 'crawl-http': script = require('./crawl-http'); break
     case 'crawl-local': script = require('./crawl-local'); break
     case 'crawl-itunes': script = require('./crawl-itunes'); break
+    case 'crawl-youtube': script = require('./crawl-youtube'); break
     case 'download-playlist': script = require('./download-playlist'); break
 
     default:

@@ -225,3 +225,6 @@ TODO: Make iTunes crawler prefer album artist over artist.
       (Done!)
 
 TODO: Make iTunes crawler take into account track numbers.
+
+TODO: Make a YouTube playlist crawler.
+      (Done!)
