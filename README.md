@@ -14,7 +14,7 @@ $ python3 -m http.server <some_port>
 $ cd http-music
 $ yarn  # to install Node.js dependencies; you'll also need `avconv` and `mpv`.
 $ npm run crawl-http -- <server_ip> > playlist.json
-$ node .  # Go!
+$ node . play  # Go!
 ```
 
 **Zomg command line arguments documentation????** — Yes; read the docs! There's
