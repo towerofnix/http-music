@@ -8,9 +8,10 @@ const sanitize = require('sanitize-filename')
 const promisifyProcess = require('./promisify-process')
 
 const {
-  isGroup, isTrack, flattenPlaylist, updatePlaylistFormat
+  isGroup, isTrack, flattenGrouplike, updatePlaylistFormat
 } = require('./playlist-utils')
 
+const { getDownloaderFor, makePowerfulDownloader } = require('./downloaders')
 const { promisify } = require('util')
 const { spawn } = require('child_process')
 
@@ -23,7 +24,7 @@ const writeFile = promisify(fs.writeFile)
 
 async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
   let doneCount = 0
-  let total = flattenPlaylist(topPlaylist).length
+  let total = flattenGrouplike(topPlaylist).items.length
 
   const status = function() {
     const percent = Math.trunc(doneCount / total * 10000) / 100
@@ -50,12 +51,15 @@ async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
     for (let item of groupContents) {
       if (isGroup(item)) {
         // TODO: Not sure if this is the best way to pick the next out dir.
-        const out = outPath + sanitize(item[0]) + '/'
+        const out = outPath + sanitize(item.name) + '/'
 
-        outPlaylist.push([item[0], await recursive(item[1], out)])
+        outPlaylist.push({
+          name: item.name,
+          items: await recursive(item.items, out)
+        })
       } else if (isTrack(item)) {
-        const base = sanitize(path.basename(item[0], path.extname(item[0])))
-        const out = outPath + sanitize(base) + '.mp3'
+        const base = path.basename(item.name, path.extname(item.name))
+        const targetFile = outPath + sanitize(base) + '.mp3'
 
         // If we've already downloaded a file at some point in previous time,
         // there's no need to download it again!
@@ -72,24 +76,50 @@ async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
         })
 
         if (match) {
-          console.log(`\x1b[32;2mAlready downloaded: ${out}\x1b[0m`)
-          outPlaylist.push([item[0], outPath + match])
+          console.log(`\x1b[32;2mAlready downloaded: ${targetFile}\x1b[0m`)
+          outPlaylist.push({name: item.name, downloaderArg: outPath + match})
           doneCount++
           status()
           continue
         }
 
-        console.log(`\x1b[2mDownloading: ${item[0]} - ${item[1]}\x1b[0m`)
+        console.log(
+          `\x1b[2mDownloading: ${item.name} - ${item.downloaderArg}` +
+          ` => ${targetFile}\x1b[0m`
+        )
 
-        console.log(out)
+        const downloader = makePowerfulDownloader(
+          getDownloaderFor(item.downloaderArg)
+        )
 
-        await promisifyProcess(spawn('mpv', [
-          '--no-audio-display',
-          item[1], '-o', out,
-          '-oac', 'libmp3lame'
-        ]))
+        const outputtedFile = await downloader(item.downloaderArg)
 
-        outPlaylist.push([item[0], out])
+        let ffmpegSuccess = false
+
+        try {
+          await promisifyProcess(spawn('ffmpeg', [
+            '-i', outputtedFile,
+
+            // A bug (in ffmpeg or macOS; not this) makes it necessary to have
+            // these options on macOS, otherwise the outputted file length is
+            // wrong.
+            '-write_xing', '0',
+
+            targetFile
+          ]), false)
+
+          ffmpegSuccess = true
+        } catch(err) {
+          console.error(
+            `\x1b[33;1mFFmpeg failed (item skipped): ${item.name}\x1b[0m`
+          )
+        }
+
+        if (ffmpegSuccess) {
+          console.log('Added:', item.name)
+          outPlaylist.push({name: item.name, downloaderArg: targetFile})
+        }
+
         doneCount++
 
         status()
@@ -99,7 +129,7 @@ async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
     return outPlaylist
   }
 
-  return recursive(topPlaylist.items, initialOutPath)
+  return {items: await recursive(topPlaylist.items, initialOutPath)}
 }
 
 async function main(args) {
@@ -119,6 +149,8 @@ async function main(args) {
   console.log('Done - saved playlist to out/playlist.json.')
   process.exit(0)
 }
+
+module.exports = main
 
 if (require.main === module) {
   main(process.argv.slice(2))
