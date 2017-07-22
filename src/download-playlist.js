@@ -88,34 +88,43 @@ async function downloadCrawl(topPlaylist, initialOutPath = './out/') {
           ` => ${targetFile}\x1b[0m`
         )
 
-        const downloader = makePowerfulDownloader(
-          getDownloaderFor(item.downloaderArg)
-        )
-
-        const outputtedFile = await downloader(item.downloaderArg)
-
-        let ffmpegSuccess = false
-
-        try {
-          await promisifyProcess(spawn('ffmpeg', [
-            '-i', outputtedFile,
-
-            // A bug (in ffmpeg or macOS; not this) makes it necessary to have
-            // these options on macOS, otherwise the outputted file length is
-            // wrong.
-            '-write_xing', '0',
-
-            targetFile
-          ]), false)
-
-          ffmpegSuccess = true
-        } catch(err) {
-          console.error(
-            `\x1b[33;1mFFmpeg failed (item skipped): ${item.name}\x1b[0m`
+        // Woo-hoo, using block labels for their intended purpose! (Maybe?)
+        downloadProcess: {
+          const downloader = makePowerfulDownloader(
+            getDownloaderFor(item.downloaderArg)
           )
-        }
 
-        if (ffmpegSuccess) {
+          const outputtedFile = await downloader(item.downloaderArg)
+
+          // If the return of the downloader is false, then the download
+          // failed.
+          if (outputtedFile === false) {
+            console.error(
+              `\x1b[33;1mDownload failed (item skipped): ${item.name}\x1b[0m`
+            )
+
+            break downloadProcess
+          }
+
+          try {
+            await promisifyProcess(spawn('ffmpeg', [
+              '-i', outputtedFile,
+
+              // A bug (in ffmpeg or macOS; not this) makes it necessary to have
+              // these options on macOS, otherwise the outputted file length is
+              // wrong.
+              '-write_xing', '0',
+
+              targetFile
+            ]), false)
+          } catch(err) {
+            console.error(
+              `\x1b[33;1mFFmpeg failed (item skipped): ${item.name}\x1b[0m`
+            )
+
+            break downloadProcess
+          }
+
           console.log('Added:', item.name)
           outPlaylist.push({name: item.name, downloaderArg: targetFile})
         }

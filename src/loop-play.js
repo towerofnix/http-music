@@ -95,8 +95,11 @@ class PlayController {
 
     while (this.nextTrack) {
       this.currentTrack = this.nextTrack
+
       await Promise.all([
-        this.playFile(nextFile),
+        // If the downloader returns false, the file failed to download; that
+        // means we'll just skip this track and wait for the next.
+        nextFile !== false ? this.playFile(nextFile) : Promise.resolve(),
         downloadNext()
       ])
     }
@@ -112,27 +115,6 @@ class PlayController {
       const downloader = getDownloaderFor(picked.downloaderArg)
       this.downloadController.download(downloader, picked.downloaderArg)
       return picked
-    }
-  }
-
-  async old_loopPlay() {
-    // Playing music in a loop isn't particularly complicated; essentially, we
-    // just want to keep picking and playing tracks until none is picked.
-
-    let nextTrack = await this.picker()
-
-    await this.downloadManager.download(getDownloaderFor(nextTrack), nextTrack)
-
-    let downloadNext
-
-    while (nextTrack) {
-      this.currentTrack = nextTrack
-
-      this.downloadManager.download(getDownloaderFor(nextTrack), nextTrack)
-
-      await this.playFile(nextTrack[1])
-
-      nextTrack = await this.picker()
     }
   }
 

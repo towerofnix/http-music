@@ -40,6 +40,7 @@ function makeYouTubeDownloader() {
 
     return promisifyProcess(spawn('youtube-dl', opts))
       .then(() => tempDir + '/dl.mp3')
+      .catch(err => false)
   }
 }
 
