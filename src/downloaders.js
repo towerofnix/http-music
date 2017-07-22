@@ -107,18 +107,6 @@ module.exports = {
   makeLocalDownloader,
   makePowerfulDownloader,
 
-  getDownloaderFor: downloaderType => {
-    if (downloaderType === 'http') {
-      return makeHTTPDownloader()
-    } else if (downloaderType === 'youtube') {
-      return makeYouTubeDownloader()
-    } else if (downloaderType === 'local') {
-      return makeLocalDownloader()
-    } else {
-      return null
-    }
-  },
-
   getDownloaderFor(arg) {
     if (arg.startsWith('http://') || arg.startsWith('https://')) {
       if (arg.includes('youtube.com')) {
