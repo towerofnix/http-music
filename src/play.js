@@ -6,6 +6,7 @@ const { promisify } = require('util')
 const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
+const commandExists = require('command-exists')
 const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
@@ -39,11 +40,22 @@ function clearConsoleLine() {
   process.stdout.write('\x1b[1K\r')
 }
 
+async function determineDefaultPlayer() {
+  if (await commandExists('mpv')) {
+    return 'mpv'
+  } else if (await commandExists('play')) {
+    return 'play'
+  } else {
+    return null
+  }
+}
+
 async function main(args) {
   let sourcePlaylist = null
   let activePlaylist = null
 
   let pickerType = 'shuffle'
+  let playerCommand = await determineDefaultPlayer()
   let playOpts = []
 
   // WILL play says whether the user has forced playback via an argument.
@@ -270,6 +282,17 @@ async function main(args) {
 
     '-selector': util => util.alias('-picker'),
 
+    '-player': function(util) {
+      // --player <player>
+      // Sets the shell command by which audio is played.
+      // Valid options include 'sox' (or 'play') and 'mpv'. Use whichever is
+      // installed on your system; mpv is the default.
+
+      playerCommand = util.nextArg()
+    },
+
+    '-player': util => util.alias('-player-command'),
+
     '-play-opts': function(util) {
       // --play-opts <opts>
       // Sets command line options passed to the `play` command.
@@ -301,11 +324,13 @@ async function main(args) {
       return
     }
 
+    console.log(`Using ${playerCommand} player.`)
+
     const {
       promise: playPromise,
       playController: play,
       downloadController
-    } = loopPlay(picker, playOpts)
+    } = loopPlay(picker, playerCommand, playOpts)
 
     // We're looking to gather standard input one keystroke at a time.
     // But that isn't *always* possible, e.g. when piping into the http-music

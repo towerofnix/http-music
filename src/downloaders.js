@@ -102,11 +102,25 @@ function makePowerfulDownloader(downloader, maxAttempts = 5) {
   }
 }
 
+function makeConverterDownloader(downloader, type) {
+  return async function(arg) {
+    const inFile = await downloader(arg)
+    const base = path.basename(inFile, path.extname(inFile))
+    const tempDir = tempy.directory()
+    const outFile = tempDir + base + '.' + type
+
+    await promisifyProcess(spawn('avconv', ['-i', inFile, outFile]), false)
+
+    return outFile
+  }
+}
+
 module.exports = {
   makeHTTPDownloader,
   makeYouTubeDownloader,
   makeLocalDownloader,
   makePowerfulDownloader,
+  makeConverterDownloader,
 
   getDownloaderFor(arg) {
     if (arg.startsWith('http://') || arg.startsWith('https://')) {

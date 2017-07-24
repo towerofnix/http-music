@@ -228,3 +228,10 @@ TODO: Make iTunes crawler take into account track numbers.
 
 TODO: Make a YouTube playlist crawler.
       (Done!)
+
+TODO: The filter utility function shouldn't work at all if it fails to find
+      what it's looking for.
+
+TODO: Make the filter/remove/keep options do a search of some sort.
+
+TODO: Make those options also work with tracks!

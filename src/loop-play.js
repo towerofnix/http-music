@@ -5,8 +5,9 @@
 const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
-const { getDownloaderFor } = require('./downloaders')
+const { getDownloaderFor, makeConverterDownloader } = require('./downloaders')
 const { getItemPathString } = require('./playlist-utils')
+const promisifyProcess = require('./promisify-process')
 
 class DownloadController extends EventEmitter {
   waitForDownload() {
@@ -65,11 +66,12 @@ class DownloadController extends EventEmitter {
 
 class PlayController {
   constructor(picker, downloadController) {
-    this.currentTrack = null
-    this.playOpts = []
-    this.process = null
     this.picker = picker
     this.downloadController = downloadController
+    this.playOpts = []
+    this.playerCommand = null
+    this.currentTrack = null
+    this.process = null
   }
 
   async loopPlay() {
@@ -112,13 +114,47 @@ class PlayController {
     if (picked === null) {
       return null
     } else {
-      const downloader = getDownloaderFor(picked.downloaderArg)
+      let downloader = getDownloaderFor(picked.downloaderArg)
+      downloader = makeConverterDownloader(downloader, 'wav')
       this.downloadController.download(downloader, picked.downloaderArg)
       return picked
     }
   }
 
   playFile(file) {
+    if (this.playerCommand === 'sox' || this.playerCommand === 'play') {
+      return this.playFileSoX(file)
+    } else if (this.playerCommand === 'mpv') {
+      return this.playFileMPV(file)
+    } else {
+      if (this.playerCommand) {
+        console.warn('Invalid player command given?', this.playerCommand)
+      } else {
+        console.warn('No player command given?')
+      }
+
+      return Promise.resolve()
+    }
+  }
+
+  playFileSoX(file) {
+    // SoX's play command is useful for systems that don't have MPV. SoX is
+    // much easier to install (and probably more commonly installed, as well).
+    // You don't get keyboard controls such as seeking or volume adjusting
+    // with SoX, though.
+
+    this.process = spawn('play', [
+      ...this.playOpts,
+      file
+    ])
+
+    return promisifyProcess(this.process)
+  }
+
+  playFileMPV(file) {
+    // The more powerful MPV player. MPV is virtually impossible for a human
+    // being to install; if you're having trouble with it, try the SoX player.
+
     this.fifo = new FIFO()
     this.process = spawn('mpv', [
       '--input-file=' + this.fifo.path,
@@ -194,7 +230,7 @@ class PlayController {
   }
 
   sendCommand(command) {
-    if (this.fifo) {
+    if (this.playerCommand === 'mpv' && this.fifo) {
       this.fifo.write(command)
     }
   }
@@ -235,15 +271,19 @@ class PlayController {
   }
 }
 
-module.exports = function loopPlay(picker, playOpts = []) {
+module.exports = function loopPlay(
+  picker, playerCommand = 'mpv', playOpts = []
+) {
   // Looping play function. Takes one argument, the "picker" function,
   // which returns a track to play. Stops when the result of the picker
   // function is null (or similar). Optionally takes a second argument
   // used as arguments to the `play` process (before the file name).
 
   const downloadController = new DownloadController()
+
   const playController = new PlayController(picker, downloadController)
-  playController.playOpts = playOpts
+
+  Object.assign(playController, {playerCommand, playOpts})
 
   const promise = playController.loopPlay()
 

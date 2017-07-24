@@ -10,8 +10,7 @@ http-music-play - plays audio from a playlist file
 .SH DESCRIPTION
 Plays audio referenced from a playlist file.
 Tracks selected using a "picker" (see \fB--picker\fR) and retrieved using a "downloader" (see \fB--downloader\fR).
-Downloaded tracks are played with the \fBmpv\fR process.
-(As such, \fBmpv\fR is a required dependency for http-music to play anything.)
+Downloaded tracks are played with either the \fBmpv\fR (default) or \fBplay\fR (from SoX) command.
 
 
 .SH KEYBOARD CONTROLS
@@ -19,11 +18,13 @@ Downloaded tracks are played with the \fBmpv\fR process.
 .BR <left-arrow>
 Skips backwards 5 seconds in the currently playing track; hold shift to skip by
 30 seconds.
+(Requires MPV player.)
 
 .TP
 .BR <right-arrow>
 Skips forwards 5 seconds in the currently playing track; hold shift to skip by
 30 seconds.
+(Requires MPV player.)
 
 .TP
 .BR <up-arrow>
@@ -31,14 +32,17 @@ Turns the volume up a 10%-notch.
 Unfortunately, at present, the volume setting is NOT kept across tracks.
 You'll need to adjust your audio volume whenever a new song starts.
 (If possible, it might be better just to opt for changing the system volume.)
+(Requires MPV player.)
 
 .TP
 .BR <down-arrow>
 Turns the volume down 10%.
+(Requires MPV player.)
 
 .TP
 .BR <space>
 Pauses (or resumes) playback.
+(Requires MPV player.)
 
 .TP
 .BR i
@@ -101,6 +105,13 @@ The default is \fBshuffle\fR.
 .TP
 .BR \-p ", " \-\-play
 Forces the playlist to actually play, regardless of options such as \fB\-\-list\fR. See also \fB\-\-no\-play\fR.
+
+.TP
+.BR \-\-player " \fIplayer"
+Selects the mode by which audio is played.
+Valid options include "mpv" and "sox" (or "play").
+Most playback controls only work with the "mpv" player, but the "sox"/"play" player is typically much more easy to (and commonly) install than "mpv".
+The default is \fBmpv\fR, but \fBsox\fR will be used if mpv is not installed.
 
 .TP
 .BR \-\-play\-opts
