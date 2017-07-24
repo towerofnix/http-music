@@ -6,7 +6,7 @@ const { promisify } = require('util')
 const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
-const commandExists = require('command-exists')
+const npmCommandExists = require('command-exists')
 const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
@@ -38,6 +38,17 @@ function downloadPlaylistFromOptionValue(arg) {
 
 function clearConsoleLine() {
   process.stdout.write('\x1b[1K\r')
+}
+
+async function commandExists(command) {
+  // When the command-exists module sees that a given command doesn't exist, it
+  // throws an error instead of returning false, which is not what we want.
+
+  try {
+    return await npmCommandExists(command)
+  } catch(err) {
+    return false
+  }
 }
 
 async function determineDefaultPlayer() {
