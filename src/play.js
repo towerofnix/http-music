@@ -291,8 +291,6 @@ async function main(args) {
       playerCommand = util.nextArg()
     },
 
-    '-player': util => util.alias('-player-command'),
-
     '-play-opts': function(util) {
       // --play-opts <opts>
       // Sets command line options passed to the `play` command.
