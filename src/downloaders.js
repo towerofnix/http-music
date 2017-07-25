@@ -107,7 +107,7 @@ function makeConverterDownloader(downloader, type) {
     const inFile = await downloader(arg)
     const base = path.basename(inFile, path.extname(inFile))
     const tempDir = tempy.directory()
-    const outFile = tempDir + base + '.' + type
+    const outFile = `${tempDir}/${base}.${type}`
 
     await promisifyProcess(spawn('avconv', ['-i', inFile, outFile]), false)
 
