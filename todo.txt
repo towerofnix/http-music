@@ -235,3 +235,8 @@ TODO: The filter utility function shouldn't work at all if it fails to find
 TODO: Make the filter/remove/keep options do a search of some sort.
 
 TODO: Make those options also work with tracks!
+
+TODO: The URL 'http://somesite.com/youtube.com.mp3' would probably
+      automatically assume the YouTube downloader. Instead of checking for the
+      string 'youtube.com' included in the downloader arg, check if it is a
+      valid URL and that the URL's domain is 'youtube.com'.

@@ -122,6 +122,14 @@ module.exports = {
   makePowerfulDownloader,
   makeConverterDownloader,
 
+  byName: {
+    'http': makeHTTPDownloader,
+    'local': makeLocalDownloader,
+    'file': makeLocalDownloader,
+    'youtube': makeYouTubeDownloader,
+    'youtube-dl': makeYouTubeDownloader
+  },
+
   getDownloaderFor(arg) {
     if (arg.startsWith('http://') || arg.startsWith('https://')) {
       if (arg.includes('youtube.com')) {
