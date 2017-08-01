@@ -30,7 +30,23 @@ function findChild(grouplike, name) {
   return grouplike.items.find(x => x.name === name)
 }
 
-async function crawl(libraryXML) {
+let NO_LIBRARY_SYMBOL = Symbol('No library')
+
+async function crawl(
+  libraryPath = `${process.env.HOME}/Music/iTunes/iTunes Music Library.xml`
+) {
+  let libraryXML
+
+  try {
+    libraryXML = await readFile(libraryPath)
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw NO_LIBRARY_SYMBOL
+    } else {
+      throw err
+    }
+  }
+
   const document = new xmldoc.XmlDocument(libraryXML)
 
   const libraryDict = document.children.find(child => child.name === 'dict')
@@ -94,16 +110,12 @@ async function crawl(libraryXML) {
 }
 
 async function main(args) {
-  const libraryPath = args[0] || (
-    `${process.env.HOME}/Music/iTunes/iTunes Music Library.xml`
-  )
-
-  let library
+  let playlist
 
   try {
-    library = await readFile(libraryPath)
+    playlist = await crawl(args[0])
   } catch(err) {
-    if (err.code === 'ENOENT') {
+    if (err === NO_LIBRARY_SYMBOL) {
       console.error(
         "It looks like you aren't sharing the iTunes Library XML file."
       )
@@ -125,12 +137,10 @@ async function main(args) {
     }
   }
 
-  const playlist = await crawl(library)
-
   console.log(JSON.stringify(playlist, null, 2))
 }
 
-module.exports = main
+module.exports = {main, crawl}
 
 if (require.main === module) {
   main(process.argv.slice(2))

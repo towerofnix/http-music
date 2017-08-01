@@ -240,3 +240,8 @@ TODO: The URL 'http://somesite.com/youtube.com.mp3' would probably
       automatically assume the YouTube downloader. Instead of checking for the
       string 'youtube.com' included in the downloader arg, check if it is a
       valid URL and that the URL's domain is 'youtube.com'.
+
+TODO: Figure out when to process.exit(1). In cli.js?
+
+TODO: Change usages of "/example/path" to a more specific "/path/to/playlist"
+      (for example).
