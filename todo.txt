@@ -250,3 +250,8 @@ TODO: Support smart playlists right inside of play - and ideally any other
       usage, e.g. download-playlist. For now the user can just run
       smart-playlist, save the result, and load that in whatever command
       they're using.
+
+TODO: Markdown documentation? Man pages are nice, but aren't really all that
+      user-friendly (citation needed); for example you can't easily read them
+      online. (Whereas Markdown documents are easily viewed online, and aren't
+      hard to read by hand, e.g. with `less doc/foo.md`.)
