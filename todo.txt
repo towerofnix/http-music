@@ -235,3 +235,23 @@ TODO: The filter utility function shouldn't work at all if it fails to find
 TODO: Make the filter/remove/keep options do a search of some sort.
 
 TODO: Make those options also work with tracks!
+
+TODO: The URL 'http://somesite.com/youtube.com.mp3' would probably
+      automatically assume the YouTube downloader. Instead of checking for the
+      string 'youtube.com' included in the downloader arg, check if it is a
+      valid URL and that the URL's domain is 'youtube.com'.
+
+TODO: Figure out when to process.exit(1). In cli.js?
+
+TODO: Change usages of "/example/path" to a more specific "/path/to/playlist"
+      (for example).
+
+TODO: Support smart playlists right inside of play - and ideally any other
+      usage, e.g. download-playlist. For now the user can just run
+      smart-playlist, save the result, and load that in whatever command
+      they're using.
+
+TODO: Markdown documentation? Man pages are nice, but aren't really all that
+      user-friendly (citation needed); for example you can't easily read them
+      online. (Whereas Markdown documents are easily viewed online, and aren't
+      hard to read by hand, e.g. with `less doc/foo.md`.)

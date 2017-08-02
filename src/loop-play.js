@@ -5,7 +5,10 @@
 const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
-const { getDownloaderFor, makeConverterDownloader } = require('./downloaders')
+const {
+  getDownloaderFor, makeConverterDownloader,
+  byName: downloadersByName
+} = require('./downloaders')
 const { getItemPathString } = require('./playlist-utils')
 const promisifyProcess = require('./promisify-process')
 
@@ -114,7 +117,22 @@ class PlayController {
     if (picked === null) {
       return null
     } else {
-      let downloader = getDownloaderFor(picked.downloaderArg)
+      let downloader
+
+      if (picked.downloader) {
+        downloader = downloadersByName[picked.downloader]()
+
+        if (!downloader) {
+          console.error(
+            `Invalid downloader for track ${picked.name}:`, downloader
+          )
+
+          return false
+        }
+      } else {
+        downloader = getDownloaderFor(picked.downloaderArg)
+      }
+
       downloader = makeConverterDownloader(downloader, 'wav')
       this.downloadController.download(downloader, picked.downloaderArg)
       return picked

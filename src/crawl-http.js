@@ -195,7 +195,7 @@ async function main(args) {
   console.log(JSON.stringify(downloadedPlaylist, null, 2))
 }
 
-module.exports = main
+module.exports = {main, crawl}
 
 if (require.main === module) {
   main(process.argv.slice(2))

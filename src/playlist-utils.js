@@ -56,6 +56,16 @@ function updateGroupFormat(group) {
     // isn't a string..
     if (typeof item[1] === 'string' || item.downloaderArg) {
       item = updateTrackFormat(item)
+
+      // TODO: Should this also apply to groups? Is recursion good? Probably
+      // not!
+      //
+      // TODO: How should saving/serializing handle this? For now it just saves
+      // the result, after applying. (I.e., "apply": {"foo": "baz"} will save
+      // child tracks with {"foo": "baz"}.)
+      if (groupObj.apply) {
+        Object.assign(item, groupObj.apply)
+      }
     } else {
       item = updateGroupFormat(item)
     }

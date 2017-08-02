@@ -4,6 +4,8 @@
 // maxlistenersexceededwarning.
 process.on('warning', e => console.warn(e.stack))
 
+const { getCrawlerByName } = require('./crawlers')
+
 async function main(args) {
   let script
 
@@ -13,18 +15,21 @@ async function main(args) {
     return
   }
 
-  switch (args[0]) {
-    case 'play': script = require('./play'); break
-    case 'crawl-http': script = require('./crawl-http'); break
-    case 'crawl-local': script = require('./crawl-local'); break
-    case 'crawl-itunes': script = require('./crawl-itunes'); break
-    case 'crawl-youtube': script = require('./crawl-youtube'); break
-    case 'download-playlist': script = require('./download-playlist'); break
+  const module = getCrawlerByName(args[0])
 
-    default:
-      console.error(`Invalid command "${args[0]}" provided.`)
-      console.error("Try 'man http-music'?")
-      return
+  if (module) {
+    script = module.main
+  } else {
+    switch (args[0]) {
+      case 'play': script = require('./play'); break
+      case 'download-playlist': script = require('./download-playlist'); break
+      case 'smart-playlist': script = require('./smart-playlist'); break
+
+      default:
+        console.error(`Invalid command "${args[0]}" provided.`)
+        console.error("Try 'man http-music'?")
+        return
+    }
   }
 
   await script(args.slice(1))

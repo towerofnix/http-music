@@ -41,7 +41,7 @@ async function main(args) {
   }
 }
 
-module.exports = main
+module.exports = {main, crawl}
 
 if (require.main === module) {
   main(process.argv.slice(2))
