@@ -77,7 +77,7 @@ function crawl(absURL, opts = {}, internals = {}) {
             verboseLog("[Dir] " + linkURL)
 
             return crawl(linkURL, opts, Object.assign({}, internals))
-              .then(items => ({name, items}))
+              .then(({ items }) => ({name, items}))
           } else {
             // It's a file!
 
