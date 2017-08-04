@@ -153,6 +153,8 @@ async function main(args) {
     return
   }
 
+  // Should be 'topURL' or something (also change 'absURL'). We don't want to
+  // shadow 'const url = require(..)'.
   const url = args[0]
 
   let maxDownloadAttempts = 5
