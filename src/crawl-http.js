@@ -145,7 +145,7 @@ async function main(args) {
     return
   }
 
-  let url = args[0]
+  const url = args[0]
 
   let maxDownloadAttempts = 5
   let verbose = false
