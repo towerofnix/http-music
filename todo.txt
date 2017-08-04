@@ -255,3 +255,8 @@ TODO: Markdown documentation? Man pages are nice, but aren't really all that
       user-friendly (citation needed); for example you can't easily read them
       online. (Whereas Markdown documents are easily viewed online, and aren't
       hard to read by hand, e.g. with `less doc/foo.md`.)
+
+TODO: Handle avconv failing (probably handle downloader rejections from within
+      DownloadController). Less important now that only music file extensions
+      are loaded, but still relevant (for old playlists which may contain
+      .DS_Stores or album cover arts, etc).
