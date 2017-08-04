@@ -245,6 +245,14 @@ function getPlaylistTreeString(playlist, showTracks = false) {
   return recursive(playlist)
 }
 
+function getItemPath(item) {
+  if (item[parentSymbol]) {
+    return [...getItemPath(item[parentSymbol]), item]
+  } else {
+    return [item]
+  }
+}
+
 function getItemPathString(item) {
   // Gets the playlist path of an item by following its parent chain.
   // Returns a string in format Foo/Bar/Baz, where Foo and Bar are group
@@ -286,7 +294,7 @@ module.exports = {
   filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
-  getItemPathString,
+  getItemPath, getItemPathString,
   parsePathString,
   isGroup, isTrack
 }
