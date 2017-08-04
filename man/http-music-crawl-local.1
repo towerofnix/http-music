@@ -1,0 +1,21 @@
+.TH http-music-crawl-local 1
+
+.SH NAME
+http-music-crawl-local - create a playlist from files on your own computer
+
+.SH SYNOPSIS
+.B http-music-crawl-local
+<path to top music directory>
+[opts...]
+
+.SH DESCRIPTION
+\fBhttp-music-crawl-local\fR is a command line utility which recursively crawls a given directory and creates a playlist from found items (with groups determined by crawled directories).
+It attempts to only add music files (mp3, ogg, etc) to the playlist (see \fB--extensions\fR).
+
+.SH OPTIONS
+.TP
+.BR -e ", " --extensions ", " --exts
+Sets file extensions that are considered music tracks to be added to the result playlist.
+\fB<extensions>\fR is a comma-separated list of extensions, not including the "dots"; e.g. \fR'mp3,wav'\fB.
+A default list of extensions exists but is not *extremely* extensive.
+Use --extensions when needed!
