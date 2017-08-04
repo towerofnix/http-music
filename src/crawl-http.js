@@ -47,7 +47,15 @@ function crawl(absURL, opts = {}, internals = {}) {
         const links = getHTMLLinks(text)
 
         return Promise.all(links.map(link => {
-          const [ name, href ] = link
+          let [ name, href ] = link
+
+          // If the name (that's the content inside of <a>..</a>) ends with a
+          // slash, that's probably just an artifact of a directory lister;
+          // not actually part of the intended content. So we remove it!
+          if (name.endsWith('/')) {
+            name = name.slice(0, -1)
+          }
+
           const urlObj = new url.URL(href, absURL)
           const linkURL = url.format(urlObj)
 
@@ -77,7 +85,7 @@ function crawl(absURL, opts = {}, internals = {}) {
             verboseLog("[Dir] " + linkURL)
 
             return crawl(linkURL, opts, Object.assign({}, internals))
-              .then(items => ({name, items}))
+              .then(({ items }) => ({name, items}))
           } else {
             // It's a file!
 
