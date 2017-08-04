@@ -5,12 +5,18 @@
 const fs = require('fs')
 const path = require('path')
 const naturalSort = require('node-natural-sort')
+const processArgv = require('./process-argv')
 
 const { promisify } = require('util')
 const readDir = promisify(fs.readdir)
 const stat = promisify(fs.stat)
 
-function crawl(dirPath) {
+function crawl(dirPath, extensions = [
+  // This list isn't very extensive, and can be customized via the
+  // --extensions (or --exts, -e) option.
+  'ogg', 'oga',
+  'wav', 'mp3', 'mp4', 'm4a', 'aac'
+]) {
   return readDir(dirPath).then(items => {
     items.sort(naturalSort())
 
@@ -19,26 +25,59 @@ function crawl(dirPath) {
 
       return stat(itemPath).then(stats => {
         if (stats.isDirectory()) {
-          return crawl(itemPath)
-            .then(group => Object.assign(group, {name: item}))
+          return crawl(itemPath, extensions)
+            .then(group => Object.assign({name: item}, group))
         } else if (stats.isFile()) {
-          const track = {name: item, downloaderArg: itemPath}
-          return track
+          // Extname returns a string starting with a dot; we don't want the
+          // dot, so we slice it off of the front.
+          const ext = path.extname(item).slice(1)
+
+          if (extensions.includes(ext)) {
+            const track = {name: item, downloaderArg: itemPath}
+            return track
+          } else {
+            return null
+          }
         }
       })
     }))
-  }).then(items => ({items}))
+  }).then(items => items.filter(Boolean))
+    .then(filteredItems => ({items: filteredItems}))
 }
 
 async function main(args) {
   if (args.length === 0) {
-    console.log("Usage: crawl-local /example/path")
-  } else {
-    const path = args[0]
-
-    const res = await crawl(path)
-    console.log(JSON.stringify(res, null, 2))
+    console.log("Usage: crawl-local /example/path [opts]")
+    return
   }
+
+  const path = args[0]
+
+  let extensions
+
+  await processArgv(args.slice(1), {
+    '-extensions': function(util) {
+      // --extensions <extensions>  (alias: --exts, -e)
+      // Sets file extensions that are considered music tracks to be added to
+      // the result playlist.
+      // <extensions> is a comma-separated list of extensions, not including
+      // the "dots"; e.g. 'mp3,wav'.
+      // A default list of extensions exists but is not *extremely* extensive.
+      // (Use --extensions when needed!)
+
+      extensions = util.nextArg().split(',')
+
+      // *Somebody*'s going to start the extensions with dots; may as well be
+      // careful for that!
+      extensions = extensions.map(e => e.startsWith('.') ? e.slice(1) : e)
+    },
+
+    '-exts': util => util.alias('-extensions'),
+    'e': util => util.alias('-extensions')
+  })
+
+  const res = await crawl(path, extensions)
+  console.log(JSON.stringify(res, null, 2))
 }
 
 module.exports = {main, crawl}
