@@ -260,3 +260,4 @@ TODO: Handle avconv failing (probably handle downloader rejections from within
       DownloadController). Less important now that only music file extensions
       are loaded, but still relevant (for old playlists which may contain
       .DS_Stores or album cover arts, etc).
+      (Done!)

@@ -21,8 +21,17 @@ class DownloadController extends EventEmitter {
     // been canceled (see cancel).  You can also listen for the
     // 'downloaded' event instead.
 
-    return new Promise(resolve => {
-      this.once('downloaded', file => resolve(file))
+    return new Promise((resolve, reject) => {
+      const onDownloaded = file => { clear(); resolve(file) }
+      const onErrored = err => { clear(); reject(err) }
+
+      const clear = () => {
+        this.removeListener('downloaded', onDownloaded)
+        this.removeListener('errored', onErrored)
+      }
+
+      this.once('downloaded', onDownloaded)
+      this.once('errored', onErrored)
     })
   }
 
@@ -44,7 +53,14 @@ class DownloadController extends EventEmitter {
 
     this.once('canceled', this._handleCanceled)
 
-    const file = await downloader(arg)
+    let file
+
+    try {
+      file = await downloader(arg)
+    } catch(err) {
+      this.emit('errored', err)
+      return
+    }
 
     if (!canceled) {
       this.emit('downloaded', file)
@@ -80,19 +96,24 @@ class PlayController {
   async loopPlay() {
     let nextFile
 
-    // Null would imply there's NO up-next track, but really
-    // we just haven't set it yet.
+    // Null would imply there's NO up-next track, but really we just haven't
+    // set it yet.
     this.nextTrack = undefined
 
-    let downloadNext = () => {
+    const downloadNext = async () => {
       this.nextTrack = this.startNextDownload()
       if (this.nextTrack !== null) {
-        return this.downloadController.waitForDownload().then(file => {
-          nextFile = file
-        })
+        try {
+          nextFile = await this.downloadController.waitForDownload()
+        } catch(err) {
+          console.warn(
+            "\x1b[31mFailed to download (or convert) track \x1b[1m" +
+            getItemPathString(this.nextTrack) + "\x1b[0m"
+          )
+          await downloadNext()
+        }
       } else {
         nextFile = null
-        return Promise.resolve()
       }
     }
 
