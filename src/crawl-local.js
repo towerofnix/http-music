@@ -65,8 +65,7 @@ async function main(args) {
       // --extensions <extensions>  (alias: --exts, -e)
       // Sets file extensions that are considered music tracks to be added to
       // the result playlist.
-      // <extensions> is a comma-separated list of extensions, not including
-      // the "dots"; e.g. 'mp3,wav'.
+      // <extensions> is a comma-separated list of extensions, e.g. 'mp3,wav'.
       // A default list of extensions exists but is not *extremely* extensive.
       // (Use --extensions when needed!)
 
