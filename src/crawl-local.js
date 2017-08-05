@@ -33,7 +33,12 @@ function crawl(dirPath, extensions = [
           const ext = path.extname(item).slice(1)
 
           if (extensions.includes(ext)) {
-            const track = {name: item, downloaderArg: itemPath}
+            // The name of the track doesn't include the file extension; a user
+            // probably wouldn't add the file extensions to a hand-written
+            // playlist, or want them in an auto-generated one.
+            const basename = path.basename(item, path.extname(item))
+
+            const track = {name: basename, downloaderArg: itemPath}
             return track
           } else {
             return null
