@@ -198,6 +198,7 @@ TODO: In the playlist downloader, it would be nice if we skipped past existing
       which makes up 10%, and then the rest would still be downloaded, which
       take up 70%. It would be better if we went from 0%, skipped ALL complete
       tracks to get to 90%, then did the 10% for the downloaded tracks.
+      (Done!)
 
 TODO: Tracks should be able to contain more data than the title and downloader
       argument, by being stored as objects instead of arrays. This would also

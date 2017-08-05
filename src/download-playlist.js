@@ -24,13 +24,20 @@ async function downloadCrawl(playlist, topOut = './out/') {
   const flat = flattenGrouplike(playlist)
   let doneCount = 0
 
-  const status = function() {
+  const showStatus = function() {
     const total = flat.items.length
     const percent = Math.trunc(doneCount / total * 10000) / 100
     console.log(
       `\x1b[1mDownload crawler - ${percent}% completed ` +
       `(${doneCount}/${total} tracks)\x1b[0m`)
   }
+
+  // First off, we go through all tracks and see which are already downloaded.
+  // We store the ones that *aren't* downloaded in an 'itemsToDownload' array,
+  // which we use later.
+  const itemsToDownload = []
+
+  const targetFileSymbol = Symbol('Target file')
 
   for (let item of flat.items) {
     const parentGroups = getItemPath(item).slice(0, -1)
@@ -39,10 +46,14 @@ async function downloadCrawl(playlist, topOut = './out/') {
       return a + '/' + sanitize(b.name)
     }, topOut) + '/'
 
-    await mkdirp(dir)
-
     const base = path.basename(item.name, path.extname(item.name))
     const targetFile = dir + sanitize(base) + '.mp3'
+
+    // We'll be using the target file later when we download all tracks, so
+    // we save that right on the playlist item.
+    item[targetFileSymbol] = targetFile
+
+    await mkdirp(dir)
 
     // If we've already downloaded a file at some point in previous time,
     // there's no need to download it again!
@@ -61,9 +72,16 @@ async function downloadCrawl(playlist, topOut = './out/') {
     if (match) {
       console.log(`\x1b[32;2mAlready downloaded: ${targetFile}\x1b[0m`)
       doneCount++
-      status()
-      continue
+      showStatus()
+    } else {
+      itemsToDownload.push(item)
     }
+  }
+
+  // Now that we've decided on which items we need to download, we go through
+  // and download all of them.
+  for (let item of itemsToDownload) {
+    const targetFile = item[targetFileSymbol]
 
     console.log(
       `\x1b[2mDownloading: ${item.name} - ${item.downloaderArg}` +
@@ -89,6 +107,8 @@ async function downloadCrawl(playlist, topOut = './out/') {
       }
 
       try {
+        console.log(targetFile)
+
         await promisifyProcess(spawn('ffmpeg', [
           '-i', outputtedFile,
 
@@ -106,13 +126,11 @@ async function downloadCrawl(playlist, topOut = './out/') {
 
         break downloadProcess
       }
-
-      console.log('Added:', item.name)
     }
 
     doneCount++
 
-    status()
+    showStatus()
   }
 }
 
