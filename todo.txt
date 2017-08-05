@@ -246,6 +246,7 @@ TODO: Figure out when to process.exit(1). In cli.js?
 
 TODO: Change usages of "/example/path" to a more specific "/path/to/playlist"
       (for example).
+      (Done!)
 
 TODO: Support smart playlists right inside of play - and ideally any other
       usage, e.g. download-playlist. For now the user can just run
