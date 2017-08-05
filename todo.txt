@@ -220,6 +220,7 @@ TODO: Figure out how man pages work, and update the syntax in those files.
       more consistent, and figure out when to use '\-' or '-'.
 
 TODO: Fix skip up-next..!
+      (Done!)
 
 TODO: Make iTunes crawler prefer album artist over artist.
       (Done!)

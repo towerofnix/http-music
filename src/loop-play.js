@@ -1,5 +1,11 @@
 // This isn't actually the code for the `play` command! That's in `play.js`.
 
+// NOTE TO FUTURE SELF AND READERS:
+// Please be careful to discern the target of methods such as waitForDownload.
+// DownloadController and PlayController are messes and have lots of functions
+// of the same name but completely different purposes. (Also keep an eye out
+// for similarly/identically-named events between the two classes.)
+
 'use strict'
 
 const { spawn } = require('child_process')
@@ -83,15 +89,16 @@ class DownloadController extends EventEmitter {
   }
 }
 
-class PlayController {
+class PlayController extends EventEmitter {
   constructor(picker, downloadController) {
+    super()
+
     this.picker = picker
     this.downloadController = downloadController
     this.playOpts = []
     this.playerCommand = null
     this.currentTrack = null
     this.process = null
-    this.downloadProcess = null
   }
 
   async loopPlay() {
@@ -99,66 +106,76 @@ class PlayController {
     // set it yet.
     this.nextTrack = undefined
 
-    await (this.downloadProcess = this.downlold())
+    this.startNextDownload()
+
+    await this.waitForDownload()
 
     while (this.nextTrack) {
       this.currentTrack = this.nextTrack
 
-      this.downlold()
+      this.startNextDownload()
 
-      // Maybe Promise.all isn't good here? Rather, wait for play-file then
-      // downlold? Or - we should have some "downlolder" promise, set by
-      // downlold.
       if (this.nextFile) {
         await this.playFile(this.nextFile)
       }
 
-      await this.downloadProcess
+      await this.waitForDownload()
     }
   }
 
-  async downlold() {
-    this.nextTrack = this.startNextDownload()
-
-    try {
-      this.nextFile = await this.downloadController.waitForDownload()
-    } catch(err) {
-      console.warn(
-        "\x1b[31mFailed to download (or convert) track \x1b[1m" +
-        getItemPathString(this.nextTrack) + "\x1b[0m"
-      )
-
-      await (this.downloadProcess = this.downlold())
-    }
+  waitForDownload() {
+    return new Promise(resolve => {
+      if (this.isDownloading) {
+        this.once('downloaded', () => resolve())
+      } else {
+        resolve()
+      }
+    })
   }
 
   startNextDownload() {
-    // TODO: Handle/test null return from picker.
+    this.isDownloading = true
+
     const picked = this.picker()
+    this.nextTrack = picked
 
-    if (picked === null) {
+    if (!picked) {
       return null
-    } else {
-      let downloader
-
-      if (picked.downloader) {
-        downloader = downloadersByName[picked.downloader]()
-
-        if (!downloader) {
-          console.error(
-            `Invalid downloader for track ${picked.name}:`, downloader
-          )
-
-          return false
-        }
-      } else {
-        downloader = getDownloaderFor(picked.downloaderArg)
-      }
-
-      downloader = makeConverterDownloader(downloader, 'wav')
-      this.downloadController.download(downloader, picked.downloaderArg)
-      return picked
     }
+
+    let downloader
+
+    if (picked.downloader) {
+      downloader = downloadersByName[picked.downloader]()
+
+      if (!downloader) {
+        console.error(
+          `Invalid downloader for track ${picked.name}:`, downloader
+        )
+
+        return false
+      }
+    } else {
+      downloader = getDownloaderFor(picked.downloaderArg)
+    }
+
+    downloader = makeConverterDownloader(downloader, 'wav')
+    this.downloadController.download(downloader, picked.downloaderArg)
+
+    this.downloadController.waitForDownload()
+      .then(file => {
+        this.isDownloading = false
+        this.nextFile = file
+        this.emit('downloaded')
+      })
+      .catch(() => {
+        console.warn(
+          "\x1b[31mFailed to download (or convert) track \x1b[1m" +
+          getItemPathString(this.nextTrack) + "\x1b[0m"
+        )
+
+        this.startNextDownload()
+      })
   }
 
   playFile(file) {

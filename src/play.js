@@ -409,7 +409,7 @@ async function main(args) {
         // TODO: It would be nice to have this as a method of
         // PlayController.
         // Double TODO: This doesn't actually work!!
-        play.downloadProcess = play.downlold()
+        play.startNextDownload()
       }
 
       if (
