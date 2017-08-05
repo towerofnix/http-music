@@ -6,7 +6,7 @@ It's also decently powerful.
 ## Installation
 
 ```bash
-$ git clone https://github.com/liam4/http-music
+$ git clone https://github.com/towerofnix/http-music
 $ cd http-music
 $ npm install
 
