@@ -91,43 +91,44 @@ class PlayController {
     this.playerCommand = null
     this.currentTrack = null
     this.process = null
+    this.downloadProcess = null
   }
 
   async loopPlay() {
-    let nextFile
-
     // Null would imply there's NO up-next track, but really we just haven't
     // set it yet.
     this.nextTrack = undefined
 
-    const downloadNext = async () => {
-      this.nextTrack = this.startNextDownload()
-      if (this.nextTrack !== null) {
-        try {
-          nextFile = await this.downloadController.waitForDownload()
-        } catch(err) {
-          console.warn(
-            "\x1b[31mFailed to download (or convert) track \x1b[1m" +
-            getItemPathString(this.nextTrack) + "\x1b[0m"
-          )
-          await downloadNext()
-        }
-      } else {
-        nextFile = null
-      }
-    }
-
-    await downloadNext()
+    await (this.downloadProcess = this.downlold())
 
     while (this.nextTrack) {
       this.currentTrack = this.nextTrack
 
-      await Promise.all([
-        // If the downloader returns false, the file failed to download; that
-        // means we'll just skip this track and wait for the next.
-        nextFile !== false ? this.playFile(nextFile) : Promise.resolve(),
-        downloadNext()
-      ])
+      this.downlold()
+
+      // Maybe Promise.all isn't good here? Rather, wait for play-file then
+      // downlold? Or - we should have some "downlolder" promise, set by
+      // downlold.
+      if (this.nextFile) {
+        await this.playFile(this.nextFile)
+      }
+
+      await this.downloadProcess
+    }
+  }
+
+  async downlold() {
+    this.nextTrack = this.startNextDownload()
+
+    try {
+      this.nextFile = await this.downloadController.waitForDownload()
+    } catch(err) {
+      console.warn(
+        "\x1b[31mFailed to download (or convert) track \x1b[1m" +
+        getItemPathString(this.nextTrack) + "\x1b[0m"
+      )
+
+      await (this.downloadProcess = this.downlold())
     }
   }
 
