@@ -252,7 +252,7 @@ TODO: Change usages of "/example/path" to a more specific "/path/to/playlist"
 TODO: Support smart playlists right inside of play - and ideally any other
       usage, e.g. download-playlist. For now the user can just run
       smart-playlist, save the result, and load that in whatever command
-      they're using.
+      they're using. (`play` supported.)
 
 TODO: Markdown documentation? Man pages are nice, but aren't really all that
       user-friendly (citation needed); for example you can't easily read them
@@ -264,3 +264,6 @@ TODO: Handle avconv failing (probably handle downloader rejections from within
       are loaded, but still relevant (for old playlists which may contain
       .DS_Stores or album cover arts, etc).
       (Done!)
+
+TODO: Delete temporary files when done with them - seriously! http-music alone
+      filled up a good 9GB of disk space, solely on temporary music files.

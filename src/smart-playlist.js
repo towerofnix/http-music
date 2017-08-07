@@ -8,29 +8,31 @@ const readFile = promisify(fs.readFile)
 
 async function processItem(item) {
   // Object.assign is used so that we keep original properties, e.g. "name"
-  // or "apply".
+  // or "apply". (It's also used so we return copies of original objects.)
 
-  if ('items' in item) {
-    return Object.assign(item, {
-      items: await Promise.all(item.items.map(processItem))
-    })
-  } else if ('source' in item) {
+  if ('source' in item) {
     const [ name, ...args ] = item.source
 
     const crawlModule = getCrawlerByName(name)
 
     if (crawlModule === null) {
       console.error(`No crawler by name ${name} - skipped item:`, item)
-      return Object.assign(item, {failed: true})
+      return Object.assign({}, item, {failed: true})
     }
 
     const { crawl } = crawlModule
 
-    return Object.assign(item, await crawl(...args))
+    return Object.assign({}, item, await crawl(...args))
+  } else if ('items' in item) {
+    return Object.assign({}, item, {
+      items: await Promise.all(item.items.map(processItem))
+    })
   } else {
-    return item
+    return Object.assign({}, item)
   }
 }
+
+module.exports = processItem
 
 async function main(opts) {
   // TODO: Error when no file is given

@@ -10,6 +10,7 @@ const npmCommandExists = require('command-exists')
 const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
+const processSmartPlaylist = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
@@ -95,13 +96,16 @@ async function main(args) {
 
     const openedPlaylist = updatePlaylistFormat(JSON.parse(playlistText))
 
+    // We also want to de-smart-ify (stupidify? - simplify?) the playlist.
+    const processedPlaylist = await processSmartPlaylist(openedPlaylist)
+
     // The active playlist is a clone of the source playlist; after all it's
     // quite possible we'll be messing with the value of the active playlist,
     // and we don't want to reflect those changes in the source playlist.
-    sourcePlaylist = openedPlaylist
-    activePlaylist = clone(openedPlaylist)
+    sourcePlaylist = processedPlaylist
+    activePlaylist = clone(processedPlaylist)
 
-    processArgv(openedPlaylist.options, optionFunctions)
+    processArgv(processedPlaylist.options, optionFunctions)
   }
 
   function requiresOpenPlaylist() {
