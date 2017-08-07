@@ -14,6 +14,13 @@ const { promisify } = require('util')
 const writeFile = promisify(fs.writeFile)
 const copyFile = fse.copy
 
+// Pseudo-tempy!!
+/*
+const tempy = {
+  directory: () => './tempy-fake'
+}
+*/
+
 function makeHTTPDownloader() {
   return function(arg) {
     const dir = tempy.directory()

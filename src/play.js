@@ -343,7 +343,7 @@ async function main(args) {
       promise: playPromise,
       playController: play,
       downloadController
-    } = loopPlay(picker, playerCommand, playOpts)
+    } = loopPlay(activePlaylist, picker, playerCommand, playOpts)
 
     // We're looking to gather standard input one keystroke at a time.
     // But that isn't *always* possible, e.g. when piping into the http-music
@@ -413,7 +413,7 @@ async function main(args) {
         // TODO: It would be nice to have this as a method of
         // PlayController.
         // Double TODO: This doesn't actually work!!
-        play.startNextDownload()
+        play.skipUpNext()
       }
 
       if (

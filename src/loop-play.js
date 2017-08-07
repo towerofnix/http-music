@@ -11,12 +11,14 @@
 const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
-const {
-  getDownloaderFor, makeConverterDownloader,
-  byName: downloadersByName
-} = require('./downloaders')
-const { getItemPathString } = require('./playlist-utils')
 const promisifyProcess = require('./promisify-process')
+const { getItemPathString } = require('./playlist-utils')
+
+const { safeUnlink } = require('./playlist-utils')
+
+const {
+  getDownloaderFor, byName: downloadersByName
+} = require('./downloaders')
 
 class DownloadController extends EventEmitter {
   waitForDownload() {
@@ -47,6 +49,7 @@ class DownloadController extends EventEmitter {
     // (The reasoning is that it's possible for a download to
     // be canceled and replaced with a new download (see cancel)
     // which would void the result of the old download.)
+    // The resulting file is a WAV.
 
     this.cleanupListeners()
 
@@ -68,8 +71,13 @@ class DownloadController extends EventEmitter {
       return
     }
 
-    if (!canceled) {
+    // If this current download has been canceled, we should get rid of the
+    // download file (and shouldn't emit a download success).
+    if (canceled) {
+      this.emit('deleteFile', file)
+    } else {
       this.emit('downloaded', file)
+      this.cleanupListeners()
     }
   }
 
@@ -113,10 +121,21 @@ class PlayController extends EventEmitter {
     while (this.nextTrack) {
       this.currentTrack = this.nextTrack
 
+      const next = this.nextFile
+      this.nextFile = undefined
+
       this.startNextDownload()
 
-      if (this.nextFile) {
-        await this.playFile(this.nextFile)
+      if (next) {
+        await this.playFile(next)
+
+        // Now that we're done playing the file, we should delete it.. unless
+        // it's the file that's coming up! (This would only happen in the case
+        // that all temporary files are stored in the same folder, together;
+        // indeed an unusual case, but technically possible.)
+        if (next !== this.nextFile) {
+          this.emit('deleteFile', next)
+        }
       }
 
       await this.waitForDownload()
@@ -159,7 +178,6 @@ class PlayController extends EventEmitter {
       downloader = getDownloaderFor(picked.downloaderArg)
     }
 
-    downloader = makeConverterDownloader(downloader, 'wav')
     this.downloadController.download(downloader, picked.downloaderArg)
 
     this.downloadController.waitForDownload()
@@ -266,6 +284,15 @@ class PlayController extends EventEmitter {
     this.kill()
   }
 
+  async skipUpNext() {
+    if (this.nextFile) {
+      this.emit('deleteFile', this.nextFile)
+    }
+
+    this.downloadController.cancel()
+    this.startNextDownload()
+  }
+
   seekAhead(secs) {
     this.sendCommand(`seek +${parseFloat(secs)}`)
   }
@@ -329,7 +356,7 @@ class PlayController extends EventEmitter {
 }
 
 module.exports = function loopPlay(
-  picker, playerCommand = 'mpv', playOpts = []
+  playlist, picker, playerCommand = 'mpv', playOpts = []
 ) {
   // Looping play function. Takes one argument, the "picker" function,
   // which returns a track to play. Stops when the result of the picker
@@ -339,6 +366,9 @@ module.exports = function loopPlay(
   const downloadController = new DownloadController()
 
   const playController = new PlayController(picker, downloadController)
+
+  downloadController.on('deleteFile', f => safeUnlink(f, playlist))
+  playController.on('deleteFile', f => safeUnlink(f, playlist))
 
   Object.assign(playController, {playerCommand, playOpts})
 

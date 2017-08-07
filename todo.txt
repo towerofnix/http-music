@@ -267,3 +267,4 @@ TODO: Handle avconv failing (probably handle downloader rejections from within
 
 TODO: Delete temporary files when done with them - seriously! http-music alone
       filled up a good 9GB of disk space, solely on temporary music files.
+      (Done!)

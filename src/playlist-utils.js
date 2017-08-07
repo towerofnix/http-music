@@ -1,5 +1,11 @@
 'use strict'
 
+const path = require('path')
+const fs = require('fs')
+
+const { promisify } = require('util')
+const unlink = promisify(fs.unlink)
+
 const parentSymbol = Symbol('parent')
 
 function updatePlaylistFormat(playlist) {
@@ -287,6 +293,27 @@ function isTrack(obj) {
   // return typeof array[1] === 'string'
 }
 
+function safeUnlink(file, playlist) {
+  if (!playlist) {
+    throw new Error('No playlist given to safe-unlink.')
+  }
+
+  // TODO: Is it good to call this every time? - But flattening a list probably
+  // isn't THAT big of a task.
+  const flat = flattenGrouplike(playlist)
+
+  if (
+    flat.items.some(t => path.resolve(t.downloaderArg) === path.resolve(file))
+  ) {
+    throw new Error(
+      'Attempted to delete a file path found in the playlist.json file - ' +
+      'this is almost definitely a bug!'
+    )
+  }
+
+  return unlink(file)
+}
+
 module.exports = {
   parentSymbol,
   updatePlaylistFormat, updateTrackFormat,
@@ -296,5 +323,6 @@ module.exports = {
   getPlaylistTreeString,
   getItemPath, getItemPathString,
   parsePathString,
-  isGroup, isTrack
+  isGroup, isTrack,
+  safeUnlink
 }
