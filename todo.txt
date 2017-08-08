@@ -278,3 +278,14 @@ TODO: FIFO doesn't work on Windows.
 
 TODO: It looks like the SoX player is broken? - Fix this!
       (Done!)
+
+TODO: Support caps-lock variants of letter-based keyboard controls, and avoid
+      separate functionality based on shift being pressed or not. (What this
+      practically means is - make keyboard controls work even if caps-lock is
+      pressed!)
+      (Done!)
+
+TODO: Only create one converter instance (per DownloadController).
+
+TODO: More selectors! No-loop/loop options of ordered and shuffled would be
+      nice.

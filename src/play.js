@@ -348,6 +348,11 @@ async function main(args) {
         Buffer.concat([escModifier, shiftModifier, Buffer.from([num])])
       )
 
+      const equalsChar = char => (
+        Buffer.from(char.toLowerCase()).equals(data) ||
+        Buffer.from(char.toUpperCase()).equals(data)
+      )
+
       if (Buffer.from([0x20]).equals(data)) {
         player.togglePause()
       }
@@ -376,7 +381,7 @@ async function main(args) {
         player.volDown(10)
       }
 
-      if (Buffer.from('s').equals(data)) {
+      if (equalsChar('s')) {
         clearConsoleLine()
         console.log(
           "Skipping the track that's currently playing. " +
@@ -396,15 +401,13 @@ async function main(args) {
         playController.skipUpNext()
       }
 
-      if (
-        Buffer.from('i').equals(data) ||
-        Buffer.from('t').equals(data)
-      ) {
+      if (equalsChar('i') || equalsChar('t')) {
         clearConsoleLine()
         playController.logTrackInfo()
       }
 
       if (
+        equalsChar('q') ||
         Buffer.from('q').equals(data) ||
         Buffer.from([0x03]).equals(data) || // ^C
         Buffer.from([0x04]).equals(data) // ^D
