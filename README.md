@@ -12,7 +12,22 @@ $ npm install
 
 # Installs http-music GLOBALLY, i.e., so you can use from in any directory.
 $ npm link # (You might need sudo here.)
+
+# (Hey, you! That one person who only reads the install code! Please also
+# read the "you will also need" section below.)
 ```
+
+**You will also need:**
+
+* **A player:** [`play` (from SoX)][sox] and [`mpv`][mpv] both work. You'll
+  only need one of these, but mpv gives you access to play/pause and seeking
+  controls.
+
+* **A sound converter:** either [`avconv`][libav] or [`ffmpeg`][ffmpeg] will
+  work.
+
+There's a fair chance you already have some of these installed; you can always
+check from your terminal using the [`type`][type] command!
 
 ## Usage
 
@@ -31,3 +46,10 @@ $ http-music play
 ## Documentation
 
 Check out [the man pages](man/). (Or view them with `man http-music`.)
+
+  [sox]: http://sox.sourceforge.net/
+  [mpv]: https://mpv.io/
+  [libav]: https://www.libav.org/
+  [ffmpeg]: https://www.ffmpeg.org/
+  [type]: https://unix.stackexchange.com/a/10529/125775
+
