@@ -12,15 +12,161 @@ const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
 const promisifyProcess = require('./promisify-process')
+const killProcess = require('./kill-process')
 const { getItemPathString } = require('./playlist-utils')
 
 const { safeUnlink } = require('./playlist-utils')
 
 const {
-  getDownloaderFor, byName: downloadersByName
+  getDownloaderFor, byName: downloadersByName, makeConverter
 } = require('./downloaders')
 
+class Player {
+  playFile(file) {}
+  seekAhead(secs) {}
+  seekBack(secs) {}
+  volUp(amount) {}
+  volDown(amount) {}
+  togglePause() {}
+  kill() {}
+}
+
+class MPVPlayer extends Player {
+  getMPVOptions(file) {
+    return ['--no-audio-display', file]
+  }
+
+  playFile(file) {
+    // The more powerful MPV player. MPV is virtually impossible for a human
+    // being to install; if you're having trouble with it, try the SoX player.
+
+    this.process = spawn('mpv', this.getMPVOptions(file))
+
+    this.process.stderr.on('data', data => {
+      const match = data.toString().match(
+        /(..):(..):(..) \/ (..):(..):(..) \(([0-9]+)%\)/
+      )
+
+      if (match) {
+        const [
+          curHour, curMin, curSec, // ##:##:##
+          lenHour, lenMin, lenSec, // ##:##:##
+          percent // ###%
+        ] = match.slice(1)
+
+        let curStr, lenStr
+
+        // We don't want to display hour counters if the total length is less
+        // than an hour.
+        if (parseInt(lenHour) > 0) {
+          curStr = `${curHour}:${curMin}:${curSec}`
+          lenStr = `${lenHour}:${lenMin}:${lenSec}`
+        } else {
+          curStr = `${curMin}:${curSec}`
+          lenStr = `${lenMin}:${lenSec}`
+        }
+
+        // Multiplication casts to numbers; addition prioritizes strings.
+        // Thanks, JavaScript!
+        const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
+        const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
+        const percentVal = (100 / lenSecTotal) * curSecTotal
+        const percentStr = (Math.trunc(percentVal * 100) / 100).toFixed(2)
+
+        process.stdout.write(
+          `\x1b[K~ (${percentStr}%) ${curStr} / ${lenStr}\r`
+        )
+      }
+    })
+
+    return new Promise(resolve => {
+      this.process.once('close', resolve)
+    })
+  }
+
+  async kill() {
+    if (this.process) {
+      await killProcess(this.process)
+    }
+  }
+}
+
+class ControllableMPVPlayer extends MPVPlayer {
+  getMPVOptions(file) {
+    return ['--input-file=' + this.fifo.path, ...super.getMPVOptions(file)]
+  }
+
+  playFile(file) {
+    this.fifo = new FIFO()
+
+    return super.playFile(file)
+  }
+
+  sendCommand(command) {
+    if (this.fifo) {
+      this.fifo.write(command)
+    }
+  }
+
+  seekAhead(secs) {
+    this.sendCommand(`seek +${parseFloat(secs)}`)
+  }
+
+  seekBack(secs) {
+    this.sendCommand(`seek -${parseFloat(secs)}`)
+  }
+
+  volUp(amount) {
+    this.sendCommand(`add volume +${parseFloat(amount)}`)
+  }
+
+  volDown(amount) {
+    this.sendCommand(`add volume -${parseFloat(amount)}`)
+  }
+
+  togglePause() {
+    this.sendCommand('cycle pause')
+  }
+
+  kill() {
+    if (this.fifo) {
+      this.fifo.close()
+      delete this.fifo
+    }
+
+    return super.kill()
+  }
+}
+
+class SoXPlayer extends Player {
+  playFile(file) {
+    // SoX's play command is useful for systems that don't have MPV. SoX is
+    // much easier to install (and probably more commonly installed, as well).
+    // You don't get keyboard controls such as seeking or volume adjusting
+    // with SoX, though.
+
+    this.process = spawn('play', [
+      ...this.playOpts,
+      file
+    ])
+
+    return promisifyProcess(this.process)
+  }
+
+  async kill() {
+    if (this.process) {
+      await killProcess(this.process)
+    }
+  }
+}
+
 class DownloadController extends EventEmitter {
+  constructor(playlist) {
+    super()
+
+    this.playlist = playlist
+  }
+
   waitForDownload() {
     // Returns a promise that resolves when a download is
     // completed.  Note that this isn't necessarily the download
@@ -62,10 +208,13 @@ class DownloadController extends EventEmitter {
 
     this.once('canceled', this._handleCanceled)
 
-    let file
+    let downloadFile
+
+    // TODO: Be more specific; 'errored' * 2 could instead be 'downloadErrored' and
+    // 'convertErrored'.
 
     try {
-      file = await downloader(arg)
+      downloadFile = await downloader(arg)
     } catch(err) {
       this.emit('errored', err)
       return
@@ -74,11 +223,33 @@ class DownloadController extends EventEmitter {
     // If this current download has been canceled, we should get rid of the
     // download file (and shouldn't emit a download success).
     if (canceled) {
-      this.emit('deleteFile', file)
-    } else {
-      this.emit('downloaded', file)
-      this.cleanupListeners()
+      await safeUnlink(downloadFile, this.playlist)
+      return
     }
+
+    let convertFile
+
+    const converter = await makeConverter('wav')
+
+    try {
+      convertFile = await converter(downloadFile)
+    } catch(err) {
+      this.emit('errored', err)
+      return
+    } finally {
+      // Whether the convertion succeeds or not (hence 'finally'), we should
+      // delete the temporary download file.
+      await safeUnlink(downloadFile, this.playlist)
+    }
+
+    // Again, if canceled, we should delete temporary files and stop.
+    if (canceled) {
+      await safeUnlink(convertFile, this.playlist)
+      return
+    }
+
+    this.emit('downloaded', convertFile)
+    this.cleanupListeners()
   }
 
   cleanupListeners() {
@@ -98,15 +269,18 @@ class DownloadController extends EventEmitter {
 }
 
 class PlayController extends EventEmitter {
-  constructor(picker, downloadController) {
+  constructor(picker, player, playlist, downloadController) {
     super()
 
     this.picker = picker
+    this.player = player
+    this.playlist = playlist
     this.downloadController = downloadController
-    this.playOpts = []
-    this.playerCommand = null
+
     this.currentTrack = null
-    this.process = null
+    this.nextTrack = null
+    this.nextFile = undefined // TODO: Why isn't this null?
+    this.stopped = false
   }
 
   async loopPlay() {
@@ -118,7 +292,7 @@ class PlayController extends EventEmitter {
 
     await this.waitForDownload()
 
-    while (this.nextTrack) {
+    while (this.nextTrack && !this.stopped) {
       this.currentTrack = this.nextTrack
 
       const next = this.nextFile
@@ -134,7 +308,7 @@ class PlayController extends EventEmitter {
         // that all temporary files are stored in the same folder, together;
         // indeed an unusual case, but technically possible.)
         if (next !== this.nextFile) {
-          this.emit('deleteFile', next)
+          await safeUnlink(next, this.playlist)
         }
       }
 
@@ -197,139 +371,30 @@ class PlayController extends EventEmitter {
   }
 
   playFile(file) {
-    if (this.playerCommand === 'sox' || this.playerCommand === 'play') {
-      return this.playFileSoX(file)
-    } else if (this.playerCommand === 'mpv') {
-      return this.playFileMPV(file)
-    } else {
-      if (this.playerCommand) {
-        console.warn('Invalid player command given?', this.playerCommand)
-      } else {
-        console.warn('No player command given?')
-      }
-
-      return Promise.resolve()
-    }
+    return this.player.playFile(file)
   }
 
-  playFileSoX(file) {
-    // SoX's play command is useful for systems that don't have MPV. SoX is
-    // much easier to install (and probably more commonly installed, as well).
-    // You don't get keyboard controls such as seeking or volume adjusting
-    // with SoX, though.
-
-    this.process = spawn('play', [
-      ...this.playOpts,
-      file
-    ])
-
-    return promisifyProcess(this.process)
-  }
-
-  playFileMPV(file) {
-    // The more powerful MPV player. MPV is virtually impossible for a human
-    // being to install; if you're having trouble with it, try the SoX player.
-
-    this.fifo = new FIFO()
-    this.process = spawn('mpv', [
-      '--input-file=' + this.fifo.path,
-      '--no-audio-display',
-      file,
-      ...this.playOpts
-    ])
-
-    this.process.stderr.on('data', data => {
-      const match = data.toString().match(
-        /(..):(..):(..) \/ (..):(..):(..) \(([0-9]+)%\)/
-      )
-
-      if (match) {
-        const [
-          curHour, curMin, curSec, // ##:##:##
-          lenHour, lenMin, lenSec, // ##:##:##
-          percent // ###%
-        ] = match.slice(1)
-
-        let curStr, lenStr
-
-        // We don't want to display hour counters if the total length is less
-        // than an hour.
-        if (parseInt(lenHour) > 0) {
-          curStr = `${curHour}:${curMin}:${curSec}`
-          lenStr = `${lenHour}:${lenMin}:${lenSec}`
-        } else {
-          curStr = `${curMin}:${curSec}`
-          lenStr = `${lenMin}:${lenSec}`
-        }
-
-        // Multiplication casts to numbers; addition prioritizes strings.
-        // Thanks, JavaScript!
-        const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
-        const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
-        const percentVal = (100 / lenSecTotal) * curSecTotal
-        const percentStr = (Math.trunc(percentVal * 100) / 100).toFixed(2)
-
-        process.stdout.write(
-          `\x1b[K~ (${percentStr}%) ${curStr} / ${lenStr}\r`
-        )
-      }
-    })
-
-    return new Promise(resolve => {
-      this.process.once('close', resolve)
-    })
-  }
-
-  skip() {
-    this.kill()
+  async skip() {
+    await this.player.kill()
+    this.currentTrack = null
   }
 
   async skipUpNext() {
     if (this.nextFile) {
-      this.emit('deleteFile', this.nextFile)
+      await safeUnlink(this.nextFile, this.playlist)
     }
 
     this.downloadController.cancel()
     this.startNextDownload()
   }
 
-  seekAhead(secs) {
-    this.sendCommand(`seek +${parseFloat(secs)}`)
-  }
-
-  seekBack(secs) {
-    this.sendCommand(`seek -${parseFloat(secs)}`)
-  }
-
-  volUp(amount) {
-    this.sendCommand(`add volume +${parseFloat(amount)}`)
-  }
-
-  volDown(amount) {
-    this.sendCommand(`add volume -${parseFloat(amount)}`)
-  }
-
-  togglePause() {
-    this.sendCommand('cycle pause')
-  }
-
-  sendCommand(command) {
-    if (this.playerCommand === 'mpv' && this.fifo) {
-      this.fifo.write(command)
-    }
-  }
-
-  kill() {
-    if (this.process) {
-      this.process.kill()
-    }
-
-    if (this.fifo) {
-      this.fifo.close()
-      delete this.fifo
-    }
-
+  async stop() {
+    // TODO: How to bork download-controller files?? Wait for it to emit a
+    // 'cleaned up' event? This whole program being split-up is a Baaaaad idea.
+    this.downloadController.cancel()
+    await this.player.kill()
     this.currentTrack = null
+    this.stopped = true
   }
 
   logTrackInfo() {
@@ -363,12 +428,32 @@ module.exports = function loopPlay(
   // function is null (or similar). Optionally takes a second argument
   // used as arguments to the `play` process (before the file name).
 
-  const downloadController = new DownloadController()
+  let player
+  if (playerCommand === 'sox' || playerCommand === 'play') {
+    player = new SoXPlayer()
+  } else if (playerCommand === 'mpv') {
+    player = new ControllableMPVPlayer()
+  } else if (
+    playerCommand === 'mpv-nocontrolls' ||
+    playerCommand === 'mpv-windows' ||
+    playerCommand === 'mpv-nofifo'
+  ) {
+    player = new MPVPlayer()
+  } else {
+    if (playerCommand) {
+      console.warn('Invalid player command given?', playerCommand)
+    } else {
+      console.warn('No player command given?')
+    }
 
-  const playController = new PlayController(picker, downloadController)
+    return Promise.resolve()
+  }
 
-  downloadController.on('deleteFile', f => safeUnlink(f, playlist))
-  playController.on('deleteFile', f => safeUnlink(f, playlist))
+  const downloadController = new DownloadController(playlist)
+
+  const playController = new PlayController(
+    picker, player, playlist, downloadController
+  )
 
   Object.assign(playController, {playerCommand, playOpts})
 
@@ -377,6 +462,7 @@ module.exports = function loopPlay(
   return {
     promise,
     playController,
-    downloadController
+    downloadController,
+    player
   }
 }

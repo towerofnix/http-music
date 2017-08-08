@@ -3,10 +3,11 @@
 const fs = require('fs')
 const fse = require('fs-extra')
 const fetch = require('node-fetch')
-const promisifyProcess = require('./promisify-process')
 const tempy = require('tempy')
 const path = require('path')
 const sanitize = require('sanitize-filename')
+const promisifyProcess = require('./promisify-process')
+const commandExists = require('./command-exists')
 
 const { spawn } = require('child_process')
 const { promisify } = require('util')
@@ -109,14 +110,24 @@ function makePowerfulDownloader(downloader, maxAttempts = 5) {
   }
 }
 
-function makeConverterDownloader(downloader, type) {
-  return async function(arg) {
-    const inFile = await downloader(arg)
+async function makeConverter(type) {
+  let binary
+  if (await commandExists('avconv')) {
+    binary = 'avconv'
+  } else if (await commandExists('ffmpeg')) {
+    binary = 'ffmpeg'
+  } else {
+    throw new Error('avconv or ffmpeg is required for converter downloader!')
+  }
+
+  console.log(`Using ${binary} converter.`)
+
+  return async function(inFile) {
     const base = path.basename(inFile, path.extname(inFile))
     const tempDir = tempy.directory()
     const outFile = `${tempDir}/${base}.${type}`
 
-    await promisifyProcess(spawn('avconv', ['-i', inFile, outFile]), false)
+    await promisifyProcess(spawn(binary, ['-i', inFile, outFile]), false)
 
     return outFile
   }
@@ -127,7 +138,7 @@ module.exports = {
   makeYouTubeDownloader,
   makeLocalDownloader,
   makePowerfulDownloader,
-  makeConverterDownloader,
+  makeConverter,
 
   byName: {
     'http': makeHTTPDownloader,

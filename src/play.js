@@ -6,7 +6,7 @@ const { promisify } = require('util')
 const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
-const npmCommandExists = require('command-exists')
+const commandExists = require('./command-exists')
 const pickers = require('./pickers')
 const loopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
@@ -39,17 +39,6 @@ function downloadPlaylistFromOptionValue(arg) {
 
 function clearConsoleLine() {
   process.stdout.write('\x1b[1K\r')
-}
-
-async function commandExists(command) {
-  // When the command-exists module sees that a given command doesn't exist, it
-  // throws an error instead of returning false, which is not what we want.
-
-  try {
-    return await npmCommandExists(command)
-  } catch(err) {
-    return false
-  }
 }
 
 async function determineDefaultPlayer() {
@@ -301,16 +290,9 @@ async function main(args) {
       // --player <player>
       // Sets the shell command by which audio is played.
       // Valid options include 'sox' (or 'play') and 'mpv'. Use whichever is
-      // installed on your system; mpv is the default.
+      // installed on your system.
 
       playerCommand = util.nextArg()
-    },
-
-    '-play-opts': function(util) {
-      // --play-opts <opts>
-      // Sets command line options passed to the `play` command.
-
-      playOpts = util.nextArg().split(' ')
     }
   }
 
@@ -341,8 +323,9 @@ async function main(args) {
 
     const {
       promise: playPromise,
-      playController: play,
-      downloadController
+      playController,
+      downloadController,
+      player
     } = loopPlay(activePlaylist, picker, playerCommand, playOpts)
 
     // We're looking to gather standard input one keystroke at a time.
@@ -366,31 +349,31 @@ async function main(args) {
       )
 
       if (Buffer.from([0x20]).equals(data)) {
-        play.togglePause()
+        player.togglePause()
       }
 
       if (esc(0x43).equals(data)) {
-        play.seekAhead(5)
+        player.seekAhead(5)
       }
 
       if (esc(0x44).equals(data)) {
-        play.seekBack(5)
+        player.seekBack(5)
       }
 
       if (shiftEsc(0x43).equals(data)) {
-        play.seekAhead(30)
+        player.seekAhead(30)
       }
 
       if (shiftEsc(0x44).equals(data)) {
-        play.seekBack(30)
+        player.seekBack(30)
       }
 
       if (esc(0x41).equals(data)) {
-        play.volUp(10)
+        player.volUp(10)
       }
 
       if (esc(0x42).equals(data)) {
-        play.volDown(10)
+        player.volDown(10)
       }
 
       if (Buffer.from('s').equals(data)) {
@@ -400,7 +383,7 @@ async function main(args) {
           "(Press I for track info!)"
         )
 
-        play.skip()
+        playController.skip()
       }
 
       if (Buffer.from([0x7f]).equals(data)) {
@@ -410,10 +393,7 @@ async function main(args) {
           "(Press I for track info!)"
         )
 
-        // TODO: It would be nice to have this as a method of
-        // PlayController.
-        // Double TODO: This doesn't actually work!!
-        play.skipUpNext()
+        playController.skipUpNext()
       }
 
       if (
@@ -421,7 +401,7 @@ async function main(args) {
         Buffer.from('t').equals(data)
       ) {
         clearConsoleLine()
-        play.logTrackInfo()
+        playController.logTrackInfo()
       }
 
       if (
@@ -429,9 +409,9 @@ async function main(args) {
         Buffer.from([0x03]).equals(data) || // ^C
         Buffer.from([0x04]).equals(data) // ^D
       ) {
-        play.kill()
-        process.stdout.write('\n')
-        process.exit(0)
+        playController.stop().then(() => {
+          process.exit(0)
+        })
       }
     })
 

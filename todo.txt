@@ -268,3 +268,10 @@ TODO: Handle avconv failing (probably handle downloader rejections from within
 TODO: Delete temporary files when done with them - seriously! http-music alone
       filled up a good 9GB of disk space, solely on temporary music files.
       (Done!)
+
+TODO: Players (MPV, SoX) should be separate (sub-)classes.
+      (Done!)
+
+TODO: FIFO doesn't work on Windows.
+      (Done! - Use mpv-nofifo player. Would like to automatically check for
+      mkfifo command; then use nofifo if that doesn't exist.)
