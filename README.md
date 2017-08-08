@@ -27,8 +27,8 @@ $ npm link # (You might need sudo here.)
   work.
 
 * **Optionally,** [`youtube-dl`][ytdl] lets you [play][apply] music from
-  [just about anywhere][moresites] (rather than just http://blah/foo.mp3-like
-  URLs!).
+  [just about anywhere][moresites] (rather than just
+  `http://blah/foo.mp3`-like URLs!).
 
 There's a fair chance you already have some of these installed; you can always
 check from your terminal using the [`type`][type] command!
