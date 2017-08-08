@@ -145,10 +145,7 @@ class SoXPlayer extends Player {
     // You don't get keyboard controls such as seeking or volume adjusting
     // with SoX, though.
 
-    this.process = spawn('play', [
-      ...this.playOpts,
-      file
-    ])
+    this.process = spawn('play', [file])
 
     return promisifyProcess(this.process)
   }

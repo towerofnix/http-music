@@ -275,3 +275,6 @@ TODO: Players (MPV, SoX) should be separate (sub-)classes.
 TODO: FIFO doesn't work on Windows.
       (Done! - Use mpv-nofifo player. Would like to automatically check for
       mkfifo command; then use nofifo if that doesn't exist.)
+
+TODO: It looks like the SoX player is broken? - Fix this!
+      (Done!)
