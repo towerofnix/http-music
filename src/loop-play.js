@@ -164,6 +164,10 @@ class DownloadController extends EventEmitter {
     this.playlist = playlist
   }
 
+  async init() {
+    this.converter = await makeConverter('wav')
+  }
+
   waitForDownload() {
     // Returns a promise that resolves when a download is
     // completed.  Note that this isn't necessarily the download
@@ -226,10 +230,8 @@ class DownloadController extends EventEmitter {
 
     let convertFile
 
-    const converter = await makeConverter('wav')
-
     try {
-      convertFile = await converter(downloadFile)
+      convertFile = await this.converter(downloadFile)
     } catch(err) {
       this.emit('errored', err)
       return
@@ -417,7 +419,7 @@ class PlayController extends EventEmitter {
   }
 }
 
-module.exports = function loopPlay(
+module.exports = async function startLoopPlay(
   playlist, picker, playerCommand = 'mpv', playOpts = []
 ) {
   // Looping play function. Takes one argument, the "picker" function,
@@ -447,6 +449,7 @@ module.exports = function loopPlay(
   }
 
   const downloadController = new DownloadController(playlist)
+  await downloadController.init()
 
   const playController = new PlayController(
     picker, player, playlist, downloadController

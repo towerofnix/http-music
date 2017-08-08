@@ -8,7 +8,7 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 const commandExists = require('./command-exists')
 const pickers = require('./pickers')
-const loopPlay = require('./loop-play')
+const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const processSmartPlaylist = require('./smart-playlist')
 
@@ -326,7 +326,7 @@ async function main(args) {
       playController,
       downloadController,
       player
-    } = loopPlay(activePlaylist, picker, playerCommand, playOpts)
+    } = await startLoopPlay(activePlaylist, picker, playerCommand, playOpts)
 
     // We're looking to gather standard input one keystroke at a time.
     // But that isn't *always* possible, e.g. when piping into the http-music
