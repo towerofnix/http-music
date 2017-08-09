@@ -367,6 +367,8 @@ class PlayController extends EventEmitter {
 
         this.startNextDownload()
       })
+
+    return picked
   }
 
   playFile(file) {
@@ -374,6 +376,9 @@ class PlayController extends EventEmitter {
   }
 
   async skip() {
+    // TODO: It would be nice if this returned the next track, but that
+    // probably isn't possible with the current play/loop-setup.
+
     await this.player.kill()
     this.currentTrack = null
   }
@@ -384,7 +389,7 @@ class PlayController extends EventEmitter {
     }
 
     this.downloadController.cancel()
-    this.startNextDownload()
+    return this.startNextDownload()
   }
 
   async stop() {

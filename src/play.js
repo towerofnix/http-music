@@ -393,12 +393,14 @@ async function main(args) {
 
       if (Buffer.from([0x7f]).equals(data)) {
         clearConsoleLine()
-        console.log(
-          "Skipping the track that's up next. " +
-          "(Press I for track info!)"
-        )
+        console.log("Skipping the track that's up next.")
 
-        playController.skipUpNext()
+        playController.skipUpNext().then(nextTrack => {
+          console.log(
+            `New track up next: ${nextTrack.name || '(Unnamed)'}` +
+            " (Press I for track info!)"
+          )
+        })
       }
 
       if (equalsChar('i') || equalsChar('t')) {

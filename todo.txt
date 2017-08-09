@@ -292,3 +292,11 @@ TODO: More selectors! No-loop/loop options of ordered and shuffled would be
 
 TODO: Magically watching for the play/pause keyboard button being pressed
       would be fun. (This would definitely be togglable via option!)
+
+TODO: Show the new up-next song when delete-up-next (backspace) is pressed.
+      (Done!)
+
+TODO: safeUnlink probably shouldn't throw/reject if it fails to delete its
+      given file (e.g. if a temporary file was automatically purged by the
+      system before safeUnlink). Having a warning might be better? (Since
+      *most* of the time it's probably a bug.)
