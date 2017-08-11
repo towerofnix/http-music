@@ -1,6 +1,15 @@
 'use strict'
 
-const { flattenGrouplike } = require('./playlist-utils')
+const { flattenGrouplike, isGroup } = require('./playlist-utils')
+
+function shuffleGroups(grouplike) {
+  if (isGroup(grouplike) && grouplike.items.every(isGroup)) {
+    const items = shuffleArray(grouplike.items.map(shuffleGroups))
+    return Object.assign({}, grouplike, {items})
+  } else {
+    return grouplike
+  }
+}
 
 function makePicker(grouplike, sort, loop) {
   // Options to take into consideration:
@@ -31,7 +40,8 @@ function makePicker(grouplike, sort, loop) {
     }
 
     if (sort === 'shuffle-top-level' || sort === 'shuffle-groups') {
-      topLevel.items = flattenGrouplike(shuffleArray(grouplike.items))
+      console.log(JSON.stringify(shuffleGroups(grouplike), null, 2))
+      topLevel.items = flattenGrouplike(shuffleGroups(grouplike)).items
     }
 
     console.log(topLevel.items.map(require('./playlist-utils').getItemPathString).join('\n'))
