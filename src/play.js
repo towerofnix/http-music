@@ -280,8 +280,6 @@ async function main(args) {
     '-sort-mode': function(util) {
       // --sort-mode <mode>  (alias: --sort)
       // Sets the mode by which the playback order list is sorted.
-      // Valid options include 'order', 'shuffle', and 'shuffle-top-level'
-      // (which has an alias 'shuffle-groups').
       // See pickers.js.
 
       pickerSortMode = util.nextArg()
@@ -294,8 +292,6 @@ async function main(args) {
       // Sets the mode by which the playback order list is looped (typically,
       // what happens when the picker's index counter gets to the end of the
       // list).
-      // Valid options include 'no-loop', 'loop-same-order' (or 'loop'),
-      // 'loop-regenerate', and 'pick-random'.
       // See pickers.js.
 
       pickerLoopMode = util.nextArg()

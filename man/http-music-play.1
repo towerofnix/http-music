@@ -87,6 +87,12 @@ Lists all groups and tracks in the (active) playlist.
 If this is the last option used, nothing plays (see \fB\-\-play\fR).
 
 .TP
+.BR \-\-loop\-mode ", " \-\-loop
+Sets the mode by which the playback order list is looped (typically, what happens when the picker's index counter gets to the end of the list).
+Valid options include \fBno-loop\fR (or \fBno\fR), \fBloop-same-order\fR (or \fBloop\fR), \fBloop-regenerate\fR (the default), and \fBpick-random\fR.
+See also \fB\-\-sort\-mode\fR.
+
+.TP
 .BR \-np ", " \-\-no\-play
 Forces the playlist not to play.
 See also \fB\-\-play\fR.
@@ -120,6 +126,12 @@ Prints the JSON representation of the active playlist to the console.
 .TP
 .BR \-r ", " \-\-remove ", " \-x " \fIgroupPath\fR"
 Removes a group from the (active) playlist.
+
+.TP
+.BR \-\-sort\-mode ", " \-\-sort
+Sets the mode by which the playback order list is sorted.
+Valid options include \fBorder\fR, \fBshuffle\fR (the default), and \fBshuffle-top-level\fR (or \fBshuffle-groups\fR).
+See also \fB\-\-loop\-mode\fR.
 
 .TP
 .BR \-w ", " \-\-write\-playlist ", " \-\-write ", " \-\-save " \fIfilePath\fR"
