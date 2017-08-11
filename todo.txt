@@ -300,3 +300,7 @@ TODO: safeUnlink probably shouldn't throw/reject if it fails to delete its
       given file (e.g. if a temporary file was automatically purged by the
       system before safeUnlink). Having a warning might be better? (Since
       *most* of the time it's probably a bug.)
+
+TODO: A shuffle-groups picker would be fun! (That is, it would take a
+      grouplike, then shuffle all the items on the TOP level; so it would
+      play random (top-level) groups at a time.)

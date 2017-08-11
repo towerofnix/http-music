@@ -7,7 +7,7 @@ const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
 const commandExists = require('./command-exists')
-const pickers = require('./pickers')
+const { byName: pickersByName } = require('./pickers')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const processSmartPlaylist = require('./smart-playlist')
@@ -307,17 +307,14 @@ async function main(args) {
   }
 
   if (willPlay || (willPlay === null && shouldPlay)) {
-    let picker
-    if (pickerType === 'shuffle') {
-      console.log("Using shuffle picker.")
-      picker = pickers.makeShufflePlaylistPicker(activePlaylist)
-    } else if (pickerType === 'ordered') {
-      console.log("Using ordered picker.")
-      picker = pickers.makeOrderedPlaylistPicker(activePlaylist)
-    } else {
+    if (!Object.keys(pickersByName).includes(pickerType)) {
       console.error("Invalid picker type: " + pickerType)
       return
     }
+
+    console.log(`Using ${pickerType} picker.`)
+
+    const picker = pickersByName[pickerType](activePlaylist)
 
     console.log(`Using ${playerCommand} player.`)
 
