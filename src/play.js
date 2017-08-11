@@ -7,7 +7,7 @@ const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
 const commandExists = require('./command-exists')
-const { byName: pickersByName } = require('./pickers')
+const makePicker = require('./pickers')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const processSmartPlaylist = require('./smart-playlist')
@@ -55,7 +55,8 @@ async function main(args) {
   let sourcePlaylist = null
   let activePlaylist = null
 
-  let pickerType = 'shuffle'
+  let pickerSortMode = 'shuffle'
+  let pickerLoopMode = 'loop-regenerate'
   let playerCommand = await determineDefaultPlayer()
   let playOpts = []
 
@@ -276,15 +277,31 @@ async function main(args) {
 
     'np': util => util.alias('-no-play'),
 
-    '-picker': function(util) {
-      // --picker <picker type>  (alias: --selector)
-      // Selects the mode that the song to play is picked.
+    '-sort-mode': function(util) {
+      // --sort-mode <mode>  (alias: --sort)
+      // Sets the mode by which the playback order list is sorted.
+      // Valid options include 'order', 'shuffle', and 'shuffle-top-level'
+      // (which has an alias 'shuffle-groups').
       // See pickers.js.
 
-      pickerType = util.nextArg()
+      pickerSortMode = util.nextArg()
     },
 
-    '-selector': util => util.alias('-picker'),
+    '-sort': util => util.alias('-sort-mode'),
+
+    '-loop-mode': function(util) {
+      // --loop-mode <mode>  (alias: --loop)
+      // Sets the mode by which the playback order list is looped (typically,
+      // what happens when the picker's index counter gets to the end of the
+      // list).
+      // Valid options include 'no-loop', 'loop-same-order' (or 'loop'),
+      // 'loop-regenerate', and 'pick-random'.
+      // See pickers.js.
+
+      pickerLoopMode = util.nextArg()
+    },
+
+    '-loop': util => util.alias('-loop-mode'),
 
     '-player': function(util) {
       // --player <player>
@@ -307,14 +324,9 @@ async function main(args) {
   }
 
   if (willPlay || (willPlay === null && shouldPlay)) {
-    if (!Object.keys(pickersByName).includes(pickerType)) {
-      console.error("Invalid picker type: " + pickerType)
-      return
-    }
+    console.log(`Using sort: ${pickerSortMode} and loop: ${pickerLoopMode}.`)
 
-    console.log(`Using ${pickerType} picker.`)
-
-    const picker = pickersByName[pickerType](activePlaylist)
+    const picker = makePicker(activePlaylist, pickerSortMode, pickerLoopMode)
 
     console.log(`Using ${playerCommand} player.`)
 

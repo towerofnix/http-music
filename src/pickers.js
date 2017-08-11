@@ -2,71 +2,100 @@
 
 const { flattenGrouplike } = require('./playlist-utils')
 
-function makeLoopingOrderedPlaylistPicker(grouplike) {
-  // Looping ordered playlist picker - this plays all the tracks in a group
-  // in order, while looping the same order forever.
+function makePicker(grouplike, sort, loop) {
+  // Options to take into consideration:
+  // - How should the top-level be sorted?
+  //   (e.g. "order", "shuffle", "shuffle-groups")
+  // - How should looping be handled?
+  //   (e.g. "loop", "no-loop")
+  // - Also keep in mind aliases for all of the above.
+  //   (e.g. "ordered", "shuffled", "noloop")
+  //
+  // What about a shuffle-mode that should simply pick a random track every
+  // time?
+  //
+  // What about a shuffle-mode that re-shuffles the list every time a loop
+  // happens?
+  //
+  // Both of those options could probably be handled via the 'loop' option.
 
-  const flatGroup = flattenGrouplike(grouplike)
+  const topLevel = {items: []}
+
+  let generateTopLevel = () => {
+    if (sort === 'order') {
+      topLevel.items = flattenGrouplike(grouplike).items
+    }
+
+    if (sort === 'shuffle') {
+      topLevel.items = shuffleArray(flattenGrouplike(grouplike).items)
+    }
+
+    if (sort === 'shuffle-top-level' || sort === 'shuffle-groups') {
+      topLevel.items = flattenGrouplike(shuffleArray(grouplike.items))
+    }
+
+    console.log(topLevel.items.map(require('./playlist-utils').getItemPathString).join('\n'))
+  }
+
+  generateTopLevel()
+
   let index = 0
 
   return function() {
-    if (index >= flatGroup.items.length) {
-      index = 0
+    if (index === topLevel.items.length) {
+      if (loop === 'loop-same-order' || loop === 'loop') {
+        index = 0
+      }
+
+      if (loop === 'loop-regenerate') {
+        generateTopLevel()
+        index = 0
+      }
+
+      if (loop === 'no-loop' || loop === 'no') {
+        // Returning null means the picker is done picking.
+        // (In theory, we could use an ES2015 generator intead, but this works
+        // well enough.)
+        return null
+      }
     }
 
-    const picked = flatGroup.items[index]
-    index++
-    return picked
-  }
-}
-
-function makeNonLoopingOrderedPlaylistPicker(grouplike) {
-  // Ordered playlist picker - this plays all the tracks in a group in
-  // order, after flattening it.
-
-  const flatGroup = flattenGrouplike(grouplike)
-  let index = 0
-
-  return function() {
-    if (index < flatGroup.items.length) {
-      const picked = flatGroup.items[index]
-      index++
-      return picked
-    } else {
-      return null
+    if (index > topLevel.items.length) {
+      throw new Error(
+        "Picker index is greater than total item count?" +
+        `(${index} > ${topLevel.items.length}`
+      )
     }
-  }
-}
 
-function makeLoopingShufflePlaylistPicker(grouplike) {
-  // Shuffle playlist picker - this selects a random track at any index in
-  // the playlist, after flattening it.
+    if (index < topLevel.items.length) {
+      // Pick-random is a special exception - in this case we don't actually
+      // care about the value of the index variable; instead we just pick a
+      // random track from the generated top level.
+      //
+      // Loop=pick-random is different from sort=shuffle. Sort=shuffle always
+      // ensures the same song doesn't play twice in a single shuffle. It's
+      // like how when you shuffle a deck of cards, you'll still never pick
+      // the same card twice, until you go all the way through the deck and
+      // re-shuffle the deck!
+      //
+      // Loop=pick-random instead picks a random track every time the picker
+      // is called. It's more like you reshuffle the complete deck every time
+      // you pick something.
+      //
+      // Now, how should pick-random work when dealing with groups, such as
+      // when using sort=shuffle-groups? (If I can't find a solution, I'd say
+      // that's alright.)
+      if (loop === 'pick-random') {
+        const pickedIndex = Math.floor(Math.random() * topLevel.items.length)
+        return topLevel.items[pickedIndex]
+      }
 
-  const flatGroup = flattenGrouplike(grouplike)
-
-  return function() {
-    if (flatGroup.items.length) {
-      const index = Math.floor(Math.random() * flatGroup.items.length)
-      return flatGroup.items[index]
-    } else {
-      return null
-    }
-  }
-}
-
-function makeNonLoopingShufflePlaylistPicker(grouplike) {
-  // No-loop shuffle playlist picker - this takes a playlist and randomly
-  // shuffles the order of the items in it, then uses that as an "ordered"
-  // playlist (i.e. it plays all the items in it then stops).
-
-  const flatGroup = flattenGrouplike(grouplike)
-  const items = shuffleArray(flatGroup.items)
-
-  return function() {
-    if (items.length) {
-      return items.splice(0, 1)[0]
-    } else {
-      return null
+      // If we're using any other mode, we just want to get the current item
+      // in the playlist, and increment the index variable by one (note i++
+      // and not ++i; i++ increments AFTER getting i so it gets us the range
+      // 0..length-1, whereas ++i increments BEFORE, which gets us the range
+      // 1..length.
+      return topLevel.items[index++]
     }
   }
 }
@@ -93,24 +122,5 @@ function shuffleArray(array) {
   return workingArray
 }
 
-module.exports = {
-  makeLoopingOrderedPlaylistPicker,
-  makeNonLoopingOrderedPlaylistPicker,
-  makeLoopingShufflePlaylistPicker,
-  makeNonLoopingShufflePlaylistPicker,
 
-  byName: {
-    'order':           makeNonLoopingOrderedPlaylistPicker,
-    'ordered':         makeNonLoopingOrderedPlaylistPicker,
-    'order-loop':      makeLoopingOrderedPlaylistPicker,
-    'ordered-loop':    makeLoopingOrderedPlaylistPicker,
-    'order-noloop':    makeNonLoopingOrderedPlaylistPicker,
-    'ordered-noloop':  makeNonLoopingOrderedPlaylistPicker,
-    'order-no-loop':   makeNonLoopingOrderedPlaylistPicker,
-    'ordered-no-loop': makeNonLoopingOrderedPlaylistPicker,
-    'shuffle':         makeLoopingShufflePlaylistPicker,
-    'shuffle-loop':    makeLoopingShufflePlaylistPicker,
-    'shuffle-noloop':  makeNonLoopingShufflePlaylistPicker,
-    'shuffle-no-loop': makeNonLoopingShufflePlaylistPicker,
-  }
-}
+module.exports = makePicker
