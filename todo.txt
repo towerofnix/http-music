@@ -307,3 +307,5 @@ TODO: A shuffle-groups picker would be fun! (That is, it would take a
       grouplike, then shuffle all the items on the TOP level; so it would
       play random (top-level) groups at a time.)
       (Done!)
+
+TODO: cheerio and xmldoc are both NPM dependencies. This seems Bad!
