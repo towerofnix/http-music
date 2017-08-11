@@ -286,9 +286,11 @@ TODO: Support caps-lock variants of letter-based keyboard controls, and avoid
       (Done!)
 
 TODO: Only create one converter instance (per DownloadController).
+      (Done!)
 
 TODO: More selectors! No-loop/loop options of ordered and shuffled would be
       nice.
+      (Done!)
 
 TODO: Magically watching for the play/pause keyboard button being pressed
       would be fun. (This would definitely be togglable via option!)
