@@ -28,6 +28,20 @@ function makePicker(grouplike, sort, loop) {
   //
   // Both of those options could probably be handled via the 'loop' option.
 
+  if (![
+    'order', 'ordered', 'shuffle', 'shuffled', 'shuffle-groups',
+    'shuffled-groups'
+  ].includes(sort)) {
+    throw new Error(`Invalid sort mode: ${sort}`)
+  }
+
+  if (![
+    'loop', 'no-loop', 'no', 'loop-same-order', 'loop-regenerate',
+    'pick-random'
+  ].includes(loop)) {
+    throw new Error(`Invalid loop mode: ${loop}`)
+  }
+
   const topLevel = {items: []}
 
   let generateTopLevel = () => {
