@@ -31,20 +31,17 @@ function makePicker(grouplike, sort, loop) {
   const topLevel = {items: []}
 
   let generateTopLevel = () => {
-    if (sort === 'order') {
+    if (sort === 'order' || sort === 'ordered') {
       topLevel.items = flattenGrouplike(grouplike).items
     }
 
-    if (sort === 'shuffle') {
+    if (sort === 'shuffle' || sort === 'shuffled') {
       topLevel.items = shuffleArray(flattenGrouplike(grouplike).items)
     }
 
-    if (sort === 'shuffle-top-level' || sort === 'shuffle-groups') {
-      console.log(JSON.stringify(shuffleGroups(grouplike), null, 2))
+    if (sort === 'shuffle-groups' || sort === 'shuffled-groups') {
       topLevel.items = flattenGrouplike(shuffleGroups(grouplike)).items
     }
-
-    console.log(topLevel.items.map(require('./playlist-utils').getItemPathString).join('\n'))
   }
 
   generateTopLevel()
