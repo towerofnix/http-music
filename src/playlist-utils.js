@@ -293,7 +293,7 @@ function isTrack(obj) {
   // return typeof array[1] === 'string'
 }
 
-function safeUnlink(file, playlist) {
+async function safeUnlink(file, playlist) {
   if (!playlist) {
     throw new Error('No playlist given to safe-unlink.')
   }
@@ -311,7 +311,21 @@ function safeUnlink(file, playlist) {
     )
   }
 
-  return unlink(file)
+  try {
+    await unlink(file)
+  } catch(err) {
+    if (err.code === 'ENOENT') {
+      console.trace(
+        `Attempted to delete file "${file}" which does not exist. This ` +
+        'could be because of a temporary file being automatically deleted ' +
+        'by the system before now, or because of http-music attempting to ' +
+        'delete a temporary file which it has already deleted; otherwise ' +
+        'this is almost certainly a bug.'
+      )
+    } else {
+      throw err
+    }
+  }
 }
 
 module.exports = {
