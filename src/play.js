@@ -43,7 +43,11 @@ function clearConsoleLine() {
 
 async function determineDefaultPlayer() {
   if (await commandExists('mpv')) {
-    return 'mpv'
+    if (await commandExists('mkfifo')) {
+      return 'mpv'
+    } else {
+      return 'mpv-nofifo'
+    }
   } else if (await commandExists('play')) {
     return 'play'
   } else {

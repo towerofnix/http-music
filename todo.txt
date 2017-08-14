@@ -272,9 +272,8 @@ TODO: Delete temporary files when done with them - seriously! http-music alone
 TODO: Players (MPV, SoX) should be separate (sub-)classes.
       (Done!)
 
-TODO: FIFO doesn't work on Windows.
-      (Done! - Use mpv-nofifo player. Would like to automatically check for
-      mkfifo command; then use nofifo if that doesn't exist.)
+TODO: FIFO doesn't work on Windows. Implement a no-fifo player.
+      (Done!)
 
 TODO: It looks like the SoX player is broken? - Fix this!
       (Done!)
@@ -310,3 +309,8 @@ TODO: A shuffle-groups picker would be fun! (That is, it would take a
       (Done!)
 
 TODO: cheerio and xmldoc are both NPM dependencies. This seems Bad!
+
+TODO: Check if the `mkfifo` shell command exists when determining the
+      player to use; if it doesn't, use mpv-nofifo. For better support on
+      Windows!
+      (Done!)
