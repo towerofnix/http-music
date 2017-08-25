@@ -62,13 +62,14 @@ async function main(args) {
   let pickerSortMode = 'shuffle'
   let pickerLoopMode = 'loop-regenerate'
   let playerCommand = await determineDefaultPlayer()
-  let playOpts = []
 
   // WILL play says whether the user has forced playback via an argument.
   // SHOULD play says whether the program has automatically decided to play
   // or not, if the user hasn't set WILL play.
   let shouldPlay = true
   let willPlay = null
+
+  let disablePlaybackStatus = false
 
   async function openPlaylist(arg, silent = false) {
     let playlistText
@@ -310,7 +311,17 @@ async function main(args) {
       // installed on your system.
 
       playerCommand = util.nextArg()
-    }
+    },
+
+    '-disable-playback-status': function() {
+      // --disable-playback-status  (alias: --hide-playback-status)
+      // Hides the playback status line.
+
+      console.log("Not showing playback status.")
+      disablePlaybackStatus = true
+    },
+
+    '-hide-playback-status': util => util.alias('-disable-playback-status')
   }
 
   await openPlaylist('./playlist.json', true)
@@ -335,7 +346,10 @@ async function main(args) {
       playController,
       downloadController,
       player
-    } = await startLoopPlay(activePlaylist, picker, playerCommand, playOpts)
+    } = await startLoopPlay(activePlaylist, {
+      picker, playerCommand,
+      disablePlaybackStatus
+    })
 
     // We're looking to gather standard input one keystroke at a time.
     // But that isn't *always* possible, e.g. when piping into the http-music

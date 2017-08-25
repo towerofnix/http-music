@@ -22,6 +22,10 @@ const {
 } = require('./downloaders')
 
 class Player {
+  constructor() {
+    this.disablePlaybackStatus = false
+  }
+
   playFile(file) {}
   seekAhead(secs) {}
   seekBack(secs) {}
@@ -43,6 +47,10 @@ class MPVPlayer extends Player {
     this.process = spawn('mpv', this.getMPVOptions(file))
 
     this.process.stderr.on('data', data => {
+      if (this.disablePlaybackStatus) {
+        return
+      }
+
       const match = data.toString().match(
         /(..):(..):(..) \/ (..):(..):(..) \(([0-9]+)%\)/
       )
@@ -147,7 +155,25 @@ class SoXPlayer extends Player {
 
     this.process = spawn('play', [file])
 
-    return promisifyProcess(this.process)
+    this.process.stdout.on('data', data => {
+      process.stdout.write(data.toString())
+    })
+
+    // Most output from SoX is given to stderr, for some reason!
+    this.process.stderr.on('data', data => {
+      // The status line starts with "In:".
+      if (data.toString().trim().startsWith('In:')) {
+        if (this.disablePlaybackStatus) {
+          return
+        }
+      }
+
+      process.stdout.write(data.toString())
+    })
+
+    return new Promise(resolve => {
+      this.process.on('close', () => resolve())
+    })
   }
 
   async kill() {
@@ -425,7 +451,10 @@ class PlayController extends EventEmitter {
 }
 
 module.exports = async function startLoopPlay(
-  playlist, picker, playerCommand = 'mpv', playOpts = []
+  playlist, {
+    picker, playerCommand = 'mpv',
+    disablePlaybackStatus = false
+  }
 ) {
   // Looping play function. Takes one argument, the "picker" function,
   // which returns a track to play. Stops when the result of the picker
@@ -453,6 +482,8 @@ module.exports = async function startLoopPlay(
     return Promise.resolve()
   }
 
+  Object.assign(player, {disablePlaybackStatus})
+
   const downloadController = new DownloadController(playlist)
   await downloadController.init()
 
@@ -460,7 +491,7 @@ module.exports = async function startLoopPlay(
     picker, player, playlist, downloadController
   )
 
-  Object.assign(playController, {playerCommand, playOpts})
+  Object.assign(playController, {playerCommand})
 
   const promise = playController.loopPlay()
 
