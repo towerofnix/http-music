@@ -397,15 +397,14 @@ async function main(args) {
         player.seekBack(30)
       }
 
-      if (esc(0x41).equals(data)) {
-        player.volUp(10)
+      if (esc(0x41).equals(data) || equalsChar('p')) { // Previous
+        clearConsoleLine()
+        console.log("Skipping backwards. (Press I for track info!")
+
+        playController.skipBack()
       }
 
-      if (esc(0x42).equals(data)) {
-        player.volDown(10)
-      }
-
-      if (equalsChar('s')) {
+      if (esc(0x42).equals(data) || equalsChar('s')) { // Skip
         clearConsoleLine()
         console.log(
           "Skipping the track that's currently playing. " +
@@ -413,6 +412,14 @@ async function main(args) {
         )
 
         playController.skip()
+      }
+
+      if (shiftEsc(0x41).equals(data)) {
+        player.volUp(10)
+      }
+
+      if (shiftEsc(0x42).equals(data)) {
+        player.volDown(10)
       }
 
       if (Buffer.from([0x7f]).equals(data)) {

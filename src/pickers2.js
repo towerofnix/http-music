@@ -52,13 +52,28 @@ class HistoryController {
     }
   }
 
-  getNextTrack() {
+  getNextTrack(move = true) {
     // Moves the timeline index forwards and returns the track at the new index
     // (while refilling the timeline, so that the "up next" list is still full,
     // and so the picker is called if there is no track at the current index).
-    this.timelineIndex++
-    this.fillTimeline()
-    return this.currentTrack
+    if (move) {
+      this.timelineIndex++
+      this.fillTimeline()
+      return this.currentTrack
+    } else {
+      return this.timeline[this.timelineIndex + 1]
+    }
+  }
+
+  getBackTrack(move = true) {
+    if (move) {
+      if (this.timelineIndex > 0) {
+        this.timelineIndex--
+      }
+      return this.currentTrack
+    } else {
+      return this.timeline[Math.max(this.timelineIndex - 1, 0)]
+    }
   }
 
   get currentTrack() {

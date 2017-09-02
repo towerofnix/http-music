@@ -305,6 +305,7 @@ class PlayController extends EventEmitter {
     this.nextTrack = null
     this.nextFile = undefined // TODO: Why isn't this null?
     this.stopped = false
+    this.shouldMoveNext = true
   }
 
   async loopPlay() {
@@ -340,8 +341,12 @@ class PlayController extends EventEmitter {
         }
       }
 
-      this.historyController.timelineIndex++
-      this.historyController.fillTimeline()
+      if (!this.shouldMoveNext) {
+        this.shouldMoveNext = true
+      } else {
+        this.historyController.timelineIndex++
+        this.historyController.fillTimeline()
+      }
 
       await this.waitForDownload()
     }
@@ -420,6 +425,27 @@ class PlayController extends EventEmitter {
     // TODO: It would be nice if this returned the next track, but that
     // probably isn't possible with the current play/loop-setup.
 
+    if (this.nextTrack !== this.historyController.getNextTrack(false)) {
+      this.downloadController.cancel()
+      this.startNextDownload(this.historyController.getNextTrack())
+      this.shouldMoveNext = false
+    }
+
+    await this.player.kill()
+    this.currentTrack = null
+  }
+
+  async skipBack() {
+    // Usually the downloader moves forwards in time (so, the NEXT track will
+    // be pre-downloaded). Here, we want to move back, so we need to override
+    // the downloader ourselves.
+
+    if (this.nextTrack !== this.historyController.getBackTrack(false)) {
+      this.downloadController.cancel()
+      this.startNextDownload(this.historyController.getBackTrack())
+    }
+
+    this.shouldMoveNext = false
     await this.player.kill()
     this.currentTrack = null
   }
@@ -429,7 +455,6 @@ class PlayController extends EventEmitter {
       await safeUnlink(this.nextFile, this.playlist)
     }
 
-    // The timeline is always one index ahead.
     const tl = this.historyController.timeline
     tl.splice(this.historyController.timelineIndex + 1, 1)
     this.historyController.fillTimeline()
