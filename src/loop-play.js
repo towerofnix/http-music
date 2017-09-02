@@ -350,10 +350,12 @@ class PlayController extends EventEmitter {
     })
   }
 
-  startNextDownload() {
+  startNextDownload(moveTimelineIndex = true) {
     this.isDownloading = true
 
-    const picked = this.historyController.getNextTrack()
+    const picked = (moveTimelineIndex
+      ? this.historyController.getNextTrack()
+      : this.historyController.currentTrack)
     this.nextTrack = picked
 
     if (!picked) {
@@ -413,8 +415,13 @@ class PlayController extends EventEmitter {
       await safeUnlink(this.nextFile, this.playlist)
     }
 
+    // The timeline is always one index ahead.
+    const tl = this.historyController.timeline
+    tl.splice(this.historyController.timelineIndex - 1, 1)
+    this.historyController.fillTimeline()
+
     this.downloadController.cancel()
-    return this.startNextDownload()
+    return this.startNextDownload(false)
   }
 
   async stop() {
