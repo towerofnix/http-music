@@ -396,6 +396,13 @@ class PlayController extends EventEmitter {
           "\x1b[31mFailed to download (or convert) track \x1b[1m" +
           getItemPathString(this.nextTrack) + "\x1b[0m"
         )
+
+        // A little bit blecht, but.. this works.
+        const tl = this.historyController.timeline
+        const index = tl.indexOf(picked)
+        tl.splice(index, 1)
+        this.historyController.fillTimeline()
+        this.startNextDownload(tl[index])
       })
 
     return picked
