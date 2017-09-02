@@ -316,3 +316,7 @@ TODO: Check if the `mkfifo` shell command exists when determining the
       (Done!)
 
 TODO: History VOODOO!
+      (Done!)
+
+TODO: Fix the shuffle players, which don't really work anymore (they more or
+      less behave like pick-random).
