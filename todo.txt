@@ -314,3 +314,5 @@ TODO: Check if the `mkfifo` shell command exists when determining the
       player to use; if it doesn't, use mpv-nofifo. For better support on
       Windows!
       (Done!)
+
+TODO: History VOODOO!
