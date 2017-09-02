@@ -312,7 +312,8 @@ class PlayController extends EventEmitter {
     // set it yet.
     this.nextTrack = undefined
 
-    this.startNextDownload()
+    // Download the very first track.
+    this.startNextDownload(this.historyController.getNextTrack())
 
     await this.waitForDownload()
 
@@ -322,7 +323,10 @@ class PlayController extends EventEmitter {
       const next = this.nextFile
       this.nextFile = undefined
 
-      this.startNextDownload()
+      // Pre-download the track that's up next.
+      this.startNextDownload(this.historyController.timeline[
+        this.historyController.timelineIndex + 1
+      ])
 
       if (next) {
         await this.playFile(next)
@@ -335,6 +339,9 @@ class PlayController extends EventEmitter {
           await safeUnlink(next, this.playlist)
         }
       }
+
+      this.historyController.timelineIndex++
+      this.historyController.fillTimeline()
 
       await this.waitForDownload()
     }
@@ -350,12 +357,9 @@ class PlayController extends EventEmitter {
     })
   }
 
-  startNextDownload(moveTimelineIndex = true) {
+  startNextDownload(picked) {
     this.isDownloading = true
 
-    const picked = (moveTimelineIndex
-      ? this.historyController.getNextTrack()
-      : this.historyController.currentTrack)
     this.nextTrack = picked
 
     if (!picked) {
@@ -387,12 +391,11 @@ class PlayController extends EventEmitter {
         this.emit('downloaded')
       })
       .catch(() => {
+        // TODO: Test this!!
         console.warn(
           "\x1b[31mFailed to download (or convert) track \x1b[1m" +
           getItemPathString(this.nextTrack) + "\x1b[0m"
         )
-
-        this.startNextDownload()
       })
 
     return picked
@@ -417,11 +420,11 @@ class PlayController extends EventEmitter {
 
     // The timeline is always one index ahead.
     const tl = this.historyController.timeline
-    tl.splice(this.historyController.timelineIndex - 1, 1)
+    tl.splice(this.historyController.timelineIndex + 1, 1)
     this.historyController.fillTimeline()
 
     this.downloadController.cancel()
-    return this.startNextDownload(false)
+    return this.startNextDownload(tl[this.historyController.timelineIndex + 1])
   }
 
   async stop() {
@@ -454,7 +457,7 @@ class PlayController extends EventEmitter {
 
     const hc = this.historyController
     const tl = hc.timeline
-    const tlI = hc.timelineIndex - 1
+    const tlI = hc.timelineIndex
 
     for (let i = Math.max(0, tlI - 2); i < tlI; i++) {
       console.log(`\x1b[2m(Prev) ${getCleanMessage(tl[i])}\x1b[0m`)
