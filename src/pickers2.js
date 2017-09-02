@@ -96,7 +96,7 @@ const createOrderedPicker = playlist => {
 
 // Test script:
 
-{
+if (require.main === module) {
   const playlist = {items: [{x: 'A'}, {x: 'B'}, {x: 'C'}, {items: [{x: 'D-a'}, {x: 'D-b'}]}, {x: 'E'}]}
   const picker = createOrderedPicker(playlist)
   const hm = new HistoryManager(picker)
