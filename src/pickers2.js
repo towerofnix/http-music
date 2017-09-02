@@ -67,37 +67,6 @@ class HistoryManager {
   }
 }
 
-/*
-const createOrderedPicker = playlist => {
-  const flattened = flattenGrouplike(playlist)
-
-  return lastTrack => {
-    if (lastTrack === null) {
-      return flattened.items[0]
-    }
-
-    const index = flattened.items.indexOf(lastTrack)
-
-    // Technically, if the index is -1, flattened[0] will be automatically
-    // selected, but that isn't really obvious; handling it separately makes
-    // it clearer that when we're given a track that's not in the playlist,
-    // we just pick the first track in the entire playlist.
-    if (index === -1) {
-      return flattened.items[0]
-    }
-
-    // If we just played the last track, start back from the beginning.
-    if (index + 1 === flattened.items.length) {
-      return flattened.items[0]
-    }
-
-    // Otherwise, we just played some other track in the playlist, so we just
-    // pick the next track.
-    return flattened.items[index + 1]
-  }
-}
-*/
-
 function shuffleGroups(grouplike) {
   if (isGroup(grouplike) && grouplike.items.every(isGroup)) {
     const items = shuffleArray(grouplike.items.map(shuffleGroups))
