@@ -398,6 +398,10 @@ class PlayController extends EventEmitter {
         )
 
         // A little bit blecht, but.. this works.
+        // "When a track fails, remove it from the timeline, and start
+        // downloading whatever track fills its place."
+        // Only problem is if a track before the current timeline index fails,
+        // maybe? (Since then the timelineIndex value might be messed up?)
         const tl = this.historyController.timeline
         const index = tl.indexOf(picked)
         tl.splice(index, 1)
