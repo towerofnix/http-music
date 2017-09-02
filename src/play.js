@@ -7,7 +7,6 @@ const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
 const commandExists = require('./command-exists')
-const makePicker = require('./pickers')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const processSmartPlaylist = require('./smart-playlist')
@@ -337,8 +336,6 @@ async function main(args) {
   if (willPlay || (willPlay === null && shouldPlay)) {
     console.log(`Using sort: ${pickerSortMode} and loop: ${pickerLoopMode}.`)
 
-    const picker = makePicker(activePlaylist, pickerSortMode, pickerLoopMode)
-
     console.log(`Using ${playerCommand} player.`)
 
     const {
@@ -347,7 +344,11 @@ async function main(args) {
       downloadController,
       player
     } = await startLoopPlay(activePlaylist, {
-      picker, playerCommand,
+      pickerOptions: {
+        loop: pickerLoopMode,
+        sort: pickerSortMode
+      },
+      playerCommand,
       disablePlaybackStatus
     })
 

@@ -13,9 +13,8 @@ const FIFO = require('fifo-js')
 const EventEmitter = require('events')
 const promisifyProcess = require('./promisify-process')
 const killProcess = require('./kill-process')
-const { getItemPathString } = require('./playlist-utils')
-
-const { safeUnlink } = require('./playlist-utils')
+const { getItemPathString, safeUnlink } = require('./playlist-utils')
+const { HistoryController, generalPicker } = require('./pickers2')
 
 const {
   getDownloaderFor, byName: downloadersByName, makeConverter
@@ -294,12 +293,12 @@ class DownloadController extends EventEmitter {
 }
 
 class PlayController extends EventEmitter {
-  constructor(picker, player, playlist, downloadController) {
+  constructor(player, playlist, historyController, downloadController) {
     super()
 
-    this.picker = picker
     this.player = player
     this.playlist = playlist
+    this.historyController = historyController
     this.downloadController = downloadController
 
     this.currentTrack = null
@@ -354,7 +353,7 @@ class PlayController extends EventEmitter {
   startNextDownload() {
     this.isDownloading = true
 
-    const picked = this.picker()
+    const picked = this.historyController.getNextTrack()
     this.nextTrack = picked
 
     if (!picked) {
@@ -452,14 +451,13 @@ class PlayController extends EventEmitter {
 
 module.exports = async function startLoopPlay(
   playlist, {
-    picker, playerCommand = 'mpv',
+    pickerOptions, playerCommand = 'mpv',
     disablePlaybackStatus = false
   }
 ) {
-  // Looping play function. Takes one argument, the "picker" function,
-  // which returns a track to play. Stops when the result of the picker
-  // function is null (or similar). Optionally takes a second argument
-  // used as arguments to the `play` process (before the file name).
+  // Looping play function. Takes a playlist and an object containing general
+  // options (picker options, player command, and disable-playback-status).
+  // Stops when the history controller returns null.
 
   let player
   if (playerCommand === 'sox' || playerCommand === 'play') {
@@ -487,8 +485,12 @@ module.exports = async function startLoopPlay(
   const downloadController = new DownloadController(playlist)
   await downloadController.init()
 
+  const historyController = new HistoryController(
+    playlist, generalPicker, pickerOptions
+  )
+
   const playController = new PlayController(
-    picker, player, playlist, downloadController
+    player, playlist, historyController, downloadController
   )
 
   Object.assign(playController, {playerCommand})

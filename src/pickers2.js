@@ -204,6 +204,7 @@ function generalPicker(playlist, lastTrack, options) {
   }
 }
 
+module.exports = {HistoryController, generalPicker}
 
 // ----------------------------------------------------------------------------
 
