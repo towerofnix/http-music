@@ -104,7 +104,16 @@ const createOrderedPicker = playlist => {
   console.log(hm.timeline)
   console.log('initial length:', hm.timeline.length)
   for (let i = 0; i < 6; i++) {
-    console.log('next:', hm.getNextTrack())
-    console.log('length:', hm.timeline.length)
+    console.log(`(${hm.timelineIndex}) next:`, hm.getNextTrack())
+    console.log(`(-> ${hm.timelineIndex}) length:`, hm.timeline.length)
+  }
+
+  console.log('setting timeline index to 2 (3)..')
+  hm.timelineIndex = 2
+  console.log('current:', hm.currentTrack)
+
+  for (let i = 0; i < 6; i++) {
+    console.log(`(${hm.timelineIndex}) next:`, hm.getNextTrack())
+    console.log(`(-> ${hm.timelineIndex}) length:`, hm.timeline.length)
   }
 }
