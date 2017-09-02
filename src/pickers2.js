@@ -12,6 +12,8 @@
 // Picker state is used to contain information specific to that picker (for example, the seed a shuffle picker uses, or sorting methods).
 // Uncertain on how to handle serialization of tracks.. some tracks may appear twice in the same playlist (or two tracks of the same name appear); in this case the serialized path to the two track appearances is the same, when they really refer to two separate instances of the track within the playlist. Could track serialization instead be index-based (rather than name-based)..?
 
+const { flattenGrouplike } = require('./playlist-utils')
+
 class HistoryManager {
   constructor(picker) {
     this.picker = picker
@@ -29,6 +31,11 @@ class HistoryManager {
   }
 
   fillTimeline() {
+    // Refills the timeline so that there's at least timelineFillSize tracks
+    // past the current timeline index (which is considered to be at least 0,
+    // i.e. so that while it is -1 initially, the length will still be filled
+    // to a length of tilelineFillSize).
+
     // Math.max is used here because we should always be loading at least one
     // track (the one at the current index)!
     const targetSize = (
@@ -42,13 +49,46 @@ class HistoryManager {
   }
 
   getNextTrack() {
+    // Moves the timeline index forwards and returns the track at the new index
+    // (while refilling the timeline, so that the "up next" list is still full,
+    // and so the picker is called if there is no track at the current index).
     this.timelineIndex++
     this.fillTimeline()
     return this.currentTrack
   }
 
   get currentTrack() {
+    // Returns the track in the timeline at the current index.
     return this.timeline[this.timelineIndex]
+  }
+}
+
+const createOrderedPicker = playlist => {
+  const flattened = flattenGrouplike(playlist)
+
+  return lastTrack => {
+    if (lastTrack === null) {
+      return flattened[0]
+    }
+
+    const index = flattened.items.indexOf(lastTrack)
+
+    // Technically, if the index is -1, flattened[0] will be automatically
+    // selected, but that isn't really obvious; handling it separately makes
+    // it clearer that when we're given a track that's not in the playlist,
+    // we just pick the first track in the entire playlist.
+    if (index === -1) {
+      return flattened.items[0]
+    }
+
+    // If we just played the last track, start back from the beginning.
+    if (index + 1 === flattened.items.length) {
+      return flattened.items[0]
+    }
+
+    // Otherwise, we just played some other track in the playlist, so we just
+    // pick the next track.
+    return flattened.items[index + 1]
   }
 }
 
@@ -57,21 +97,8 @@ class HistoryManager {
 // Test script:
 
 {
-  const playlist = [{x: 'A'}, {x: 'B'}, {x: 'C'}, {x: 'D'}]
-  const picker = (lastTrack) => {
-    if (lastTrack === null) {
-      return playlist[0]
-    } else {
-      const index = playlist.indexOf(lastTrack)
-      if (index === -1) {
-        return playlist[0]
-      } else if (index < playlist.length - 1) {
-        return playlist[index + 1]
-      } else {
-        return playlist[0]
-      }
-    }
-  }
+  const playlist = {items: [{x: 'A'}, {x: 'B'}, {x: 'C'}, {items: [{x: 'D-a'}, {x: 'D-b'}]}, {x: 'E'}]}
+  const picker = createOrderedPicker(playlist)
   const hm = new HistoryManager(picker)
   hm.fillTimeline()
   console.log(hm.timeline)
