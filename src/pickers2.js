@@ -14,7 +14,7 @@
 
 const { flattenGrouplike } = require('./playlist-utils')
 
-class HistoryManager {
+class HistoryController {
   constructor(playlist, picker, pickerOptions = {}) {
     this.playlist = playlist
     this.picker = picker
@@ -211,7 +211,7 @@ function generalPicker(playlist, lastTrack, options) {
 
 if (require.main === module) {
   const playlist = {items: [{x: 'A'}, {x: 'B'}, {x: 'C'}, {items: [{x: 'D-a'}, {x: 'D-b'}]}, {x: 'E'}]}
-  const hm = new HistoryManager(playlist, generalPicker, {sort: 'ordered', loop: 'loop'})
+  const hm = new HistoryController(playlist, generalPicker, {sort: 'ordered', loop: 'loop'})
   hm.fillTimeline()
   console.log(hm.timeline)
   console.log('initial length:', hm.timeline.length)
