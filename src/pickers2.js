@@ -15,10 +15,13 @@
 const { flattenGrouplike } = require('./playlist-utils')
 
 class HistoryManager {
-  constructor(picker) {
+  constructor(playlist, picker, pickerOptions = {}) {
+    this.playlist = playlist
     this.picker = picker
+    this.pickerOptions = pickerOptions // This is mutable by the picker!
+
     this.timeline = []
-    this.timelineIndex = -1 // is 0 upon first getNextTrack
+    this.timelineIndex = -1 // Becomes 0 upon first call of getNextTrack.
 
     // Number of tracks that should be picked and placed into the timeline
     // "ahead of time" (i.e. past the timelineIndex).
@@ -26,8 +29,9 @@ class HistoryManager {
   }
 
   addNextTrackToTimeline(picker) {
-    const lastTrack = this.timeline[this.timeline.length - 1]
-    this.timeline.push(this.picker(lastTrack || null))
+    const lastTrack = this.timeline[this.timeline.length - 1] || null
+    const picked = this.picker(this.playlist, lastTrack, this.pickerOptions)
+    this.timeline.push(picked)
   }
 
   fillTimeline() {
@@ -63,6 +67,7 @@ class HistoryManager {
   }
 }
 
+/*
 const createOrderedPicker = playlist => {
   const flattened = flattenGrouplike(playlist)
 
@@ -91,6 +96,145 @@ const createOrderedPicker = playlist => {
     return flattened.items[index + 1]
   }
 }
+*/
+
+function shuffleGroups(grouplike) {
+  if (isGroup(grouplike) && grouplike.items.every(isGroup)) {
+    const items = shuffleArray(grouplike.items.map(shuffleGroups))
+    return Object.assign({}, grouplike, {items})
+  } else {
+    return grouplike
+  }
+}
+
+function shuffleArray(array) {
+  // Shuffles the items in an array. Super-interesting post on how it works:
+  // https://bost.ocks.org/mike/shuffle/
+
+  const workingArray = array.slice(0)
+
+  let m = array.length
+
+  while (m) {
+    let i = Math.floor(Math.random() * m)
+    m--
+
+    // Stupid lol; avoids the need of a temporary variable!
+    Object.assign(workingArray, {
+      [m]: workingArray[i],
+      [i]: workingArray[m]
+    })
+  }
+
+  return workingArray
+}
+
+// ----------------------------------------------------------------------------
+
+function sortFlattenGrouplike(grouplike, sort) {
+  // Returns a grouplike.
+  // TODO: This should accept a seed (which would control how it shuffles)..
+
+  if (sort === 'order' || sort === 'ordered') {
+    return {items: flattenGrouplike(grouplike).items}
+  }
+
+  if (sort === 'shuffle' || sort === 'shuffled') {
+    return {items: shuffleArray(flattenGrouplike(grouplike).items)}
+  }
+
+  if (sort === 'shuffle-groups' || sort === 'shuffled-groups') {
+    return {items: flattenGrouplike(shuffleGroups(grouplike)).items}
+  }
+}
+
+function generalPicker(playlist, lastTrack, options) {
+  const { sort, loop } = options
+
+  if (![
+    'order', 'ordered', 'shuffle', 'shuffled', 'shuffle-groups',
+    'shuffled-groups'
+  ].includes(sort)) {
+    throw new Error(`Invalid sort mode: ${sort}`)
+  }
+
+  if (![
+    'loop', 'no-loop', 'no', 'loop-same-order', 'loop-regenerate',
+    'pick-random'
+  ].includes(loop)) {
+    throw new Error(`Invalid loop mode: ${loop}`)
+  }
+
+  const flattened = sortFlattenGrouplike(playlist, sort)
+
+  const index = flattened.items.indexOf(lastTrack)
+
+  if (index === -1) {
+    return flattened.items[0]
+  }
+
+  if (index + 1 === flattened.items.length) {
+    if (loop === 'loop-same-order' || loop === 'loop') {
+      return flattened.items[0]
+    }
+
+    if (loop === 'loop-regenerate') {
+      if (sort === 'shuffle') {
+        // TODO: Regenerate shuffle seed. Remember to re-flatten, or else
+        // we'll be picking the first track from the old shuffle!
+        // options.shuffleSeed = ...
+        // flattened.items = sortFlattenPlaylist(.., options.shuffleSeed)
+        // Probably best to have a "generate shuffle options" function at the
+        // top of the function, which can be called if shuffleSeed is
+        // undefined (which it usually will be, on the first run of the
+        // picker).
+      }
+
+      return flattened.items[0]
+    }
+
+    if (loop === 'no-loop' || loop === 'no') {
+      // Returning null means the picker is done picking.
+      return null
+    }
+  }
+
+  if (index + 1 > flattened.items.length) {
+    throw new Error(
+      "Picker index is greater than total item count?" +
+      `(${index} > ${topLevel.items.length}`
+    )
+  }
+
+  if (index + 1 < flattened.items.length) {
+    // Pick-random is a special exception - in this case we don't actually
+    // care about the value of the index variable; instead we just pick a
+    // random track from the generated top level.
+    //
+    // Loop=pick-random is different from sort=shuffle. Sort=shuffle always
+    // ensures the same song doesn't play twice in a single shuffle. It's
+    // like how when you shuffle a deck of cards, you'll still never pick
+    // the same card twice, until you go all the way through the deck and
+    // re-shuffle the deck!
+    //
+    // Loop=pick-random instead picks a random track every time the picker
+    // is called. It's more like you reshuffle the complete deck every time
+    // you pick something.
+    //
+    // Now, how should pick-random work when dealing with groups, such as
+    // when using sort=shuffle-groups? (If I can't find a solution, I'd say
+    // that's alright.)
+    /*
+    if (loop === 'pick-random') {
+      const pickedIndex = Math.floor(Math.random() * topLevel.items.length)
+      return topLevel.items[pickedIndex]
+    }
+    */
+
+    return flattened.items[index + 1]
+  }
+}
+
 
 // ----------------------------------------------------------------------------
 
@@ -98,8 +242,7 @@ const createOrderedPicker = playlist => {
 
 if (require.main === module) {
   const playlist = {items: [{x: 'A'}, {x: 'B'}, {x: 'C'}, {items: [{x: 'D-a'}, {x: 'D-b'}]}, {x: 'E'}]}
-  const picker = createOrderedPicker(playlist)
-  const hm = new HistoryManager(picker)
+  const hm = new HistoryManager(playlist, generalPicker, {sort: 'ordered', loop: 'loop'})
   hm.fillTimeline()
   console.log(hm.timeline)
   console.log('initial length:', hm.timeline.length)
