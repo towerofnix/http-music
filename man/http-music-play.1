@@ -16,18 +16,26 @@ Downloaded tracks are played with either the \fBmpv\fR (default) or \fBplay\fR (
 .SH KEYBOARD CONTROLS
 .TP
 .BR <left-arrow>
-Skips backwards 5 seconds in the currently playing track; hold shift to skip by
-30 seconds.
+Skips backwards 5 seconds in the currently playing track; hold shift to skip by 30 seconds.
 (Requires MPV player.)
 
 .TP
 .BR <right-arrow>
-Skips forwards 5 seconds in the currently playing track; hold shift to skip by
-30 seconds.
+Skips forwards 5 seconds in the currently playing track; hold shift to skip by 30 seconds.
 (Requires MPV player.)
 
 .TP
 .BR <up-arrow>
+Skips to the track that just previously played.
+(\fBp\fR (for "Previous") also works.)
+
+.TP
+.BR <down-arrow>
+Skips past the track that's currently playing.
+(\fBs\fR (for "Skip") also works.)
+
+.TP
+.BR <shift>-<up-arrow>
 Turns the volume up a 10%-notch.
 Unfortunately, at present, the volume setting is NOT kept across tracks.
 You'll need to adjust your audio volume whenever a new song starts.
@@ -35,7 +43,7 @@ You'll need to adjust your audio volume whenever a new song starts.
 (Requires MPV player.)
 
 .TP
-.BR <down-arrow>
+.BR <shift>-<down-arrow>
 Turns the volume down 10%.
 (Requires MPV player.)
 
@@ -50,13 +58,19 @@ Shows information (title, URL/path) on the currently playing track.
 (\fBt\fR also works.)
 
 .TP
+.BR p
+Skips to the track that just previously played.
+(\fB<up-arrow>\fR also works.)
+
+.TP
 .BR q
 Quits the http-music process and stops music currently being played.
 (\fB^C\fR and \fB^D\fR also work.)
 
 .TP
 .BR s
-Skips the currently playing track.
+Skips past the track that's currently playing.
+(\fB<down-arrow>\fR also works.)
 
 
 .SH OPTIONS
@@ -92,7 +106,7 @@ If this is the last option used, nothing plays (see \fB\-\-play\fR).
 .TP
 .BR \-\-loop\-mode ", " \-\-loop
 Sets the mode by which the playback order list is looped (typically, what happens when the picker's index counter gets to the end of the list).
-Valid options include \fBno-loop\fR (or \fBno\fR), \fBloop-same-order\fR (or \fBloop\fR), \fBloop-regenerate\fR (the default), and \fBpick-random\fR.
+Valid options include \fBno-loop\fR (or \fBno\fR), \fBloop-same-order\fR (or \fBloop\fR), and \fBloop-regenerate\fR (the default).
 See also \fB\-\-sort\-mode\fR.
 
 .TP
