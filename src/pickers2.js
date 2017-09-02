@@ -27,7 +27,7 @@ class HistoryManager {
 
   addNextTrackToTimeline(picker) {
     const lastTrack = this.timeline[this.timeline.length - 1]
-    this.timeline.push(this.picker(lastTrack))
+    this.timeline.push(this.picker(lastTrack || null))
   }
 
   fillTimeline() {
@@ -68,7 +68,7 @@ const createOrderedPicker = playlist => {
 
   return lastTrack => {
     if (lastTrack === null) {
-      return flattened[0]
+      return flattened.items[0]
     }
 
     const index = flattened.items.indexOf(lastTrack)
