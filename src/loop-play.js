@@ -434,24 +434,36 @@ class PlayController extends EventEmitter {
   }
 
   logTrackInfo() {
-    const getMessage = t => {
-      let path = getItemPathString(t)
+    const getColorMessage = t => {
+      if (!t) return '\x1b[2m(No track)\x1b[0m'
+
+      const path = getItemPathString(t)
 
       return (
-        `\x1b[1m${t.name} \x1b[0m@ ${path} \x1b[2m${t.downloaderArg}\x1b[0m`
+        `\x1b[1m${t.name} \x1b[0m@ ${path} \x1b[2m(${t.downloaderArg})\x1b[0m`
       )
     }
 
-    if (this.currentTrack) {
-      console.log(`Playing: ${getMessage(this.currentTrack)}`)
-    } else {
-      console.log("No song currently playing.")
+    const getCleanMessage = t => {
+      if (!t) return '(No track)'
+
+      const path = getItemPathString(t)
+
+      return `${t.name} @ ${path}`
     }
 
-    if (this.nextTrack) {
-      console.log(`Up next: ${getMessage(this.nextTrack)}`)
-    } else {
-      console.log("No song up next.")
+    const hc = this.historyController
+    const tl = hc.timeline
+    const tlI = hc.timelineIndex - 1
+
+    for (let i = Math.max(0, tlI - 2); i < tlI; i++) {
+      console.log(`\x1b[2m(Prev) ${getCleanMessage(tl[i])}\x1b[0m`)
+    }
+
+    console.log(`\x1b[1m(Curr) \x1b[1m${getColorMessage(tl[tlI])}\x1b[0m`)
+
+    for (let i = tlI + 1; i < Math.min(tlI + 3, tl.length); i++) {
+      console.log(`(Next) ${getCleanMessage(tl[i])}`)
     }
   }
 }
