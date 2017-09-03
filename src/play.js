@@ -9,6 +9,7 @@ const fetch = require('node-fetch')
 const commandExists = require('./command-exists')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
+const { compileKeybindings } = require('./keybinder')
 const processSmartPlaylist = require('./smart-playlist')
 
 const {
@@ -366,7 +367,7 @@ async function main(args) {
       'doNothing': function() {},
 
       // TODO: Separate pause and unpause commands
-      'toggle_pause': function() {
+      'togglePause': function() {
         player.togglePause()
       },
 
@@ -437,25 +438,9 @@ async function main(args) {
       }
     }
 
-    const splitChars = str => str.split('').map(char => char.charCodeAt(0))
-
-    const simpleKeybindings = {
-      space: [0x20],
-      esc: [0x1b], escape: [0x1b],
-      up: [0x1b, ...splitChars('[A')],
-      down: [0x1b, ...splitChars('[B')],
-      right: [0x1b, ...splitChars('[C')],
-      left: [0x1b, ...splitChars('[D')],
-      shiftUp: [0x1b, ...splitChars('[1;2A')],
-      shiftDown: [0x1b, ...splitChars('[1;2B')],
-      shiftRight: [0x1b, ...splitChars('[1;2C')],
-      shiftLeft: [0x1b, ...splitChars('[1;2D')],
-      delete: [0x7f]
-    }
-
     // TODO: Load these from a file
     // TODO: Verify that each command exists
-    const commandBindings = {
+    const keybindingHandler = compileKeybindings({
       bindings: [
         [['space'], 'togglePause'],
         [['left'], 'seek', -5],
@@ -470,7 +455,7 @@ async function main(args) {
         [['t'], 'showTrackInfo'],
         [['q'], 'quit']
       ]
-    }
+    }.bindings, commands)
 
     process.stdin.on('data', data => {
       const escModifier = Buffer.from('\x1b[')
@@ -498,30 +483,7 @@ async function main(args) {
         return
       }
 
-      for (let [ keyBinding, command, ...args ] of commandBindings.bindings) {
-        let run = true
-
-        // TODO: "Compile" keybindings upon loading them
-        const buffer = Buffer.from(keyBinding.map(item => {
-          if (typeof item === 'number') {
-            return [item]
-          } else if (Object.keys(simpleKeybindings).includes(item)) {
-            return simpleKeybindings[item]
-          } else if (typeof item === 'string' && item.length === 1) {
-            return [item.charCodeAt(0)]
-          } else {
-            // Error
-            console.warn('Invalid keybinding part?', item, 'in', keyBinding)
-            return [0xFF]
-          }
-        }).reduce((a, b) => a.concat(b), []))
-
-        run = buffer.equals(data)
-
-        if (run && Object.keys(commands).includes(command)) {
-          commands[command](...args)
-        }
-      }
+      keybindingHandler(data)
     })
 
     return playPromise
