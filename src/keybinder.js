@@ -28,7 +28,7 @@ module.exports.compileKeybindings = function(bindings, commands) {
     const bufferParts = keys.map(item => {
       if (typeof item === 'number') {
         return [item]
-      } else if (Object.keys(simpleKeybindings).includes(item)) {
+      } else if (simpleKeybindings.hasOwnProperty(item)) {
         return simpleKeybindings[item]
       } else if (typeof item === 'string' && item.length === 1) {
         return [item.charCodeAt(0)]
