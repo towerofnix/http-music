@@ -320,3 +320,5 @@ TODO: History VOODOO!
 
 TODO: Fix the shuffle players, which don't really work anymore (they more or
       less behave like pick-random).
+
+TODO: The concepts of importing and adding keybindings isn't very intuitive..

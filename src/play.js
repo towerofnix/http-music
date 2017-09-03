@@ -71,6 +71,21 @@ async function main(args) {
 
   let disablePlaybackStatus = false
 
+  const keybindings = [
+    [['space'], 'togglePause'],
+    [['left'], 'seek', -5],
+    [['right'], 'seek', +5],
+    [['shiftLeft'], 'seek', -30],
+    [['shiftRight'], 'seek', +30],
+    [['up'], 'skipBack'],
+    [['down'], 'skipAhead'],
+    [['s'], 'skipAhead'],
+    [['delete'], 'skipUpNext'],
+    [['i'], 'showTrackInfo'],
+    [['t'], 'showTrackInfo'],
+    [['q'], 'quit']
+  ]
+
   async function openPlaylist(arg, silent = false) {
     let playlistText
 
@@ -101,6 +116,30 @@ async function main(args) {
     activePlaylist = clone(processedPlaylist)
 
     processArgv(processedPlaylist.options, optionFunctions)
+  }
+
+  async function openKeybindings(arg, add = true) {
+    console.log("Opening keybindings from: " + arg)
+
+    let keybindingText
+
+    // TODO: Maybe let keybindings be downloaded from a file? We'd probably
+    // just have to rename the downloadPlaylistFromOptionValue function's
+    // name.
+    try {
+      keybindingText = await readFile(arg)
+    } catch(err) {
+      console.error("Failed to open keybinding file: " + arg)
+      return false
+    }
+
+    const openedKeybindings = JSON.parse(keybindingText)
+
+    if (!add) {
+      keybindings.splice(0)
+    }
+
+    keybindings.push(...openedKeybindings)
   }
 
   function requiresOpenPlaylist() {
@@ -184,6 +223,19 @@ async function main(args) {
 
     '-log-playlist': util => util.alias('-print-playlist'),
     '-json': util => util.alias('-print-playlist'),
+
+    // Add appends the keybindings to the existing keybindings; import replaces
+    // the current ones with the opened ones.
+
+    '-add-keybindings': async function(util) {
+      await openKeybindings(util.nextArg())
+    },
+
+    '-open-keybindings': util => util.alias('-add-keybindings'),
+
+    '-import-keybindings': async function(util) {
+      await openKeybindings(util.nextArg(), false)
+    },
 
     '-clear': function(util) {
       // --clear  (alias: -c)
@@ -438,23 +490,7 @@ async function main(args) {
       }
     }
 
-    // TODO: Let the user load custom keybindings from a file.
-    const keybindingHandler = compileKeybindings({
-      bindings: [
-        [['space'], 'togglePause'],
-        [['left'], 'seek', -5],
-        [['right'], 'seek', +5],
-        [['shiftLeft'], 'seek', -30],
-        [['shiftRight'], 'seek', +30],
-        [['up'], 'skipBack'],
-        [['down'], 'skipAhead'],
-        [['s'], 'skipAhead'],
-        [['delete'], 'skipUpNext'],
-        [['i'], 'showTrackInfo'],
-        [['t'], 'showTrackInfo'],
-        [['q'], 'quit']
-      ]
-    }.bindings, commands)
+    const keybindingHandler = compileKeybindings(keybindings, commands)
 
     process.stdin.on('data', data => {
       const escModifier = Buffer.from('\x1b[')
