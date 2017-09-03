@@ -362,6 +362,116 @@ async function main(args) {
       console.warn("If you're piping into http-music, this is normal.")
     }
 
+    const commands = {
+      'doNothing': function() {},
+
+      // TODO: Separate pause and unpause commands
+      'toggle_pause': function() {
+        player.togglePause()
+      },
+
+      'quit': function() {
+        playController.stop().then(() => {
+          process.exit(0)
+        })
+      },
+
+      'seek': function(seconds) {
+        // TODO: Does it even make sense to have these two methods be
+        // separate?
+        if (seconds < 0) {
+          player.seekBack(-seconds)
+        } else {
+          player.seekAhead(seconds)
+        }
+      },
+
+      'changeVolume': function(diff) {
+        // TODO: Why have these be separate?
+        if (diff < 0) {
+          player.volDown(-diff)
+        } else {
+          player.volUp(diff)
+        }
+      },
+
+      // TODO: Skip back/ahead multiple tracks at once
+
+      'skipBack': function() {
+        clearConsoleLine()
+        console.log("Skipping backwards. (Press I for track info!")
+
+        playController.skipBack()
+      },
+
+      'skipAhead': function() {
+        clearConsoleLine()
+        console.log(
+          "Skipping the track that's currently playing. " +
+          "(Press I for track info!)"
+        )
+
+        playController.skip()
+      },
+
+      'skip': function() {
+        commands.skipAhead()
+      },
+
+      'skipUpNext': function() {
+        clearConsoleLine()
+        console.log("Skipping the track that's up next.")
+
+        playController.skipUpNext().then(nextTrack => {
+          console.log(
+            `New track up next: ${nextTrack.name || '(Unnamed)'}` +
+            " (Press I for track info!)"
+          )
+        })
+      },
+
+      // TODO: Number of history/up-next tracks to show.
+      'showTrackInfo': function() {
+        clearConsoleLine()
+        playController.logTrackInfo()
+      }
+    }
+
+    const splitChars = str => str.split('').map(char => char.charCodeAt(0))
+
+    const simpleKeybindings = {
+      space: [0x20],
+      esc: [0x1b], escape: [0x1b],
+      up: [0x1b, ...splitChars('[A')],
+      down: [0x1b, ...splitChars('[B')],
+      right: [0x1b, ...splitChars('[C')],
+      left: [0x1b, ...splitChars('[D')],
+      shiftUp: [0x1b, ...splitChars('[1;2A')],
+      shiftDown: [0x1b, ...splitChars('[1;2B')],
+      shiftRight: [0x1b, ...splitChars('[1;2C')],
+      shiftLeft: [0x1b, ...splitChars('[1;2D')],
+      delete: [0x7f]
+    }
+
+    // TODO: Load these from a file
+    // TODO: Verify that each command exists
+    const commandBindings = {
+      bindings: [
+        [['space'], 'togglePause'],
+        [['left'], 'seek', -5],
+        [['right'], 'seek', +5],
+        [['shiftLeft'], 'seek', -30],
+        [['shiftRight'], 'seek', +30],
+        [['up'], 'skipBack'],
+        [['down'], 'skipAhead'],
+        [['s'], 'skipAhead'],
+        [['delete'], 'skipUpNext'],
+        [['i'], 'showTrackInfo'],
+        [['t'], 'showTrackInfo'],
+        [['q'], 'quit']
+      ]
+    }
+
     process.stdin.on('data', data => {
       const escModifier = Buffer.from('\x1b[')
       const shiftModifier = Buffer.from('1;2')
@@ -377,77 +487,40 @@ async function main(args) {
         Buffer.from(char.toUpperCase()).equals(data)
       )
 
-      if (Buffer.from([0x20]).equals(data)) {
-        player.togglePause()
-      }
-
-      if (esc(0x43).equals(data)) {
-        player.seekAhead(5)
-      }
-
-      if (esc(0x44).equals(data)) {
-        player.seekBack(5)
-      }
-
-      if (shiftEsc(0x43).equals(data)) {
-        player.seekAhead(30)
-      }
-
-      if (shiftEsc(0x44).equals(data)) {
-        player.seekBack(30)
-      }
-
-      if (esc(0x41).equals(data) || equalsChar('p')) { // Previous
-        clearConsoleLine()
-        console.log("Skipping backwards. (Press I for track info!")
-
-        playController.skipBack()
-      }
-
-      if (esc(0x42).equals(data) || equalsChar('s')) { // Skip
-        clearConsoleLine()
-        console.log(
-          "Skipping the track that's currently playing. " +
-          "(Press I for track info!)"
-        )
-
-        playController.skip()
-      }
-
-      if (shiftEsc(0x41).equals(data)) {
-        player.volUp(10)
-      }
-
-      if (shiftEsc(0x42).equals(data)) {
-        player.volDown(10)
-      }
-
-      if (Buffer.from([0x7f]).equals(data)) {
-        clearConsoleLine()
-        console.log("Skipping the track that's up next.")
-
-        playController.skipUpNext().then(nextTrack => {
-          console.log(
-            `New track up next: ${nextTrack.name || '(Unnamed)'}` +
-            " (Press I for track info!)"
-          )
-        })
-      }
-
-      if (equalsChar('i') || equalsChar('t')) {
-        clearConsoleLine()
-        playController.logTrackInfo()
-      }
-
       if (
-        equalsChar('q') ||
-        Buffer.from('q').equals(data) ||
         Buffer.from([0x03]).equals(data) || // ^C
         Buffer.from([0x04]).equals(data) // ^D
       ) {
         playController.stop().then(() => {
           process.exit(0)
         })
+
+        return
+      }
+
+      for (let [ keyBinding, command, ...args ] of commandBindings.bindings) {
+        let run = true
+
+        // TODO: "Compile" keybindings upon loading them
+        const buffer = Buffer.from(keyBinding.map(item => {
+          if (typeof item === 'number') {
+            return [item]
+          } else if (Object.keys(simpleKeybindings).includes(item)) {
+            return simpleKeybindings[item]
+          } else if (typeof item === 'string' && item.length === 1) {
+            return [item.charCodeAt(0)]
+          } else {
+            // Error
+            console.warn('Invalid keybinding part?', item, 'in', keyBinding)
+            return [0xFF]
+          }
+        }).reduce((a, b) => a.concat(b), []))
+
+        run = buffer.equals(data)
+
+        if (run && Object.keys(commands).includes(command)) {
+          commands[command](...args)
+        }
       }
     })
 
