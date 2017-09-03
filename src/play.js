@@ -438,8 +438,7 @@ async function main(args) {
       }
     }
 
-    // TODO: Load these from a file
-    // TODO: Verify that each command exists
+    // TODO: Let the user load custom keybindings from a file.
     const keybindingHandler = compileKeybindings({
       bindings: [
         [['space'], 'togglePause'],
