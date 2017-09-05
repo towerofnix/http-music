@@ -30,6 +30,7 @@
     "node-fetch": "^1.7.0",
     "node-natural-sort": "^0.8.6",
     "sanitize-filename": "^1.6.1",
+    "seed-random": "^2.2.0",
     "tempy": "^0.1.0",
     "xmldoc": "^1.1.0"
   }

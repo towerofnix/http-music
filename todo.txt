@@ -320,5 +320,13 @@ TODO: History VOODOO!
 
 TODO: Fix the shuffle players, which don't really work anymore (they more or
       less behave like pick-random).
+      (Done!)
+
+TODO: Also fix the shuffle-groups player.
+
+TODO: Consider adding pick-random back, in some way or another?
 
 TODO: The concepts of importing and adding keybindings isn't very intuitive..
+
+TODO: A way to export the "timeline" playlist (though we'll need a better
+      term) - that is, the flat result of the picker - would be awesome!

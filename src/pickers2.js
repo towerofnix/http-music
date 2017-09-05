@@ -1,3 +1,5 @@
+const _seedRandom = require('seed-random')
+
 // Pickers should rely on a "state", which is a serializable object that stores data for a given picker "instance".
 
 // Pick-random picker: picks a random track from the entire playlist each time.
@@ -91,16 +93,23 @@ function shuffleGroups(grouplike) {
   }
 }
 
-function shuffleArray(array) {
-  // Shuffles the items in an array. Super-interesting post on how it works:
+function shuffleArray(array, seed) {
+  // Shuffles the items in an array, using a seeded random number generator.
+  // (That means giving the same array and seed to shuffleArray will always
+  // produce the same results.) Attaches the resulting seed to the return
+  // array under the property "newSeed". Super-interesting post on how this
+  // all works (though with less seeded-RNG):
   // https://bost.ocks.org/mike/shuffle/
 
   const workingArray = array.slice(0)
+  let newSeed = seed
 
   let m = array.length
 
   while (m) {
-    let i = Math.floor(Math.random() * m)
+    // I don't think this is how it's *supposed* to work..?
+    newSeed = seedRandom(seed)()
+    let i = Math.floor(newSeed * m)
     m--
 
     // Stupid lol; avoids the need of a temporary variable!
@@ -110,25 +119,54 @@ function shuffleArray(array) {
     })
   }
 
-  return workingArray
+  return Object.assign(workingArray, {newSeed})
+}
+
+function seedRandom(seed = null) {
+  // The normal seedRandom function (from NPM) doesn't handle getting
+  // undefined as its seed very well; this function is fine with that (and
+  // appropriately generates a new seed, as _seedRandom() with no arguments
+  // does).
+
+  if (seed === null) {
+    return _seedRandom()
+  } else {
+    return _seedRandom(seed)
+  }
 }
 
 // ----------------------------------------------------------------------------
 
-function sortFlattenGrouplike(grouplike, sort) {
-  // Returns a grouplike.
-  // TODO: This should accept a seed (which would control how it shuffles)..
+function sortFlattenGrouplike(grouplike, sort, seed) {
+  // Takes a grouplike (usually a playlist), and returns a flat (only tracks,
+  // no groups) version of it, according to a given sorting method. Takes a
+  // seed, for random-generation purposes.
+  //
+  // Returns a grouplike. The modified seed is attached to this grouplike
+  // under the "newSeed" property.
 
   if (sort === 'order' || sort === 'ordered') {
     return {items: flattenGrouplike(grouplike).items}
   }
 
-  if (sort === 'shuffle' || sort === 'shuffled') {
-    return {items: shuffleArray(flattenGrouplike(grouplike).items)}
+  // We use Array.from to discard the 'newSeed' property on the return
+  // array.
+
+  if (
+    sort === 'shuffle' || sort === 'shuffled' ||
+    sort === 'shuffle-tracks' || sort === 'shuffled-tracks'
+  ) {
+    const ret = shuffleArray(flattenGrouplike(grouplike).items, seed)
+    const items = Array.from(ret)
+    const { newSeed } = ret
+    return {items, newSeed}
   }
 
   if (sort === 'shuffle-groups' || sort === 'shuffled-groups') {
-    return {items: flattenGrouplike(shuffleGroups(grouplike)).items}
+    const ret = flattenGrouplike(shuffleGroups(grouplike), seed)
+    const items = Array.from(ret)
+    const { newSeed } = ret
+    return {items, newSeed}
   }
 }
 
@@ -136,8 +174,8 @@ function generalPicker(playlist, lastTrack, options) {
   const { sort, loop } = options
 
   if (![
-    'order', 'ordered', 'shuffle', 'shuffled', 'shuffle-groups',
-    'shuffled-groups'
+    'order', 'ordered', 'shuffle', 'shuffled', 'shuffle-tracks',
+    'shuffled-tracks','shuffle-groups', 'shuffled-groups'
   ].includes(sort)) {
     throw new Error(`Invalid sort mode: ${sort}`)
   }
@@ -149,7 +187,11 @@ function generalPicker(playlist, lastTrack, options) {
     throw new Error(`Invalid loop mode: ${loop}`)
   }
 
-  const flattened = sortFlattenGrouplike(playlist, sort)
+  const flattened = sortFlattenGrouplike(playlist, sort, options.seed)
+  if (typeof options.seed === 'undefined') {
+    options.seed = flattened.newSeed
+  }
+  delete flattened.newSeed
 
   const index = flattened.items.indexOf(lastTrack)
 
@@ -163,18 +205,13 @@ function generalPicker(playlist, lastTrack, options) {
     }
 
     if (loop === 'loop-regenerate') {
-      if (sort === 'shuffle') {
-        // TODO: Regenerate shuffle seed. Remember to re-flatten, or else
-        // we'll be picking the first track from the old shuffle!
-        // options.shuffleSeed = ...
-        // flattened.items = sortFlattenPlaylist(.., options.shuffleSeed)
-        // Probably best to have a "generate shuffle options" function at the
-        // top of the function, which can be called if shuffleSeed is
-        // undefined (which it usually will be, on the first run of the
-        // picker).
-      }
-
-      return flattened.items[0]
+      // Deletes the random number generation seed then starts over. Assigning
+      // a new RNG seed makes it so we get a new shuffle the next time, and
+      // clearing the lastTrack value makes generalPicker thinks we're
+      // starting over.
+      const newSeed = seedRandom(options.seed)()
+      options.seed = newSeed
+      return generalPicker(playlist, null, options)
     }
 
     if (loop === 'no-loop' || loop === 'no') {
@@ -227,21 +264,60 @@ module.exports = {HistoryController, generalPicker}
 
 if (require.main === module) {
   const playlist = {items: [{x: 'A'}, {x: 'B'}, {x: 'C'}, {items: [{x: 'D-a'}, {x: 'D-b'}]}, {x: 'E'}]}
-  const hm = new HistoryController(playlist, generalPicker, {sort: 'ordered', loop: 'loop'})
-  hm.fillTimeline()
-  console.log(hm.timeline)
-  console.log('initial length:', hm.timeline.length)
+
+  console.log('ordered:')
+  console.log('- testing to see if timeline fill size works correctly')
+  console.log('- initial length should be 4, index -1')
+  console.log('- once index becomes 0, length should still be 4')
+  console.log('- as index grows, length should increase at same rate')
+
+  const hc = new HistoryController(playlist, generalPicker, {sort: 'ordered', loop: 'loop'})
+
+  hc.timelineFillSize = 4
+  hc.fillTimeline()
+  console.log(hc.timeline)
+  console.log('initial length:', hc.timeline.length)
   for (let i = 0; i < 6; i++) {
-    console.log(`(${hm.timelineIndex}) next:`, hm.getNextTrack())
-    console.log(`(-> ${hm.timelineIndex}) length:`, hm.timeline.length)
+    console.log(`(${hc.timelineIndex}) next:`, hc.getNextTrack())
+    console.log(`(-> ${hc.timelineIndex}) length:`, hc.timeline.length)
   }
 
-  console.log('setting timeline index to 2 (3)..')
-  hm.timelineIndex = 2
-  console.log('current:', hm.currentTrack)
+  console.log('setting timeline index to 2 (3rd item)..')
+  console.log('- timeline shouldn\'t grow until it gets to 6')
+  console.log('  (because currently the timeline is (or should be) 9 (from index=5 + fillSize=4)')
+  console.log('  but then, index=6 + fillSize=4 = length=10)')
+  console.log('- timeline should then grow at same rate as index')
+  hc.timelineIndex = 2
+  console.log('current:', hc.currentTrack)
 
   for (let i = 0; i < 6; i++) {
-    console.log(`(${hm.timelineIndex}) next:`, hm.getNextTrack())
-    console.log(`(-> ${hm.timelineIndex}) length:`, hm.timeline.length)
+    console.log(`(${hc.timelineIndex}) next:`, hc.getNextTrack())
+    console.log(`(-> ${hc.timelineIndex}) length:`, hc.timeline.length)
   }
+
+  console.log('---------------')
+  console.log('shuffle-tracks:')
+
+  console.log('seed = 123; loop = loop-same-order')
+  console.log(' - should output the same thing every run')
+  console.log(' - the resulting tracks should loop in a cycle')
+  const hc_st = new HistoryController(playlist, generalPicker, {sort: 'shuffle-tracks', loop: 'loop-same-order', seed: 123})
+  hc_st.timelineFillSize = 20
+  hc_st.fillTimeline()
+  console.log(hc_st.timeline)
+
+  console.log('seed = 123; loop = loop-regenerate')
+  console.log(' - should output the same thing every run')
+  console.log(' - the resulting tracks should loop randomly (based on the seed)')
+  const hc_st2 = new HistoryController(playlist, generalPicker, {sort: 'shuffle-tracks', loop: 'loop-regenerate', seed: 123})
+  hc_st2.timelineFillSize = 20
+  hc_st2.fillTimeline()
+  console.log(hc_st2.timeline)
+
+  console.log('seed = undefined')
+  console.log(' - should output something random each time')
+  const hc_st3 = new HistoryController(playlist, generalPicker, {sort: 'shuffle-tracks', loop: 'loop'})
+  hc_st3.timelineFillSize = 5
+  hc_st3.fillTimeline()
+  console.log(hc_st3.timeline)
 }

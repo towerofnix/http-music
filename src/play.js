@@ -61,6 +61,7 @@ async function main(args) {
 
   let pickerSortMode = 'shuffle'
   let pickerLoopMode = 'loop-regenerate'
+  let shuffleSeed
   let playerCommand = await determineDefaultPlayer()
 
   // WILL play says whether the user has forced playback via an argument.
@@ -344,6 +345,18 @@ async function main(args) {
 
     '-sort': util => util.alias('-sort-mode'),
 
+    '-shuffle-seed': function(util) {
+      // --shuffle-seed <seed>  (alias: --seed)
+      // Sets the seed used for random number generation (so, in shuffles).
+      // Primarily used for debugging, but can be used to save an interesting
+      // shuffle. (Try adding {"options": ["--seed", "..."]} to your
+      // playlist!)
+
+      shuffleSeed = util.nextArg()
+    },
+
+    '-seed': util => util.alias('-shuffle-seed'),
+
     '-loop-mode': function(util) {
       // --loop-mode <mode>  (alias: --loop)
       // Sets the mode by which the playback order list is looped (typically,
@@ -399,7 +412,8 @@ async function main(args) {
     } = await startLoopPlay(activePlaylist, {
       pickerOptions: {
         loop: pickerLoopMode,
-        sort: pickerSortMode
+        sort: pickerSortMode,
+        seed: shuffleSeed
       },
       playerCommand,
       disablePlaybackStatus
