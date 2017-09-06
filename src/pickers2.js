@@ -14,7 +14,7 @@ const _seedRandom = require('seed-random')
 // Picker state is used to contain information specific to that picker (for example, the seed a shuffle picker uses, or sorting methods).
 // Uncertain on how to handle serialization of tracks.. some tracks may appear twice in the same playlist (or two tracks of the same name appear); in this case the serialized path to the two track appearances is the same, when they really refer to two separate instances of the track within the playlist. Could track serialization instead be index-based (rather than name-based)..?
 
-const { flattenGrouplike } = require('./playlist-utils')
+const { flattenGrouplike, isGroup } = require('./playlist-utils')
 
 class HistoryController {
   constructor(playlist, picker, pickerOptions = {}) {
@@ -84,10 +84,27 @@ class HistoryController {
   }
 }
 
-function shuffleGroups(grouplike) {
+function shuffleGroups(grouplike, seed) {
+  let newSeed = seed
+
   if (isGroup(grouplike) && grouplike.items.every(isGroup)) {
-    const items = shuffleArray(grouplike.items.map(shuffleGroups))
-    return Object.assign({}, grouplike, {items})
+    const newItems = []
+    for (let item of grouplike.items) {
+      const returnGrouplike = shuffleGroups(item, newSeed)
+
+      if (returnGrouplike.hasOwnProperty('newSeed')) {
+        newSeed = returnGrouplike.newSeed
+        delete returnGrouplike.newSeed
+      }
+
+      newItems.push(returnGrouplike)
+    }
+
+    const shuffledItems = shuffleArray(newItems, newSeed)
+    newSeed = shuffledItems.newSeed
+    delete shuffledItems.newSeed
+
+    return Object.assign({}, grouplike, {items: shuffledItems, newSeed})
   } else {
     return grouplike
   }
@@ -163,9 +180,9 @@ function sortFlattenGrouplike(grouplike, sort, seed) {
   }
 
   if (sort === 'shuffle-groups' || sort === 'shuffled-groups') {
-    const ret = flattenGrouplike(shuffleGroups(grouplike), seed)
-    const items = Array.from(ret)
-    const { newSeed } = ret
+    const shuffled = shuffleGroups(grouplike, seed)
+    const { newSeed } = shuffled
+    const { items } = flattenGrouplike(shuffled)
     return {items, newSeed}
   }
 }
@@ -320,4 +337,39 @@ if (require.main === module) {
   hc_st3.timelineFillSize = 5
   hc_st3.fillTimeline()
   console.log(hc_st3.timeline)
+
+  console.log('---------------')
+  console.log('shuffle-groups:')
+  console.log('(different playlist used here)')
+
+  const playlist2 = {items: [
+    {items: [
+      {x: 'A-a'}, {x: 'A-b'}, {x: 'A-c'}
+    ]},
+    {items: [
+      {x: 'B-a'}, {x: 'B-b'}
+    ]},
+    {items: [
+      {items: [
+        {x: 'C-1-a'}, {x: 'C-1-b'}
+      ]},
+      {items: [
+        {x: 'C-2-a'}, {x: 'C-2-b'}
+      ]}
+    ]}
+  ]}
+
+  console.log('seed = baz')
+  console.log(' - should output the same thing every time')
+  const hc_sg = new HistoryController(playlist2, generalPicker, {sort: 'shuffle-groups', loop: 'loop', seed: '13324iou321324i234123'})
+  hc_sg.timelineFillSize = 3 + 2 + (2 + 2)
+  hc_sg.fillTimeline()
+  console.log(hc_sg.timeline)
+
+  console.log('seed = undefined')
+  console.log('- should output something random each time')
+  const hc_sg2 = new HistoryController(playlist2, generalPicker, {sort: 'shuffle-groups', loop: 'loop'})
+  hc_sg2.timelineFillSize = 3 + 2 + (2 + 2)
+  hc_sg2.fillTimeline()
+  console.log(hc_sg2.timeline)
 }

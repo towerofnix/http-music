@@ -323,6 +323,7 @@ TODO: Fix the shuffle players, which don't really work anymore (they more or
       (Done!)
 
 TODO: Also fix the shuffle-groups player.
+      (Done!)
 
 TODO: Consider adding pick-random back, in some way or another?
 
@@ -330,3 +331,11 @@ TODO: The concepts of importing and adding keybindings isn't very intuitive..
 
 TODO: A way to export the "timeline" playlist (though we'll need a better
       term) - that is, the flat result of the picker - would be awesome!
+
+TODO: I'm really, really bad at seeding randomness. Aaaaaa. Aaaaaaa. Aaa.
+      AAAAAAA. (Fix the code. Unless it's working right already. Hmm.)
+
+TODO: Now that we're using seeded randomness, generating the entire timeline
+      every time we want to call the picker is definitely really slow. There
+      should be some way to make it faster. (Maybe store the playlist on the
+      mutable options object?).
