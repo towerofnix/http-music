@@ -334,6 +334,7 @@ TODO: A way to export the "timeline" playlist (though we'll need a better
 
 TODO: I'm really, really bad at seeding randomness. Aaaaaa. Aaaaaaa. Aaa.
       AAAAAAA. (Fix the code. Unless it's working right already. Hmm.)
+      (Done!)
 
 TODO: Now that we're using seeded randomness, generating the entire timeline
       every time we want to call the picker is definitely really slow. There
