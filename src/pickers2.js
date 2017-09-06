@@ -213,6 +213,7 @@ function generalPicker(playlist, lastTrack, options) {
   if (options.hasOwnProperty(flattenedCache)) {
     flattened = options[flattenedCache]
   } else {
+    console.log('\x1b[1K\rIndexing (flattening)...')
     flattened = sortFlattenGrouplike(playlist, sort, options.seed)
 
     if (typeof options.seed === 'undefined') {
@@ -221,6 +222,7 @@ function generalPicker(playlist, lastTrack, options) {
     delete flattened.newSeed
 
     options[flattenedCache] = flattened
+    console.log('\x1b[1K\rDone indexing.')
   }
 
   const index = flattened.items.indexOf(lastTrack)
