@@ -187,6 +187,8 @@ function sortFlattenGrouplike(grouplike, sort, seed) {
   }
 }
 
+const flattenedCache = Symbol('Cache of flattened')
+
 function generalPicker(playlist, lastTrack, options) {
   const { sort, loop } = options
 
@@ -204,11 +206,22 @@ function generalPicker(playlist, lastTrack, options) {
     throw new Error(`Invalid loop mode: ${loop}`)
   }
 
-  const flattened = sortFlattenGrouplike(playlist, sort, options.seed)
-  if (typeof options.seed === 'undefined') {
-    options.seed = flattened.newSeed
+  // Regenerating the flattened list is really time-expensive, so we make sure
+  // to cache the result of the operation (in the 'options' property, which is
+  // used to store "state"-specific data for the picker).
+  let flattened
+  if (options.hasOwnProperty(flattenedCache)) {
+    flattened = options[flattenedCache]
+  } else {
+    flattened = sortFlattenGrouplike(playlist, sort, options.seed)
+
+    if (typeof options.seed === 'undefined') {
+      options.seed = flattened.newSeed
+    }
+    delete flattened.newSeed
+
+    options[flattenedCache] = flattened
   }
-  delete flattened.newSeed
 
   const index = flattened.items.indexOf(lastTrack)
 
@@ -225,9 +238,11 @@ function generalPicker(playlist, lastTrack, options) {
       // Deletes the random number generation seed then starts over. Assigning
       // a new RNG seed makes it so we get a new shuffle the next time, and
       // clearing the lastTrack value makes generalPicker thinks we're
-      // starting over.
+      // starting over. We also need to destroy the flattenedCache, or else it
+      // won't actually recalculate the list.
       const newSeed = seedRandom(options.seed)()
       options.seed = newSeed
+      delete options[flattenedCache]
       return generalPicker(playlist, null, options)
     }
 

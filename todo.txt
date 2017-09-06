@@ -339,3 +339,4 @@ TODO: Now that we're using seeded randomness, generating the entire timeline
       every time we want to call the picker is definitely really slow. There
       should be some way to make it faster. (Maybe store the playlist on the
       mutable options object?).
+      (Done!)
