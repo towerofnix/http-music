@@ -84,49 +84,36 @@ class HistoryController {
   }
 }
 
-function shuffleGroups(grouplike, seed) {
-  let newSeed = seed
-
+function shuffleGroups(grouplike, getRandom) {
   if (isGroup(grouplike) && grouplike.items.every(isGroup)) {
     const newItems = []
     for (let item of grouplike.items) {
-      const returnGrouplike = shuffleGroups(item, newSeed)
-
-      if (returnGrouplike.hasOwnProperty('newSeed')) {
-        newSeed = returnGrouplike.newSeed
-        delete returnGrouplike.newSeed
-      }
-
+      const returnGrouplike = shuffleGroups(item, getRandom)
       newItems.push(returnGrouplike)
     }
 
-    const shuffledItems = shuffleArray(newItems, newSeed)
-    newSeed = shuffledItems.newSeed
-    delete shuffledItems.newSeed
+    const items = shuffleArray(newItems, getRandom)
 
-    return Object.assign({}, grouplike, {items: shuffledItems, newSeed})
+    return Object.assign({}, grouplike, {items})
   } else {
     return grouplike
   }
 }
 
-function shuffleArray(array, seed) {
+function shuffleArray(array, getRandom) {
   // Shuffles the items in an array, using a seeded random number generator.
   // (That means giving the same array and seed to shuffleArray will always
-  // produce the same results.) Attaches the resulting seed to the return
-  // array under the property "newSeed". Super-interesting post on how this
+  // produce the same results.) Takes a random number generator (Math.random
+  // or a seeded RNG will work here). Super-interesting post on how this
   // all works (though with less seeded-RNG):
   // https://bost.ocks.org/mike/shuffle/
 
   const workingArray = array.slice(0)
-  let newSeed = seed
 
   let m = array.length
 
   while (m) {
-    // I don't think this is how it's *supposed* to work..?
-    newSeed = seedRandom(seed)()
-    let i = Math.floor(newSeed * m)
+    let i = Math.floor(getRandom() * m)
     m--
 
     // Stupid lol; avoids the need of a temporary variable!
@@ -136,10 +123,10 @@ function shuffleArray(array, seed) {
     })
   }
 
-  return Object.assign(workingArray, {newSeed})
+  return workingArray
 }
 
-function seedRandom(seed = null) {
+function makeGetRandom(seed = null) {
   // The normal seedRandom function (from NPM) doesn't handle getting
   // undefined as its seed very well; this function is fine with that (and
   // appropriately generates a new seed, as _seedRandom() with no arguments
@@ -154,36 +141,26 @@ function seedRandom(seed = null) {
 
 // ----------------------------------------------------------------------------
 
-function sortFlattenGrouplike(grouplike, sort, seed) {
+function sortFlattenGrouplike(grouplike, sort, getRandom) {
   // Takes a grouplike (usually a playlist), and returns a flat (only tracks,
   // no groups) version of it, according to a given sorting method. Takes a
   // seed, for random-generation purposes.
-  //
-  // Returns a grouplike. The modified seed is attached to this grouplike
-  // under the "newSeed" property.
 
   if (sort === 'order' || sort === 'ordered') {
     return {items: flattenGrouplike(grouplike).items}
   }
 
-  // We use Array.from to discard the 'newSeed' property on the return
-  // array.
-
   if (
     sort === 'shuffle' || sort === 'shuffled' ||
     sort === 'shuffle-tracks' || sort === 'shuffled-tracks'
   ) {
-    const ret = shuffleArray(flattenGrouplike(grouplike).items, seed)
-    const items = Array.from(ret)
-    const { newSeed } = ret
-    return {items, newSeed}
+    const items = shuffleArray(flattenGrouplike(grouplike).items, getRandom)
+    return {items}
   }
 
   if (sort === 'shuffle-groups' || sort === 'shuffled-groups') {
-    const shuffled = shuffleGroups(grouplike, seed)
-    const { newSeed } = shuffled
-    const { items } = flattenGrouplike(shuffled)
-    return {items, newSeed}
+    const { items } = flattenGrouplike(shuffleGroups(grouplike, getRandom))
+    return {items}
   }
 }
 
@@ -214,14 +191,18 @@ function generalPicker(playlist, lastTrack, options) {
     flattened = options[flattenedCache]
   } else {
     console.log('\x1b[1K\rIndexing (flattening)...')
-    flattened = sortFlattenGrouplike(playlist, sort, options.seed)
+    console.time('flatten')
 
     if (typeof options.seed === 'undefined') {
-      options.seed = flattened.newSeed
+      options.seed = Math.random()
     }
-    delete flattened.newSeed
+
+    const getRandom = makeGetRandom(options.seed)
+
+    flattened = sortFlattenGrouplike(playlist, sort, getRandom)
 
     options[flattenedCache] = flattened
+    console.timeEnd('flatten')
     console.log('\x1b[1K\rDone indexing.')
   }
 
@@ -242,7 +223,7 @@ function generalPicker(playlist, lastTrack, options) {
       // clearing the lastTrack value makes generalPicker thinks we're
       // starting over. We also need to destroy the flattenedCache, or else it
       // won't actually recalculate the list.
-      const newSeed = seedRandom(options.seed)()
+      const newSeed = makeGetRandom(options.seed)()
       options.seed = newSeed
       delete options[flattenedCache]
       return generalPicker(playlist, null, options)
@@ -389,4 +370,21 @@ if (require.main === module) {
   hc_sg2.timelineFillSize = 3 + 2 + (2 + 2)
   hc_sg2.fillTimeline()
   console.log(hc_sg2.timeline)
+
+  console.log('---------------')
+  console.log('misc. stuff')
+
+  const playlist3 = {items: []}
+  for (let i = 0; i < 10000; i++) {
+    playlist3.items.push({i})
+  }
+
+  console.log('speedtest shuffle-tracks on 50000 items')
+
+  const hc_sp = new HistoryController(playlist3, generalPicker, {sort: 'shuffle-tracks', loop: 'loop'})
+  hc_sp.timelineFillSize = playlist3.items.length
+
+  console.time('speedtest50k')
+  hc_sp.fillTimeline()
+  console.timeEnd('speedtest50k')
 }
