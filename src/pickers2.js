@@ -191,7 +191,6 @@ function generalPicker(playlist, lastTrack, options) {
     flattened = options[flattenedCache]
   } else {
     console.log('\x1b[1K\rIndexing (flattening)...')
-    console.time('flatten')
 
     if (typeof options.seed === 'undefined') {
       options.seed = Math.random()
@@ -202,7 +201,6 @@ function generalPicker(playlist, lastTrack, options) {
     flattened = sortFlattenGrouplike(playlist, sort, getRandom)
 
     options[flattenedCache] = flattened
-    console.timeEnd('flatten')
     console.log('\x1b[1K\rDone indexing.')
   }
 
