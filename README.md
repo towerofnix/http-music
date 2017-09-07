@@ -57,15 +57,17 @@ $ http-music play
 
 ![Basic usage](screenshots/hm-basic-usage.png)
 
-**Load music from the file system:**
+**Load music from the file system (`http-music crawl-local . > playlist.json`):**
 
 ![Local crawl](screenshots/hm-crawllocal.png)
 
-**Load music from an HTTP server:**
+**Load music from an HTTP server (<code>http-music crawl-http http://<a href="https://stackoverflow.com/q/7943751/4633828">some.directory.listing</a></code>):**
 
 ![Crawl HTTP](screenshots/hm-remote.png)
 
-**Filter by a specific group:**
+**Filter by a specific group (`http-music play --clear --keep 'C418/one'`):**
+
+(A shorthand also works! Try `http-music play -c -k C418/one`.)
 
 ![Clear/keep](screenshots/hm-clearkeep.png)
 
