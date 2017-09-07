@@ -14,7 +14,7 @@ const EventEmitter = require('events')
 const promisifyProcess = require('./promisify-process')
 const killProcess = require('./kill-process')
 const { getItemPathString, safeUnlink } = require('./playlist-utils')
-const { HistoryController, generalPicker } = require('./pickers2')
+const { HistoryController, generalPicker } = require('./pickers')
 
 const {
   getDownloaderFor, byName: downloadersByName, makeConverter

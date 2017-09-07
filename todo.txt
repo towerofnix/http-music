@@ -341,3 +341,6 @@ TODO: Now that we're using seeded randomness, generating the entire timeline
       should be some way to make it faster. (Maybe store the playlist on the
       mutable options object?).
       (Done!)
+
+TODO: Rename pickers2.js to pickers.js, and get rid of the old pickers.js.
+      (Done!)
