@@ -1,7 +1,11 @@
 # `http-music`
 
-A command line program that lets you download music from places and play it.
-It's also decently powerful.
+![Play demo](screenshots/hm-basic-usage.png)
+![Local crawl demo](screenshots/hm-crawllocal.png)
+
+A command line program that lets you download music from places (like the
+internet, or your hard drive) and play it. It's also
+[decently powerful](#screenshots).
 
 ## Installation
 
@@ -46,6 +50,24 @@ $ http-music play
 # (You can use `python3 -m http.server` or `python2 -m SimpleHTTPServer` to
 # run a quick and easy directory listing, to pass into crawl-http!)
 ```
+
+## Screenshots
+
+**Super-basic usage (`http-music play`):**
+
+![Basic usage](screenshots/hm-basic-usage.png)
+
+**Load music from the file system:**
+
+![Local crawl](screenshots/hm-crawllocal.png)
+
+**Load music from an HTTP server:**
+
+![Crawl HTTP](screenshots/hm-remote.png)
+
+**Filter by a specific group:**
+
+![Clear/keep](screenshots/hm-clearkeep.png)
 
 ## Documentation
 
