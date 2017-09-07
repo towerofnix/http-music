@@ -344,3 +344,7 @@ TODO: Now that we're using seeded randomness, generating the entire timeline
 
 TODO: Rename pickers2.js to pickers.js, and get rid of the old pickers.js.
       (Done!)
+
+TODO: Some way to control how verbose http-music is.. most people probably
+      don't care about 'Indexing (flattening)', but it is handy for those on
+      slow computers.
