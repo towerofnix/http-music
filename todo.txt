@@ -348,3 +348,6 @@ TODO: Rename pickers2.js to pickers.js, and get rid of the old pickers.js.
 TODO: Some way to control how verbose http-music is.. most people probably
       don't care about 'Indexing (flattening)', but it is handy for those on
       slow computers.
+
+TODO: Make the natural sort in crawl-local ignore capitalization case.
+      (Done!)

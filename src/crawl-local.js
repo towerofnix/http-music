@@ -11,6 +11,12 @@ const { promisify } = require('util')
 const readDir = promisify(fs.readdir)
 const stat = promisify(fs.stat)
 
+function sortIgnoreCase(sortFunction) {
+  return function(a, b) {
+    return sortFunction(a.toLowerCase(), b.toLowerCase())
+  }
+}
+
 function crawl(dirPath, extensions = [
   // This list isn't very extensive, and can be customized via the
   // --extensions (or --exts, -e) option.
@@ -18,7 +24,7 @@ function crawl(dirPath, extensions = [
   'wav', 'mp3', 'mp4', 'm4a', 'aac'
 ]) {
   return readDir(dirPath).then(items => {
-    items.sort(naturalSort())
+    items.sort(sortIgnoreCase(naturalSort()))
 
     return Promise.all(items.map(item => {
       const itemPath = path.join(dirPath, item)
