@@ -261,18 +261,28 @@ function getItemPath(item) {
 
 function getItemPathString(item) {
   // Gets the playlist path of an item by following its parent chain.
+  //
   // Returns a string in format Foo/Bar/Baz, where Foo and Bar are group
-  // names, and Baz is the name of the item. Unnamed parents (except for the
-  // top one) are considered to have the name '(Unnamed)'.
+  // names, and Baz is the name of the item.
+  //
+  // Unnamed parents are given the name '(Unnamed)'.
+  // Always ignores the root (top) group.
+  //
+  // Requires that the given item be from a playlist processed by
+  // updateGroupFormat.
+
+  const displayName = item.name || '(Unnamed)'
 
   if (item[parentSymbol]) {
-    if (item[parentSymbol].name || item[parentSymbol][parentSymbol]) {
-      return getItemPathString(item[parentSymbol]) + '/' + item.name
+    // Check if the parent is not the top level group.
+    // The top-level group is never included in the output path.
+    if (item[parentSymbol][parentSymbol]) {
+      return getItemPathString(item[parentSymbol]) + '/' + displayName
     } else {
-      return item.name
+      return displayName
     }
   } else {
-    return item.name || '(Unnamed)'
+    return displayName
   }
 }
 
@@ -335,8 +345,89 @@ module.exports = {
   filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
-  getItemPath, getItemPathString,
+  getItemPathString,
   parsePathString,
   isGroup, isTrack,
   safeUnlink
+}
+
+if (require.main === module) {
+  console.log('getItemPathString')
+
+  {
+    console.log('- (root with name) should output a/b/c/Foo')
+
+    const playlist = updateGroupFormat(
+      {name: 'root', items: [
+        {name: 'a', items: [
+          {name: 'b', items: [
+            {name: 'c', items: [
+              {name: 'Foo'}
+            ]}
+          ]}
+        ]}
+      ]}
+    )
+
+    const deepTrack = playlist.items[0].items[0].items[0].items[0]
+
+    const path = getItemPathString(deepTrack)
+    if (path === 'a/b/c/Foo') {
+      console.log('  ..good.')
+    } else {
+      console.log('  ..BAD! result:', path)
+    }
+  }
+
+  {
+    console.log('- (root without name) should output a/b/c/Foo')
+
+    const playlist = updateGroupFormat(
+      {items: [
+        {name: 'a', items: [
+          {name: 'b', items: [
+            {name: 'c', items: [
+              {name: 'Foo'}
+            ]}
+          ]}
+        ]}
+      ]}
+    )
+
+    const deepTrack = playlist.items[0].items[0].items[0].items[0]
+
+    const path = getItemPathString(deepTrack)
+    if (path === 'a/b/c/Foo') {
+      console.log('  ..good.')
+    } else {
+      console.log('  ..BAD! result:', path)
+    }
+  }
+
+  {
+    console.log('- (sub-group without name) should output a/b/(Unnamed)/c/Foo')
+
+    const playlist = updateGroupFormat(
+      {items: [
+        {name: 'a', items: [
+          {name: 'b', items: [
+            {items: [
+              {name: 'c', items: [
+                {name: 'Foo'}
+              ]}
+            ]}
+          ]}
+        ]}
+      ]}
+    )
+
+    const deepTrack = playlist.items[0].items[0].items[0].items[0].items[0]
+
+    const path = getItemPathString(deepTrack)
+    if (path === 'a/b/(Unnamed)/c/Foo') {
+      console.log('  ..good.')
+    } else {
+      console.log('  ..BAD! result:', path)
+    }
+  }
 }

@@ -351,3 +351,7 @@ TODO: Some way to control how verbose http-music is.. most people probably
 
 TODO: Make the natural sort in crawl-local ignore capitalization case.
       (Done!)
+
+TODO: Make the '@ ...' part of track-info show the path to the track, rather
+      than the track name again (this is a bug!).
+      (Done!)
