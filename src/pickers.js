@@ -14,7 +14,9 @@ const _seedRandom = require('seed-random')
 // Picker state is used to contain information specific to that picker (for example, the seed a shuffle picker uses, or sorting methods).
 // Uncertain on how to handle serialization of tracks.. some tracks may appear twice in the same playlist (or two tracks of the same name appear); in this case the serialized path to the two track appearances is the same, when they really refer to two separate instances of the track within the playlist. Could track serialization instead be index-based (rather than name-based)..?
 
-const { flattenGrouplike, isGroup } = require('./playlist-utils')
+const {
+  flattenGrouplike, isGroup, updatePlaylistFormat
+} = require('./playlist-utils')
 
 class HistoryController {
   constructor(playlist, picker, pickerOptions = {}) {
@@ -164,9 +166,9 @@ function sortFlattenGrouplike(grouplike, sort, getRandom) {
   }
 }
 
-const flattenedCache = Symbol('Cache of flattened')
+const playlistCache = Symbol('Cache of indexed playlist')
 
-function generalPicker(playlist, lastTrack, options) {
+function generalPicker(sourcePlaylist, lastTrack, options) {
   const { sort, loop } = options
 
   if (![
@@ -186,9 +188,9 @@ function generalPicker(playlist, lastTrack, options) {
   // Regenerating the flattened list is really time-expensive, so we make sure
   // to cache the result of the operation (in the 'options' property, which is
   // used to store "state"-specific data for the picker).
-  let flattened
-  if (options.hasOwnProperty(flattenedCache)) {
-    flattened = options[flattenedCache]
+  let playlist
+  if (options.hasOwnProperty(playlistCache)) {
+    playlist = options[playlistCache]
   } else {
     console.log('\x1b[1K\rIndexing (flattening)...')
 
@@ -198,33 +200,37 @@ function generalPicker(playlist, lastTrack, options) {
 
     const getRandom = makeGetRandom(options.seed)
 
-    flattened = sortFlattenGrouplike(playlist, sort, getRandom)
+    const updatedPlaylist = updatePlaylistFormat(sourcePlaylist)
+    const flattened = sortFlattenGrouplike(updatedPlaylist, sort, getRandom)
 
-    options[flattenedCache] = flattened
+    playlist = flattened
+
+    options[playlistCache] = playlist
+
     console.log('\x1b[1K\rDone indexing.')
   }
 
-  const index = flattened.items.indexOf(lastTrack)
+  const index = playlist.items.indexOf(lastTrack)
 
   if (index === -1) {
-    return flattened.items[0]
+    return playlist.items[0]
   }
 
-  if (index + 1 === flattened.items.length) {
+  if (index + 1 === playlist.items.length) {
     if (loop === 'loop-same-order' || loop === 'loop') {
-      return flattened.items[0]
+      return playlist.items[0]
     }
 
     if (loop === 'loop-regenerate') {
       // Deletes the random number generation seed then starts over. Assigning
       // a new RNG seed makes it so we get a new shuffle the next time, and
       // clearing the lastTrack value makes generalPicker thinks we're
-      // starting over. We also need to destroy the flattenedCache, or else it
+      // starting over. We also need to destroy the playlistCache, or else it
       // won't actually recalculate the list.
       const newSeed = makeGetRandom(options.seed)()
       options.seed = newSeed
-      delete options[flattenedCache]
-      return generalPicker(playlist, null, options)
+      delete options[playlistCache]
+      return generalPicker(sourcePlaylist, null, options)
     }
 
     if (loop === 'no-loop' || loop === 'no') {
@@ -233,14 +239,14 @@ function generalPicker(playlist, lastTrack, options) {
     }
   }
 
-  if (index + 1 > flattened.items.length) {
+  if (index + 1 > playlist.items.length) {
     throw new Error(
       "Picker index is greater than total item count?" +
-      `(${index} > ${topLevel.items.length}`
+      `(${index + 1} > ${playlist.items.length}`
     )
   }
 
-  if (index + 1 < flattened.items.length) {
+  if (index + 1 < playlist.items.length) {
     // Pick-random is a special exception - in this case we don't actually
     // care about the value of the index variable; instead we just pick a
     // random track from the generated top level.
@@ -265,7 +271,7 @@ function generalPicker(playlist, lastTrack, options) {
     }
     */
 
-    return flattened.items[index + 1]
+    return playlist.items[index + 1]
   }
 }
 

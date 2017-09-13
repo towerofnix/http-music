@@ -6,7 +6,7 @@ const fs = require('fs')
 const { promisify } = require('util')
 const unlink = promisify(fs.unlink)
 
-const parentSymbol = Symbol('parent')
+const parentSymbol = Symbol('Parent group')
 
 function updatePlaylistFormat(playlist) {
   const defaultPlaylist = {
@@ -357,7 +357,7 @@ if (require.main === module) {
   {
     console.log('- (root with name) should output a/b/c/Foo')
 
-    const playlist = updateGroupFormat(
+    const playlist = updatePlaylistFormat(
       {name: 'root', items: [
         {name: 'a', items: [
           {name: 'b', items: [
@@ -382,7 +382,7 @@ if (require.main === module) {
   {
     console.log('- (root without name) should output a/b/c/Foo')
 
-    const playlist = updateGroupFormat(
+    const playlist = updatePlaylistFormat(
       {items: [
         {name: 'a', items: [
           {name: 'b', items: [
@@ -407,7 +407,7 @@ if (require.main === module) {
   {
     console.log('- (sub-group without name) should output a/b/(Unnamed)/c/Foo')
 
-    const playlist = updateGroupFormat(
+    const playlist = updatePlaylistFormat(
       {items: [
         {name: 'a', items: [
           {name: 'b', items: [
