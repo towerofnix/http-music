@@ -183,14 +183,14 @@ class SoXPlayer extends Player {
 }
 
 class DownloadController extends EventEmitter {
-  constructor(playlist) {
+  constructor(playlist, converterProgram) {
     super()
 
-    this.playlist = playlist
+    Object.assign(this, {playlist, converterProgram})
   }
 
   async init() {
-    this.converter = await makeConverter('wav')
+    this.converter = await makeConverter(this.converterProgram)
   }
 
   waitForDownload() {
@@ -215,7 +215,7 @@ class DownloadController extends EventEmitter {
     })
   }
 
-  async download(downloader, arg) {
+  async download(downloader, downloaderArg, converterOptions) {
     // Downloads a file.  This doesn't return anything; use
     // waitForDownload to get the result of this.
     // (The reasoning is that it's possible for a download to
@@ -240,7 +240,7 @@ class DownloadController extends EventEmitter {
     // 'convertErrored'.
 
     try {
-      downloadFile = await downloader(arg)
+      downloadFile = await downloader(downloaderArg)
     } catch(err) {
       this.emit('errored', err)
       return
@@ -256,7 +256,7 @@ class DownloadController extends EventEmitter {
     let convertFile
 
     try {
-      convertFile = await this.converter(downloadFile)
+      convertFile = await this.converter(converterOptions)(downloadFile)
     } catch(err) {
       this.emit('errored', err)
       return
@@ -300,6 +300,7 @@ class PlayController extends EventEmitter {
     this.playlist = playlist
     this.historyController = historyController
     this.downloadController = downloadController
+    this.useConverterOptions = true
 
     this.currentTrack = null
     this.nextTrack = null
@@ -387,7 +388,14 @@ class PlayController extends EventEmitter {
       downloader = getDownloaderFor(picked.downloaderArg)
     }
 
-    this.downloadController.download(downloader, picked.downloaderArg)
+    if (picked.converterOptions && !Array.isArray(picked.converterOptions)) {
+      throw new Error("The converterOptions track property must be an array")
+    }
+
+    this.downloadController.download(
+      downloader, picked.downloaderArg,
+      this.useConverterOptions ? picked.converterOptions : undefined
+    )
 
     this.downloadController.waitForDownload()
       .then(file => {
@@ -395,12 +403,13 @@ class PlayController extends EventEmitter {
         this.nextFile = file
         this.emit('downloaded')
       })
-      .catch(() => {
+      .catch(err => {
         // TODO: Test this!!
         console.warn(
           "\x1b[31mFailed to download (or convert) track \x1b[1m" +
           getItemPathString(this.nextTrack) + "\x1b[0m"
         )
+        console.warn(err)
 
         // A little bit blecht, but.. this works.
         // "When a track fails, remove it from the timeline, and start
@@ -509,7 +518,8 @@ class PlayController extends EventEmitter {
 
 module.exports = async function startLoopPlay(
   playlist, {
-    pickerOptions, playerCommand = 'mpv',
+    pickerOptions, playerCommand, converterCommand,
+    useConverterOptions = true,
     disablePlaybackStatus = false
   }
 ) {
@@ -540,7 +550,9 @@ module.exports = async function startLoopPlay(
 
   Object.assign(player, {disablePlaybackStatus})
 
-  const downloadController = new DownloadController(playlist)
+  const downloadController = new DownloadController(
+    playlist, converterCommand
+  )
   await downloadController.init()
 
   const historyController = new HistoryController(
@@ -551,7 +563,7 @@ module.exports = async function startLoopPlay(
     player, playlist, historyController, downloadController
   )
 
-  Object.assign(playController, {playerCommand})
+  Object.assign(playController, {playerCommand, useConverterOptions})
 
   const promise = playController.loopPlay()
 

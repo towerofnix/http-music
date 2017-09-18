@@ -192,7 +192,8 @@ function generalPicker(sourcePlaylist, lastTrack, options) {
   if (options.hasOwnProperty(playlistCache)) {
     playlist = options[playlistCache]
   } else {
-    console.log('\x1b[1K\rIndexing (flattening)...')
+    // TODO: Enable this conditionally.
+    // console.log('\x1b[1K\rIndexing (flattening)...')
 
     if (typeof options.seed === 'undefined') {
       options.seed = Math.random()
@@ -207,7 +208,8 @@ function generalPicker(sourcePlaylist, lastTrack, options) {
 
     options[playlistCache] = playlist
 
-    console.log('\x1b[1K\rDone indexing.')
+    // TODO: Enable this condtionally.
+    // console.log('\x1b[1K\rDone indexing.')
   }
 
   const index = playlist.items.indexOf(lastTrack)

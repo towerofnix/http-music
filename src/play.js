@@ -55,6 +55,16 @@ async function determineDefaultPlayer() {
   }
 }
 
+async function determineDefaultConverter() {
+  if (await commandExists('ffmpeg')) {
+    return 'ffmpeg'
+  } else if (await commandExists('avconv')) {
+    return 'avconv'
+  } else {
+    return null
+  }
+}
+
 async function main(args) {
   let sourcePlaylist = null
   let activePlaylist = null
@@ -63,12 +73,17 @@ async function main(args) {
   let pickerLoopMode = 'loop-regenerate'
   let shuffleSeed
   let playerCommand = await determineDefaultPlayer()
+  let converterCommand = await determineDefaultConverter()
 
   // WILL play says whether the user has forced playback via an argument.
   // SHOULD play says whether the program has automatically decided to play
   // or not, if the user hasn't set WILL play.
   let shouldPlay = true
   let willPlay = null
+
+  // The same WILL/SHOULD rules apply here.
+  let shouldUseConverterOptions = true
+  let willUseConverterOptions = null
 
   let disablePlaybackStatus = false
 
@@ -116,7 +131,7 @@ async function main(args) {
     sourcePlaylist = processedPlaylist
     activePlaylist = clone(processedPlaylist)
 
-    processArgv(processedPlaylist.options, optionFunctions)
+    await processArgv(processedPlaylist.options, optionFunctions)
   }
 
   async function openKeybindings(arg, add = true) {
@@ -378,6 +393,59 @@ async function main(args) {
       playerCommand = util.nextArg()
     },
 
+    '-converter': async function(util) {
+      const command = util.nextArg()
+
+      if (await commandExists(command)) {
+        converterCommand = command
+      } else {
+        console.warn(`Converter ${command} does not exist!`)
+        console.warn(
+          'Because of this, track-specific converter options are being' +
+          ' disabled. (Use --enable-converter-options to force usage of' +
+          ' them.)'
+        )
+
+        shouldUseConverterOptions = false
+      }
+    },
+
+    '-baz': function() {
+      // --baz
+      // Debugger argument used to print a message as soon as this it is
+      // processed. Handy for making sure the arguments are being processed
+      // in the right order.
+
+      console.log('Baz!')
+    },
+
+    '-foo': function(util) {
+      // --foo
+      // Similar to --baz, but logs the next argument rather than 'Baz!'.
+
+      console.log(util.nextArg())
+    },
+
+    '-enable-converter-options': function() {
+      // --enable-converter-options  (alias: --use-converter-options)
+      // Forces usage of track-specific converter options.
+
+      willUseConverterOptions = true
+    },
+
+    '-use-converter-options': util => util.alias('-enable-converter-options'),
+
+    '-disable-converter-options': function() {
+      // --disable-converter-options  (alias: --no-use-converter-options)
+      // Forces track-specific converter options to not be used.
+
+      willUseConverterOptions = false
+    },
+
+    '-no-use-converter-options': util => {
+      return util.alias('-disable-converter-options')
+    },
+
     '-disable-playback-status': function() {
       // --disable-playback-status  (alias: --hide-playback-status)
       // Hides the playback status line.
@@ -401,8 +469,8 @@ async function main(args) {
 
   if (willPlay || (willPlay === null && shouldPlay)) {
     console.log(`Using sort: ${pickerSortMode} and loop: ${pickerLoopMode}.`)
-
     console.log(`Using ${playerCommand} player.`)
+    console.log(`Using ${converterCommand} converter.`)
 
     const {
       promise: playPromise,
@@ -415,7 +483,10 @@ async function main(args) {
         sort: pickerSortMode,
         seed: shuffleSeed
       },
-      playerCommand,
+      playerCommand, converterCommand,
+      useConverterOptions: willUseConverterOptions || (
+        willUseConverterOptions === null && shouldUseConverterOptions
+      ),
       disablePlaybackStatus
     })
 

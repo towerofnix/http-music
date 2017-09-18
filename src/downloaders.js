@@ -110,26 +110,39 @@ function makePowerfulDownloader(downloader, maxAttempts = 5) {
   }
 }
 
-async function makeConverter(type) {
-  let binary
-  if (await commandExists('avconv')) {
-    binary = 'avconv'
-  } else if (await commandExists('ffmpeg')) {
-    binary = 'ffmpeg'
-  } else {
-    throw new Error('avconv or ffmpeg is required for converter downloader!')
+async function makeConverter(
+  converterCommand = null, exportExtension = 'wav',
+  converterOptions = ['-i', '$in', '$out']
+) {
+  if (converterCommand === null) {
+    throw new Error(
+      'A converter is required! Try installing ffmpeg or avconv?'
+    )
   }
 
-  console.log(`Using ${binary} converter.`)
+  return function(converterOptions = ['-i', '$in', '$out']) {
+    return async function(inFile) {
+      const base = path.basename(inFile, path.extname(inFile))
+      const tempDir = tempy.directory()
+      const outFile = `${tempDir}/${base}.${exportExtension}`
 
-  return async function(inFile) {
-    const base = path.basename(inFile, path.extname(inFile))
-    const tempDir = tempy.directory()
-    const outFile = `${tempDir}/${base}.${type}`
+      const processedOptions = converterOptions.slice(0)
 
-    await promisifyProcess(spawn(binary, ['-i', inFile, outFile]), false)
+      // And some people say JavaScript isn't awesome!?
+      for (const [ i, item ] of processedOptions.entries()) {
+        if (item === '$in') {
+          processedOptions[i] = inFile
+        } else if (item === '$out') {
+          processedOptions[i] = outFile
+        }
+      }
 
-    return outFile
+      await promisifyProcess(
+        spawn(converterCommand, processedOptions), false
+      )
+
+      return outFile
+    }
   }
 }
 

@@ -355,3 +355,24 @@ TODO: Make the natural sort in crawl-local ignore capitalization case.
 TODO: Make the '@ ...' part of track-info show the path to the track, rather
       than the track name again (this is a bug!).
       (Done!)
+
+TODO: Only show the path to a given track's group in the track info.
+
+TODO: Figure out what to show in the '@ ...' part when a track is in the top
+      level (i.e. its group is only the top). Probably just '/'?
+
+TODO: Let track objects have an option for command line arguments to pass to
+      the converter program (ffmpeg or avconv). This would be useful for a
+      variety of cases:
+      * Have a track which has two minutes of blank audio you want to skip?
+        Make the converter skip past those first two minutes!
+      * Have a track which is much quieter than the rest of your library?
+        Make the converter amplify its volume!
+      It'd also be useful with the 'apply' option of groups (e.g., amplify
+      all the tracks in an album's group).
+      Since there are differences between avconv and ffmepg, it'd be
+      recommended to specify the converter program via the "options" part of
+      the playlist. When http-music finds that a playlist has asked for a
+      converter program that isn't installed, it simply won't run the
+      convertion options on the tracks in the playlist.
+      (Done!)

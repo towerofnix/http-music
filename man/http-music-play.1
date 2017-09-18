@@ -80,8 +80,26 @@ Clears the active playlist.
 This does not effect the source playlist, so specific groups can be selected using \fB\-\-keep\fR.
 
 .TP
+.BR \-\-converter
+Sets the program used for converting tracks.
+By default the program is either \fBffmpeg\fR or \fBavconv\fR.
+Playlists which use track-specific converter options should use this option through the \fB"options"\fR playlist property to set an intended converter program.
+If the program specified through \-\-converter does not exist, converter options will not be used (see \fB\-\-enable\-converter\-options\fR).
+
+.TP
+.BR \-\-disable\-converter\-options ", " \-\-no\-use\-converter\-options
+Forces track-specific converter options to not be used.
+See also \fB\-\-enable\-converter\-options\fR.
+
+.TP
 .BR \-\-disable\-playback\-status ", " \-\-hide\-playback\-status
 Hides playback status (timestamps, etc).
+
+.TP
+.BR \-\-enable\-converter\-options ", " \-\-use\-converter\-options
+Forces usage of track-specific converter options.
+By default, they are enabled.
+See also \fB\-\-disable\-converter\-options\fR.
 
 .TP
 .BR \-h ", " \-? ", " \-\-help
