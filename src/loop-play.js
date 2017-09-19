@@ -307,6 +307,7 @@ class PlayController extends EventEmitter {
     this.nextFile = undefined // TODO: Why isn't this null?
     this.stopped = false
     this.shouldMoveNext = true
+    this.failedCount = 0
   }
 
   async loopPlay() {
@@ -401,6 +402,7 @@ class PlayController extends EventEmitter {
       .then(file => {
         this.isDownloading = false
         this.nextFile = file
+        this.failedCount = 0
         this.emit('downloaded')
       })
       .catch(err => {
@@ -410,6 +412,18 @@ class PlayController extends EventEmitter {
           getItemPathString(this.nextTrack) + "\x1b[0m"
         )
         console.warn(err)
+
+        this.failedCount++
+
+        if (this.failedCount >= 5) {
+          console.error(
+            "\x1b[31mFailed to download 5 tracks in a row. Halting, to " +
+            "prevent damage to the computer.\x1b[0m"
+          )
+
+          process.exit(0)
+          throw new Error('Intentionally halted.')
+        }
 
         // A little bit blecht, but.. this works.
         // "When a track fails, remove it from the timeline, and start
