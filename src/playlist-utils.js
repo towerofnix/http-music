@@ -150,7 +150,12 @@ function filterPlaylistByPathString(playlist, pathString) {
 function filterGrouplikeByPath(grouplike, pathParts) {
   // Finds a group by following the given group path and returns it. If the
   // function encounters an item in the group path that is not found, it logs
-  // a warning message and returns the group found up to that point.
+  // a warning message and returns the group found up to that point. If the
+  // pathParts array is empty, it returns the group given to the function.
+
+  if (pathParts.length === 0) {
+    return grouplike
+  }
 
   const titleMatch = (group, caseInsensitive = false) => {
     let a = group.name
@@ -194,14 +199,25 @@ function removeGroupByPath(playlist, pathParts) {
 
   const groupToRemove = filterGrouplikeByPath(playlist, pathParts)
 
-  const parentPath = pathParts.slice(0, pathParts.length - 1)
-  let parent
+  if (playlist === groupToRemove) {
+    console.error(
+      'You can\'t remove the playlist from itself! Instead, try --clear' +
+      ' (shorthand -c).'
+    )
 
-  if (parentPath.length === 0) {
-    parent = playlist
-  } else {
-    parent = filterGrouplikeByPath(playlist, parentPath)
+    return
   }
+
+  if (!(parentSymbol in groupToRemove)) {
+    console.error(
+      `Group ${pathParts.join('/')} doesn't have a parent, so we can't` +
+      ' remove it from the playlist.'
+    )
+
+    return
+  }
+
+  const parent = groupToRemove[parentSymbol]
 
   const index = parent.items.indexOf(groupToRemove)
 
@@ -210,7 +226,7 @@ function removeGroupByPath(playlist, pathParts) {
   } else {
     console.error(
       `Group ${pathParts.join('/')} doesn't exist, so we can't explicitly ` +
-      "ignore it."
+      'ignore it.'
     )
   }
 }
@@ -271,23 +287,23 @@ function getItemPathString(item) {
   // Requires that the given item be from a playlist processed by
   // updateGroupFormat.
 
-  const displayName = item.name || '(Unnamed)'
-
+  // Check if the parent is not the top level group.
+  // The top-level group is included in the return path as '/'.
   if (item[parentSymbol]) {
-    // Check if the parent is not the top level group.
-    // The top-level group is never included in the output path.
+    const displayName = item.name || '(Unnamed)'
+
     if (item[parentSymbol][parentSymbol]) {
       return getItemPathString(item[parentSymbol]) + '/' + displayName
     } else {
-      return displayName
+      return '/' + displayName
     }
   } else {
-    return displayName
+    return '/'
   }
 }
 
 function parsePathString(pathString) {
-  const pathParts = pathString.split('/')
+  const pathParts = pathString.split('/').filter(item => item.length)
   return pathParts
 }
 
@@ -352,10 +368,47 @@ module.exports = {
 }
 
 if (require.main === module) {
+  const compareArrays = (a, b) => {
+    return a.length === b.length && a.every((x, i) => b[i] === x)
+  }
+
+  const _assert = (value, condition) => {
+    if (condition(value)) {
+      console.log('  ..good.')
+    } else {
+      console.log('  BAD! result:', value)
+    }
+  }
+
+  const assert = (value, expectedValue) => {
+    return _assert(value, x => x === expectedValue)
+  }
+
+  const assertArray = (value, expectedValue) => {
+    return _assert(value, x => compareArrays(x, expectedValue))
+  }
+
+  console.log('compareArrays')
+
+  {
+    console.log('- ([a, b], [a, b]) should return true')
+    assert(compareArrays(['a', 'b'], ['a', 'b']), true)
+  }
+
+  {
+    console.log('- ([a, b], [30, 20]) should return false')
+    assert(compareArrays(['a', 'b'], [30, 20]), false)
+  }
+
+  {
+    console.log('- ([a, b], [a, b, c]) should return false')
+    assert(compareArrays(['a', 'b'], ['a', 'b', 'c']), false)
+  }
+
   console.log('getItemPathString')
 
   {
-    console.log('- (root with name) should output a/b/c/Foo')
+    console.log('- (root with name) should return /a/b/c/Foo')
 
     const playlist = updatePlaylistFormat(
       {name: 'root', items: [
@@ -371,16 +424,11 @@ if (require.main === module) {
 
     const deepTrack = playlist.items[0].items[0].items[0].items[0]
 
-    const path = getItemPathString(deepTrack)
-    if (path === 'a/b/c/Foo') {
-      console.log('  ..good.')
-    } else {
-      console.log('  ..BAD! result:', path)
-    }
+    assert(getItemPathString(deepTrack), '/a/b/c/Foo')
   }
 
   {
-    console.log('- (root without name) should output a/b/c/Foo')
+    console.log('- (root without name) should return /a/b/c/Foo')
 
     const playlist = updatePlaylistFormat(
       {items: [
@@ -396,16 +444,11 @@ if (require.main === module) {
 
     const deepTrack = playlist.items[0].items[0].items[0].items[0]
 
-    const path = getItemPathString(deepTrack)
-    if (path === 'a/b/c/Foo') {
-      console.log('  ..good.')
-    } else {
-      console.log('  ..BAD! result:', path)
-    }
+    assert(getItemPathString(deepTrack), '/a/b/c/Foo')
   }
 
   {
-    console.log('- (sub-group without name) should output a/b/(Unnamed)/c/Foo')
+    console.log('- (sub-group without name) should return /a/b/(Unnamed)/c/Foo')
 
     const playlist = updatePlaylistFormat(
       {items: [
@@ -423,11 +466,41 @@ if (require.main === module) {
 
     const deepTrack = playlist.items[0].items[0].items[0].items[0].items[0]
 
-    const path = getItemPathString(deepTrack)
-    if (path === 'a/b/(Unnamed)/c/Foo') {
-      console.log('  ..good.')
-    } else {
-      console.log('  ..BAD! result:', path)
-    }
+    assert(getItemPathString(deepTrack), '/a/b/(Unnamed)/c/Foo')
+  }
+
+  {
+    console.log('- (path string of root) should return /')
+
+    const playlist = updatePlaylistFormat({items: []})
+
+    assert(getItemPathString(playlist), '/')
+  }
+
+  console.log('parsePathString')
+
+  {
+    console.log('- (foo/bar/baz) should return [foo, bar, baz]')
+    assertArray(parsePathString('foo/bar/baz'), ['foo', 'bar', 'baz'])
+  }
+
+  {
+    console.log('- (/foo/bar/baz) should return [foo, bar, baz]')
+    assertArray(parsePathString('/foo/bar/baz'), ['foo', 'bar', 'baz'])
+  }
+
+  {
+    console.log('- (/) should return []')
+    assertArray(parsePathString('/'), [])
+  }
+
+  {
+    console.log('- (/////foo) should return [foo]')
+    assertArray(parsePathString('/////foo'), ['foo'])
+  }
+
+  {
+    console.log('- (//foo/////bar//) should return [foo, bar]')
+    assertArray(parsePathString('//foo/////bar//'), ['foo', 'bar'])
   }
 }

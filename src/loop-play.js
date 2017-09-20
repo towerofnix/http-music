@@ -13,12 +13,15 @@ const FIFO = require('fifo-js')
 const EventEmitter = require('events')
 const promisifyProcess = require('./promisify-process')
 const killProcess = require('./kill-process')
-const { getItemPathString, safeUnlink } = require('./playlist-utils')
 const { HistoryController, generalPicker } = require('./pickers')
 
 const {
   getDownloaderFor, byName: downloadersByName, makeConverter
 } = require('./downloaders')
+
+const {
+  getItemPathString, safeUnlink, parentSymbol
+} = require('./playlist-utils')
 
 class Player {
   constructor() {
@@ -499,7 +502,7 @@ class PlayController extends EventEmitter {
     const getColorMessage = t => {
       if (!t) return '\x1b[2m(No track)\x1b[0m'
 
-      const path = getItemPathString(t)
+      const path = getItemPathString(t[parentSymbol])
 
       return (
         `\x1b[1m${t.name} \x1b[0m@ ${path} \x1b[2m(${t.downloaderArg})\x1b[0m`
@@ -509,7 +512,7 @@ class PlayController extends EventEmitter {
     const getCleanMessage = t => {
       if (!t) return '(No track)'
 
-      const path = getItemPathString(t)
+      const path = getItemPathString(t[parentSymbol])
 
       return `${t.name} @ ${path}`
     }

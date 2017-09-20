@@ -357,9 +357,13 @@ TODO: Make the '@ ...' part of track-info show the path to the track, rather
       (Done!)
 
 TODO: Only show the path to a given track's group in the track info.
+      (Done!)
 
 TODO: Figure out what to show in the '@ ...' part when a track is in the top
-      level (i.e. its group is only the top). Probably just '/'?
+      level (i.e. its group is only the top). Probably just '/'? Probably best
+      to make sure that the to-path-string function always returns a slash at
+      the start.
+      (Done!)
 
 TODO: Let track objects have an option for command line arguments to pass to
       the converter program (ffmpeg or avconv). This would be useful for a
