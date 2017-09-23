@@ -125,11 +125,16 @@ async function main(args) {
     // We also want to de-smart-ify (stupidify? - simplify?) the playlist.
     const processedPlaylist = await processSmartPlaylist(openedPlaylist)
 
+    // ..And finally, we have to update the playlist format again, since
+    // processSmartPlaylist might have added new (un-updated) items:
+    const finalPlaylist = updatePlaylistFormat(processedPlaylist)
+
+    sourcePlaylist = finalPlaylist
+
     // The active playlist is a clone of the source playlist; after all it's
     // quite possible we'll be messing with the value of the active playlist,
     // and we don't want to reflect those changes in the source playlist.
-    sourcePlaylist = processedPlaylist
-    activePlaylist = clone(processedPlaylist)
+    activePlaylist = clone(sourcePlaylist)
 
     await processArgv(processedPlaylist.options, optionFunctions)
   }
