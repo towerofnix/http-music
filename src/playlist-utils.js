@@ -58,9 +58,10 @@ function updateGroupFormat(group) {
   groupObj = Object.assign(defaultGroup, groupObj)
 
   groupObj.items = groupObj.items.map(item => {
-    // Theoretically this wouldn't work on downloader-args where the value
-    // isn't a string..
-    if (typeof item[1] === 'string' || item.downloaderArg) {
+    // Check if it's a group; if not, it's probably a track.
+    if (typeof item[1] === 'array' || item.items) {
+      item = updateGroupFormat(item)
+    } else {
       item = updateTrackFormat(item)
 
       // TODO: Should this also apply to groups? Is recursion good? Probably
@@ -72,8 +73,6 @@ function updateGroupFormat(group) {
       if (groupObj.apply) {
         Object.assign(item, groupObj.apply)
       }
-    } else {
-      item = updateGroupFormat(item)
     }
 
     item[parentSymbol] = groupObj
@@ -131,14 +130,59 @@ function flattenGrouplike(grouplike) {
   return {
     items: grouplike.items.map(item => {
       if (isGroup(item)) {
-        const flat = flattenGrouplike(item).items
-
-        return flat
+        return flattenGrouplike(item).items
       } else {
         return [item]
       }
     }).reduce((a, b) => a.concat(b), [])
   }
+}
+
+function partiallyFlattenGrouplike(grouplike, resultDepth) {
+  // Flattens a grouplike so that it is never more than a given number of
+  // groups deep, INCLUDING the "top" group -- e.g. a resultDepth of 2
+  // means that there can be one level of groups remaining in the resulting
+  // grouplike, plus the top group.
+
+  if (resultDepth <= 1) {
+    return flattenGrouplike(grouplike)
+  }
+
+  const items = grouplike.items.map(item => {
+    if (isGroup(item)) {
+      return {items: partiallyFlattenGrouplike(item, resultDepth - 1).items}
+    } else {
+      return item
+    }
+  })
+
+  return {items}
+}
+
+function collapseGrouplike(grouplike) {
+  // Similar to partiallyFlattenGrouplike, but doesn't discard the individual
+  // ordering of tracks; rather, it just collapses them all to one level.
+
+  // Gather the groups. The result is an array of groups.
+  // Collapsing [Kar/Baz/Foo, Kar/Baz/Lar] results in [Foo, Lar].
+  // Aha! Just collect the top levels.
+  // Only trouble is what to do with groups that contain both groups and
+  // tracks. Maybe give them their own separate group (e.g. Baz).
+
+  const subgroups = grouplike.items.filter(x => isGroup(x))
+  const nonGroups = grouplike.items.filter(x => !isGroup(x))
+
+  // Get each group's own collapsed groups, and store them all in one big
+  // array.
+  const ret = subgroups.map(group => {
+    return collapseGrouplike(group).items
+  }).reduce((a, b) => a.concat(b), [])
+
+  if (nonGroups.length) {
+    ret.unshift({name: grouplike.name, items: nonGroups})
+  }
+
+  return {items: ret}
 }
 
 function filterPlaylistByPathString(playlist, pathString) {
@@ -308,13 +352,13 @@ function parsePathString(pathString) {
 }
 
 function isGroup(obj) {
-  return obj && obj.items
+  return !!(obj && obj.items)
 
   // return Array.isArray(array[1])
 }
 
 function isTrack(obj) {
-  return obj && obj.downloaderArg
+  return !!(obj && obj.downloaderArg)
 
   // return typeof array[1] === 'string'
 }
@@ -358,6 +402,7 @@ module.exports = {
   parentSymbol,
   updatePlaylistFormat, updateTrackFormat,
   flattenGrouplike,
+  partiallyFlattenGrouplike, collapseGrouplike,
   filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
@@ -502,5 +547,66 @@ if (require.main === module) {
   {
     console.log('- (//foo/////bar//) should return [foo, bar]')
     assertArray(parsePathString('//foo/////bar//'), ['foo', 'bar'])
+  }
+
+  console.log('partiallyFlattenGrouplike')
+
+  test: {
+    console.log('- ([[a1, [aa1]], out], 2) should return [[a1, aa1], out]')
+
+    const playlist = updatePlaylistFormat({name: 'top', items: [
+      {name: 'a', items: [
+        {name: 'a1'},
+        {name: 'aa', items: [
+          {name: 'aa1'}
+        ]}
+      ]},
+      {name: 'out'}
+    ]})
+
+    const result = partiallyFlattenGrouplike(playlist, 2)
+
+    console.log('  -> ' + JSON.stringify(result, null))
+
+    // TODO: A nicer way to compare playlists, haha.
+    assert(result.items.length, 2)
+    assert(result.items[0].items.length, 2)
+    assert(result.items[0].items[0].name, 'a1')
+    assert(result.items[0].items[1].name, 'aa1')
+    assert(result.items[1].name, 'out')
+  }
+
+  console.log('collapseGrouplike')
+
+  test: {
+    console.log('- (top: [a: [a1, aa: [aa1], a2], out])')
+
+    const playlist = updatePlaylistFormat({name: 'top', items: [
+      {name: 'a', items: [
+        {name: 'a1'},
+        {name: 'aa', items: [
+          {name: 'aa1'}
+        ]},
+        {name: 'a2'}
+      ]},
+      {name: 'out'}
+    ]})
+
+    const result = collapseGrouplike(playlist)
+
+    console.log('  -> ' + JSON.stringify(result, null))
+
+    // output should be [top: [out], a: [a1, a2], aa: [aa1]]
+    assert(result.items.length, 3)
+    assert(result.items[0].name, 'top')
+    assert(result.items[0].items.length, 1)
+    assert(result.items[0].items[0].name, 'out')
+    assert(result.items[1].name, 'a')
+    assert(result.items[1].items.length, 2)
+    assert(result.items[1].items[0].name, 'a1')
+    assert(result.items[1].items[1].name, 'a2')
+    assert(result.items[2].name, 'aa')
+    assert(result.items[2].items.length, 1)
+    assert(result.items[2].items[0].name, 'aa1')
   }
 }

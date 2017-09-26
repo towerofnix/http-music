@@ -380,3 +380,9 @@ TODO: Let track objects have an option for command line arguments to pass to
       converter program that isn't installed, it simply won't run the
       convertion options on the tracks in the playlist.
       (Done!)
+
+TODO: Should the '@ ...' part display the path to the track in the SOURCE
+      playlist, rather than in the active one? I'm split on this; showing the
+      active path is handy for debugging or writing your own playlist, but
+      showing the source path is usually more practically useful, so you know
+      where the album came from (e.g. displaying /C418/BAM instead of /BAM).

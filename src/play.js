@@ -14,7 +14,7 @@ const processSmartPlaylist = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
-  updatePlaylistFormat
+  updatePlaylistFormat, collapseGrouplike
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
@@ -299,6 +299,19 @@ async function main(args) {
 
     'r': util => util.alias('-remove'),
     'x': util => util.alias('-remove'),
+
+    '-collapse-groups': function() {
+      // --collapse-groups  (alias: --collapse)
+      // Collapses groups in the active playlist so that there is only one
+      // level of sub-groups. Handy for shuffling the order groups play in;
+      // try `--collapse-groups --sort shuffle-groups`.
+
+      requiresOpenPlaylist()
+
+      activePlaylist = updatePlaylistFormat(collapseGrouplike(activePlaylist))
+    },
+
+    '-collapse': util => util.alias('-collapse-groups'),
 
     '-list-groups': function(util) {
       // --list-groups  (alias: -l, --list)
