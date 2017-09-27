@@ -80,6 +80,11 @@ Clears the active playlist.
 This does not effect the source playlist, so specific groups can be selected using \fB\-\-keep\fR.
 
 .TP
+.BR \-\-collapse\-groups ", " \-\-collapse
+Collapses groups in the active playlist so that there is only one level of sub-groups.
+Handy for shuffling the order groups play in; try \fB\-\-collapse-groups \-\-sort shuffle\-groups\fR.
+
+.TP
 .BR \-\-converter
 Sets the program used for converting tracks.
 By default the program is either \fBffmpeg\fR or \fBavconv\fR.
