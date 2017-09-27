@@ -249,3 +249,24 @@ $ http-music play --remove 'Bad News' --keep 'Bad News/Irony'
 $ http-music play -x 'Cool Author 72' -k 'Cool Author 72/Good Album'
 .RE
 .fi
+
+.PP
+Play every group in a random order, playing each group in its own original order:
+
+.PP
+.nf
+.RS
+$ http-music play --sort shuffle-groups
+.RE
+.fi
+
+.PP
+Play every group in a random order, after collapsing the playlist, so that parent groups aren't considered
+(using \fB--sort shuffle-groups\fR alone would play all of one artist's albums before moving onto the next; using \fB--collapse\fR lets the groups be shuffled without regarding the artists' groups):
+
+.PP
+.nf
+.RS
+$ http-music play --collapse --sort shuffle-groups
+.RE
+.fi
