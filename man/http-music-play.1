@@ -107,6 +107,13 @@ By default, they are enabled.
 See also \fB\-\-disable\-converter\-options\fR.
 
 .TP
+.BR \-f ", " \-\-filter " \fIproperty\fR \fIvalue\fR"
+Filters the playlist so that only tracks with the given property-value pair are kept.
+If the property is an array, it checks if the given value is contained within that array.
+For example, this is useful for adding "tags" to songs.
+Try adding \fB"tag": ["cool"]\fR to a track in a playlist file, then use \fB\-\-filter tag cool\fR to only play that track (and other tracks whose \fB"tag"\fR property contains \fB"cool"\fR).
+
+.TP
 .BR \-h ", " \-? ", " \-\-help
 Presents a help message, directing the user to the \fBman\fR page.
 If this is the last option used, nothing plays (see \fB\-\-play\fR).
