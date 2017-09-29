@@ -185,6 +185,36 @@ function collapseGrouplike(grouplike) {
   return {items: ret}
 }
 
+function filterGrouplikeByProperty(grouplike, property, value) {
+  // Returns a copy of the original grouplike, only keeping tracks with the
+  // given property-value pair. (If the track's value for the given property
+  // is an array, this will check if that array includes the given value.)
+
+  return Object.assign({}, grouplike, {
+    items: grouplike.items.map(item => {
+      if (isGroup(item)) {
+        const newGroup = filterGrouplikeByProperty(item, property, value)
+        if (newGroup.items.length) {
+          return newGroup
+        } else {
+          return false
+        }
+      } else if (isTrack(item)) {
+        const itemValue = item[property]
+        if (Array.isArray(itemValue) && itemValue.includes(value)) {
+          return item
+        } else if (item[property] === value) {
+          return item
+        } else {
+          return false
+        }
+      } else {
+        return item
+      }
+    }).filter(item => item !== false)
+  })
+}
+
 function filterPlaylistByPathString(playlist, pathString) {
   // Calls filterGroupContentsByPath, taking an unparsed path string.
 
@@ -403,6 +433,7 @@ module.exports = {
   updatePlaylistFormat, updateTrackFormat,
   flattenGrouplike,
   partiallyFlattenGrouplike, collapseGrouplike,
+  filterGrouplikeByProperty,
   filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,

@@ -14,7 +14,7 @@ const processSmartPlaylist = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
-  updatePlaylistFormat, collapseGrouplike
+  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
@@ -299,6 +299,20 @@ async function main(args) {
 
     'r': util => util.alias('-remove'),
     'x': util => util.alias('-remove'),
+
+    '-filter': function(util) {
+      // --filter <property> <value>  (alias: -f)
+      // Filters the playlist so that only tracks with the given property-
+      // value pair are kept.
+
+      const property = util.nextArg()
+      const value = util.nextArg()
+
+      const p = filterGrouplikeByProperty(activePlaylist, property, value)
+      activePlaylist = updatePlaylistFormat(p)
+    },
+
+    'f': util => util.alias('-filter'),
 
     '-collapse-groups': function() {
       // --collapse-groups  (alias: --collapse)
