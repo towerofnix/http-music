@@ -7,6 +7,7 @@ const { promisify } = require('util')
 const unlink = promisify(fs.unlink)
 
 const parentSymbol = Symbol('Parent group')
+const oldSymbol = Symbol('Old track or group reference')
 
 function updatePlaylistFormat(playlist) {
   const defaultPlaylist = {
@@ -44,7 +45,8 @@ function updatePlaylistFormat(playlist) {
 function updateGroupFormat(group) {
   const defaultGroup = {
     name: '',
-    items: []
+    items: [],
+    [oldSymbol]: group
   }
 
   let groupObj = {}
@@ -86,7 +88,8 @@ function updateGroupFormat(group) {
 function updateTrackFormat(track) {
   const defaultTrack = {
     name: '',
-    downloaderArg: ''
+    downloaderArg: '',
+    [oldSymbol]: track
   }
 
   let trackObj = {}
@@ -381,6 +384,30 @@ function parsePathString(pathString) {
   return pathParts
 }
 
+function isSameTrack(track1, track2) {
+  // Compares the two old-version chains of the given tracks. If there's any
+  // overlap, return true, as they are simply different versions of the same
+  // track; otherwise, return false.
+
+  // HAHAHA. You cannot convince me this isn't a good usage of generators.
+  const chain = function*(track) {
+    let oldTrack = track
+    while (oldTrack[oldSymbol]) {
+      yield (oldTrack = oldTrack[oldSymbol])
+    }
+  }
+
+  const track2Chain = Array.from(chain(track2))
+
+  for (const oldTrack1 of chain(track1)) {
+    if (track2Chain.includes(oldTrack1)) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function isGroup(obj) {
   return !!(obj && obj.items)
 
@@ -439,6 +466,7 @@ module.exports = {
   getPlaylistTreeString,
   getItemPathString,
   parsePathString,
+  isSameTrack,
   isGroup, isTrack,
   safeUnlink
 }

@@ -15,7 +15,7 @@ const _seedRandom = require('seed-random')
 // Uncertain on how to handle serialization of tracks.. some tracks may appear twice in the same playlist (or two tracks of the same name appear); in this case the serialized path to the two track appearances is the same, when they really refer to two separate instances of the track within the playlist. Could track serialization instead be index-based (rather than name-based)..?
 
 const {
-  flattenGrouplike, isGroup, updatePlaylistFormat
+  flattenGrouplike, isGroup, updatePlaylistFormat, isSameTrack
 } = require('./playlist-utils')
 
 class HistoryController {
@@ -212,7 +212,20 @@ function generalPicker(sourcePlaylist, lastTrack, options) {
     // console.log('\x1b[1K\rDone indexing.')
   }
 
-  const index = playlist.items.indexOf(lastTrack)
+  let index
+
+  if (lastTrack !== null) {
+    // The "current" version of the last track (that is, the object
+    // representing this track which appears in the flattened/updated/cached
+    // playlist).
+    const currentLastTrack = playlist.items.find(
+      t => isSameTrack(t, lastTrack)
+    )
+
+    index = playlist.items.indexOf(currentLastTrack)
+  } else {
+    index = -1
+  }
 
   if (index === -1) {
     return playlist.items[0]

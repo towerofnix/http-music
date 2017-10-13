@@ -537,7 +537,8 @@ module.exports = async function startLoopPlay(
   playlist, {
     pickerOptions, playerCommand, converterCommand,
     useConverterOptions = true,
-    disablePlaybackStatus = false
+    disablePlaybackStatus = false,
+    startTrack = null
   }
 ) {
   // Looping play function. Takes a playlist and an object containing general
@@ -575,6 +576,10 @@ module.exports = async function startLoopPlay(
   const historyController = new HistoryController(
     playlist, generalPicker, pickerOptions
   )
+
+  if (startTrack) {
+    historyController.timeline.push(startTrack)
+  }
 
   const playController = new PlayController(
     player, playlist, historyController, downloadController

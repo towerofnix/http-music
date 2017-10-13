@@ -14,7 +14,7 @@ const processSmartPlaylist = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
-  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty
+  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty, isTrack
 } = require('./playlist-utils')
 
 const readFile = promisify(fs.readFile)
@@ -72,6 +72,7 @@ async function main(args) {
   let pickerSortMode = 'shuffle'
   let pickerLoopMode = 'loop-regenerate'
   let shuffleSeed
+  let startTrack
   let playerCommand = await determineDefaultPlayer()
   let converterCommand = await determineDefaultConverter()
 
@@ -416,6 +417,32 @@ async function main(args) {
 
     '-loop': util => util.alias('-loop-mode'),
 
+    '-start': function(util) {
+      // --start <track path>  (alias: -s, --start-track, --start-[on|at])
+      // Sets the first track to be played.
+      // This is especially useful when using an ordered sort; this option
+      // could be used to start a long album part way through.
+      const pathString = util.nextArg()
+      const track = filterPlaylistByPathString(activePlaylist, pathString)
+      if (isTrack(track)) {
+        startTrack = track
+        console.log('Starting on track', pathString)
+      } else {
+        console.warn(
+          'A starting track path was given, but there is no track at ' +
+          'that path?'
+        )
+      }
+    },
+
+    '-start-track': util => util.alias('-start'),
+    '-start-on': util => util.alias('-start'),
+    '-start-at': util => util.alias('-start'),
+    '-starting-track': util => util.alias('-start'),
+    '-starting-on': util => util.alias('-start'),
+    '-starting-at': util => util.alias('-start'),
+    's': util => util.alias('-start'),
+
     '-player': function(util) {
       // --player <player>
       // Sets the shell command by which audio is played.
@@ -519,7 +546,8 @@ async function main(args) {
       useConverterOptions: willUseConverterOptions || (
         willUseConverterOptions === null && shouldUseConverterOptions
       ),
-      disablePlaybackStatus
+      disablePlaybackStatus,
+      startTrack
     })
 
     // We're looking to gather standard input one keystroke at a time.
