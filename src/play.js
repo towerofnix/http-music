@@ -104,6 +104,9 @@ async function main(args) {
   ]
 
   async function openPlaylist(arg, silent = false) {
+    // Takes a playlist download argument and loads it as the source and
+    // active playlist.
+
     let playlistText
 
     if (!silent) {
@@ -121,7 +124,16 @@ async function main(args) {
       return false
     }
 
-    const openedPlaylist = updatePlaylistFormat(JSON.parse(playlistText))
+    const importedPlaylist = JSON.parse(playlistText)
+
+    await loadPlaylist(importedPlaylist)
+  }
+
+  async function loadPlaylist(importedPlaylist) {
+    // Takes an actual playlist object and sets it up as the source and active
+    // playlist.
+
+    const openedPlaylist = updatePlaylistFormat(importedPlaylist)
 
     // We also want to de-smart-ify (stupidify? - simplify?) the playlist.
     const processedPlaylist = await processSmartPlaylist(openedPlaylist)
@@ -197,6 +209,14 @@ async function main(args) {
 
     '-open': util => util.alias('-open-playlist'),
     'o': util => util.alias('-open-playlist'),
+
+    '-open-playlist-string': async function(util) {
+      // --open-playlist-string <string>
+      // Opens a playlist, using the given string as the JSON text of the
+      // playlist. This sets the source playlist.
+
+      await loadPlaylist(JSON.parse(util.nextArg()))
+    },
 
     '-write-playlist': function(util) {
       // --write-playlist <file>  (alias: --write, -w, --save)

@@ -386,3 +386,14 @@ TODO: Should the '@ ...' part display the path to the track in the SOURCE
       active path is handy for debugging or writing your own playlist, but
       showing the source path is usually more practically useful, so you know
       where the album came from (e.g. displaying /C418/BAM instead of /BAM).
+
+TODO: Let playlists be passed to `play` by an actual string argument; e.g.
+      --playlist-string '{"tracks": [...]}'. Could work well with http-music's
+      own crawler utilities (e.g. --playlist-string
+      '{"source": ["crawl-local", "."]}' or with external ones (e.g.
+      --playlist-string "$(cool-crawler-utilith.sh)". At the moment the only
+      workaround is to use a temporary file to store the playlist in, or to
+      pipe the output of the crawler command (which might be `echo`!) to http-
+      music and use /dev/stdin as the --playlist-file value.. which obviously
+      isn't cross-platform or practical!
+      (Done!)
