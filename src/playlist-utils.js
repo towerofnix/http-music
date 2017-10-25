@@ -141,6 +141,29 @@ function flattenGrouplike(grouplike) {
   }
 }
 
+function collectGrouplikeChildren(grouplike, filter = null) {
+  // Collects all descendants of a grouplike into a single flat array.
+  // Can be passed a filter function, which will decide whether or not to add
+  // an item to the return array. However, note that all descendants will be
+  // checked against this function; a group will be descended through even if
+  // the filter function checks false against it.
+  // Returns an array, not a grouplike.
+
+  const items = []
+
+  for (const item of grouplike.items) {
+    if (filter === null || filter(item) === true) {
+      items.push(item)
+    }
+
+    if (isGroup(item)) {
+      items.push(...collectGrouplikeChildren(item, filter))
+    }
+  }
+
+  return items
+}
+
 function partiallyFlattenGrouplike(grouplike, resultDepth) {
   // Flattens a grouplike so that it is never more than a given number of
   // groups deep, INCLUDING the "top" group -- e.g. a resultDepth of 2
@@ -234,9 +257,27 @@ function filterGrouplikeByPath(grouplike, pathParts) {
     return grouplike
   }
 
+  let firstPart = pathParts[0]
+  let possibleMatches
+
+  if (firstPart.startsWith('?')) {
+    // TODO: Note to self - remove isGroup here to let this match anything, not
+    // just groups. Definitely want to do that in the future, but there'll need
+    // to be some preparing first - for example, what if a group contains a
+    // track which is the same name as the group? Then there are two possible
+    // matches; how should http-music know which to pick? Probably be biased to
+    // pick a group before a track, but.. that doesn't seem perfect either. And
+    // it doesn't solve the problem where there might be two descendants of the
+    // same name (groups or otherwise).
+    possibleMatches = collectGrouplikeChildren(grouplike, isGroup)
+    firstPart = firstPart.slice(1)
+  } else {
+    possibleMatches = grouplike.items
+  }
+
   const titleMatch = (group, caseInsensitive = false) => {
     let a = group.name
-    let b = pathParts[0]
+    let b = firstPart
 
     if (caseInsensitive) {
       a = a.toLowerCase()
@@ -246,10 +287,10 @@ function filterGrouplikeByPath(grouplike, pathParts) {
     return a === b || a === b + '/'
   }
 
-  let match = grouplike.items.find(g => titleMatch(g, false))
+  let match = possibleMatches.find(g => titleMatch(g, false))
 
   if (!match) {
-    match = grouplike.items.find(g => titleMatch(g, true))
+    match = possibleMatches.find(g => titleMatch(g, true))
   }
 
   if (match) {
@@ -260,7 +301,7 @@ function filterGrouplikeByPath(grouplike, pathParts) {
       return match
     }
   } else {
-    console.warn(`Not found: "${pathParts[0]}"`)
+    console.warn(`Not found: "${firstPart}"`)
     return null
   }
 }

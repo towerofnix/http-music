@@ -398,3 +398,8 @@ TODO: Let playlists be passed to `play` by an actual string argument; e.g.
       music and use /dev/stdin as the --playlist-file value.. which obviously
       isn't cross-platform or practical!
       (Done!)
+
+TODO: A way to search the playlist for a path. Probably best to modify the
+      function which filters a grouplike by a path. I think I'll hide this
+      feature behind a special prefix, e.g. -c -k '?72 Minutes of Fame'.
+      (Done!)
