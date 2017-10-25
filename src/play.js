@@ -302,7 +302,10 @@ async function main(args) {
 
       const pathString = util.nextArg()
       const group = filterPlaylistByPathString(sourcePlaylist, pathString)
-      activePlaylist.items.push(group)
+
+      if (group) {
+        activePlaylist.items.push(group)
+      }
     },
 
     'k': util => util.alias('-keep'),

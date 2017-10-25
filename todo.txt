@@ -233,6 +233,7 @@ TODO: Make a YouTube playlist crawler.
 
 TODO: The filter utility function shouldn't work at all if it fails to find
       what it's looking for.
+      (Done!)
 
 TODO: Make the filter/remove/keep options do a search of some sort.
 

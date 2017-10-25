@@ -261,7 +261,7 @@ function filterGrouplikeByPath(grouplike, pathParts) {
     }
   } else {
     console.warn(`Not found: "${pathParts[0]}"`)
-    return grouplike
+    return null
   }
 }
 
@@ -275,6 +275,10 @@ function removeGroupByPath(playlist, pathParts) {
   // Removes the group at the given path from the given playlist.
 
   const groupToRemove = filterGrouplikeByPath(playlist, pathParts)
+
+  if (groupToRemove === null) {
+    return
+  }
 
   if (playlist === groupToRemove) {
     console.error(
