@@ -24,6 +24,7 @@ async function main(args) {
       case 'play': script = require('./play'); break
       case 'download-playlist': script = require('./download-playlist'); break
       case 'smart-playlist': script = require('./smart-playlist'); break
+      case 'setup': script = require('./setup'); break
 
       default:
         console.error(`Invalid command "${args[0]}" provided.`)

@@ -544,9 +544,14 @@ async function main(args) {
   await processArgv(args, optionFunctions)
 
   if (activePlaylist === null) {
-    throw new Error(
+    console.error(
       "Cannot play - no open playlist. Try --open <playlist file>?"
     )
+    console.error(
+      "You could also try \x1b[1mhttp-music setup\x1b[0m to easily " +
+      "create a playlist file!"
+    )
+    return false
   }
 
   if (willPlay || (willPlay === null && shouldPlay)) {

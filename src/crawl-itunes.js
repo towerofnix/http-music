@@ -109,7 +109,7 @@ async function crawl(
   return resultGroup
 }
 
-async function main(args) {
+async function main(args, shouldReturn = false) {
   let playlist
 
   try {
@@ -137,7 +137,12 @@ async function main(args) {
     }
   }
 
-  console.log(JSON.stringify(playlist, null, 2))
+  const str = JSON.stringify(playlist, null, 2)
+  if (shouldReturn) {
+    return str
+  } else {
+    console.log(str)
+  }
 }
 
 module.exports = {main, crawl}

@@ -147,7 +147,7 @@ function getHTMLLinks(text) {
   })
 }
 
-async function main(args) {
+async function main(args, shouldReturn = false) {
   if (args.length === 0) {
     console.log("Usage: crawl-http http://.../example/path/ [opts]")
     return
@@ -202,7 +202,12 @@ async function main(args) {
     filterRegex: filterRegex
   })
 
-  console.log(JSON.stringify(downloadedPlaylist, null, 2))
+  const str = JSON.stringify(downloadedPlaylist, null, 2)
+  if (shouldReturn) {
+    return str
+  } else {
+    console.log(str)
+  }
 }
 
 module.exports = {main, crawl}

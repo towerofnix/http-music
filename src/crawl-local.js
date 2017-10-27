@@ -56,7 +56,7 @@ function crawl(dirPath, extensions = [
     .then(filteredItems => ({items: filteredItems}))
 }
 
-async function main(args) {
+async function main(args, shouldReturn = false) {
   if (args.length === 0) {
     console.log("Usage: crawl-local /example/path [opts]")
     return
@@ -86,8 +86,14 @@ async function main(args) {
     'e': util => util.alias('-extensions')
   })
 
-  const res = await crawl(path, extensions)
-  console.log(JSON.stringify(res, null, 2))
+  const playlist = await crawl(path, extensions)
+
+  const str = JSON.stringify(playlist, null, 2)
+  if (shouldReturn) {
+    return str
+  } else {
+    console.log(str)
+  }
 }
 
 module.exports = {main, crawl}

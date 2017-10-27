@@ -31,13 +31,20 @@ async function crawl(url) {
   }
 }
 
-async function main(args) {
+async function main(args, shouldReturn = false) {
   // TODO: Error message if none is passed.
 
   if (args.length === 0) {
     console.error("Usage: crawl-youtube <playlist URL>")
+    return
+  }
+
+  const playlist = await crawl(args[0])
+  const str = JSON.stringify(playlist, null, 2)
+  if (shouldReturn) {
+    return str
   } else {
-    console.log(JSON.stringify(await crawl(args[0]), null, 2))
+    console.log(str)
   }
 }
 
