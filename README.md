@@ -40,7 +40,10 @@ check from your terminal using the [`type`][type] command!
 ## Usage
 
 ```
-# Generate a playlist file, using one of these shell commands..
+# Generate a playlist file, using the handy interactive setup utility..
+$ http-music setup
+
+# ..or one of these shell commands:
 $ http-music crawl-http http://some.directory.listing.server/ > playlist.json
 $ http-music crawl-local ~/Music/ > playlist.json
 
