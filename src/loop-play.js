@@ -23,8 +23,14 @@ const {
   getItemPathString, safeUnlink, parentSymbol
 } = require('./playlist-utils')
 
-class Player {
+function createStatusLine({percentStr, curStr, lenStr}) {
+  return `(${percentStr}) ${curStr} / ${lenStr}`
+}
+
+class Player extends EventEmitter {
   constructor() {
+    super()
+
     this.disablePlaybackStatus = false
   }
 
@@ -35,6 +41,15 @@ class Player {
   volDown(amount) {}
   togglePause() {}
   kill() {}
+
+  printStatusLine(str) {
+    // Quick sanity check - we don't want to print the status line if it's
+    // disabled! Hopefully printStatusLine won't be called in that case, but
+    // if it is, we should be careful.
+    if (!this.disablePlaybackStatus) {
+      this.emit('printStatusLine', str)
+    }
+  }
 }
 
 class MPVPlayer extends Player {
@@ -83,9 +98,7 @@ class MPVPlayer extends Player {
         const percentVal = (100 / lenSecTotal) * curSecTotal
         const percentStr = (Math.trunc(percentVal * 100) / 100).toFixed(2)
 
-        process.stdout.write(
-          `\x1b[K~ (${percentStr}%) ${curStr} / ${lenStr}\r`
-        )
+        this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
       }
     })
 
@@ -168,9 +181,44 @@ class SoXPlayer extends Player {
         if (this.disablePlaybackStatus) {
           return
         }
-      }
 
-      process.stdout.write(data.toString())
+        const timeRegex = '([0-9]*):([0-9]*):([0-9]*)\.([0-9]*)'
+        const match = data.toString().trim().match(new RegExp(
+          `^In:([0-9.]+%)\\s*${timeRegex}\\s*\\[${timeRegex}\\]`
+        ))
+
+        if (match) {
+          const percentStr = match[1]
+
+          const [
+            curHour, curMin, curSec, curSecFrac, // ##:##:##.##
+            remHour, remMin, remSec, remSecFrac // ##:##:##.##
+          ] = match.slice(2).map(n => parseInt(n))
+
+          const duration = Math.round(
+            (curHour + remHour) * 3600 +
+            (curMin + remMin) * 60 +
+            (curSec + remSec) * 1
+          )
+
+          const lenHour = Math.floor(duration / 3600)
+          const lenMin = Math.floor((duration - lenHour * 3600) / 60)
+          const lenSec = Math.floor(duration - lenHour * 3600 - lenMin * 60)
+
+          let curStr, lenStr
+          const pad = val => val.toString().padStart(2, '0')
+
+          if (lenHour > 0) {
+            curStr = `${curHour}:${pad(curMin)}:${pad(curSec)}`
+            lenStr = `${lenHour}:${pad(lenMin)}:${pad(lenSec)}`
+          } else {
+            curStr = `${curMin}:${pad(curSec)}`
+            lenStr = `${lenMin}:${pad(lenSec)}`
+          }
+
+          this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
+        }
+      }
     })
 
     return new Promise(resolve => {
@@ -311,6 +359,46 @@ class PlayController extends EventEmitter {
     this.stopped = false
     this.shouldMoveNext = true
     this.failedCount = 0
+
+    this.player.on('printStatusLine', playerString => {
+      let fullStatusLine = ''
+
+      const track = this.currentTrack
+
+      if (track) {
+        if (track.overallTrackIndex || track.groupTrackIndex) {
+          fullStatusLine += '('
+
+          if (track.overallTrackIndex) {
+            const [ cur, len ] = track.overallTrackIndex
+            fullStatusLine += `${cur + 1} / ${len}`
+
+            if (track.groupTrackIndex) {
+              fullStatusLine += ' [All]; '
+            }
+          }
+
+          if (track.groupTrackIndex) {
+            const [ cur, len ] = track.groupTrackIndex
+            fullStatusLine += `${cur + 1} / ${len}`
+
+            if (track.overallTrackIndex) {
+              fullStatusLine += ' [Group]'
+            }
+          }
+
+          fullStatusLine += ') '
+        }
+      }
+
+      fullStatusLine += playerString
+
+      // Carriage return - moves the cursor back to the start of the line,
+      // so that the next status line is printed on top of this one.
+      fullStatusLine += '\r'
+
+      process.stdout.write(fullStatusLine)
+    })
   }
 
   async loopPlay() {

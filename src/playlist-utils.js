@@ -453,6 +453,30 @@ function isSameTrack(track1, track2) {
   return false
 }
 
+function getTrackIndexInParent(track) {
+  if (parentSymbol in track === false) {
+    throw new Error(
+      'getTrackIndexInParent called with a track that has no parent!'
+    )
+  }
+
+  const parent = track[parentSymbol]
+
+  let i = 0, foundTrack = false;
+  for (; i < parent.items.length; i++) {
+    if (isSameTrack(track, parent.items[i])) {
+      foundTrack = true
+      break
+    }
+  }
+
+  if (foundTrack === false) {
+    return [-1, parent.items.length]
+  } else {
+    return [i, parent.items.length]
+  }
+}
+
 function isGroup(obj) {
   return !!(obj && obj.items)
 
@@ -501,7 +525,7 @@ async function safeUnlink(file, playlist) {
 }
 
 module.exports = {
-  parentSymbol,
+  parentSymbol, oldSymbol,
   updatePlaylistFormat, updateTrackFormat,
   flattenGrouplike,
   partiallyFlattenGrouplike, collapseGrouplike,
@@ -512,6 +536,7 @@ module.exports = {
   getItemPathString,
   parsePathString,
   isSameTrack,
+  getTrackIndexInParent,
   isGroup, isTrack,
   safeUnlink
 }

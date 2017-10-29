@@ -15,7 +15,8 @@ const _seedRandom = require('seed-random')
 // Uncertain on how to handle serialization of tracks.. some tracks may appear twice in the same playlist (or two tracks of the same name appear); in this case the serialized path to the two track appearances is the same, when they really refer to two separate instances of the track within the playlist. Could track serialization instead be index-based (rather than name-based)..?
 
 const {
-  flattenGrouplike, isGroup, updatePlaylistFormat, isSameTrack
+  flattenGrouplike, isGroup, updatePlaylistFormat, isSameTrack, oldSymbol,
+  getTrackIndexInParent
 } = require('./playlist-utils')
 
 class HistoryController {
@@ -169,6 +170,9 @@ function sortFlattenGrouplike(grouplike, sort, getRandom) {
 const playlistCache = Symbol('Cache of indexed playlist')
 
 function generalPicker(sourcePlaylist, lastTrack, options) {
+  // (Track 3/5 [2712])   -- Track (CUR/GROUP [ALL])
+  // (Track 3/2712)       -- Track (CUR/ALL)
+
   const { sort, loop } = options
 
   if (![
@@ -214,80 +218,98 @@ function generalPicker(sourcePlaylist, lastTrack, options) {
 
   let index
 
-  if (lastTrack !== null) {
-    // The "current" version of the last track (that is, the object
-    // representing this track which appears in the flattened/updated/cached
-    // playlist).
-    const currentLastTrack = playlist.items.find(
-      t => isSameTrack(t, lastTrack)
-    )
+  decideTrackIndex: {
+    if (lastTrack !== null) {
+      // The "current" version of the last track (that is, the object
+      // representing this track which appears in the flattened/updated/cached
+      // playlist).
+      const currentLastTrack = playlist.items.find(
+        t => isSameTrack(t, lastTrack)
+      )
 
-    index = playlist.items.indexOf(currentLastTrack)
-  } else {
-    index = -1
-  }
-
-  if (index === -1) {
-    return playlist.items[0]
-  }
-
-  if (index + 1 === playlist.items.length) {
-    if (loop === 'loop-same-order' || loop === 'loop') {
-      return playlist.items[0]
+      index = playlist.items.indexOf(currentLastTrack)
+    } else {
+      index = -1
     }
 
-    if (loop === 'loop-regenerate') {
-      // Deletes the random number generation seed then starts over. Assigning
-      // a new RNG seed makes it so we get a new shuffle the next time, and
-      // clearing the lastTrack value makes generalPicker thinks we're
-      // starting over. We also need to destroy the playlistCache, or else it
-      // won't actually recalculate the list.
-      const newSeed = makeGetRandom(options.seed)()
-      options.seed = newSeed
-      delete options[playlistCache]
-      return generalPicker(sourcePlaylist, null, options)
+    if (index === -1) {
+      index = 0
+      break decideTrackIndex
     }
 
-    if (loop === 'no-loop' || loop === 'no') {
-      // Returning null means the picker is done picking.
-      return null
+    if (index + 1 === playlist.items.length) {
+      if (loop === 'loop-same-order' || loop === 'loop') {
+        index = 0
+        break decideTrackIndex
+      }
+
+      if (loop === 'loop-regenerate') {
+        // Deletes the random number generation seed then starts over. Assigning
+        // a new RNG seed makes it so we get a new shuffle the next time, and
+        // clearing the lastTrack value makes generalPicker thinks we're
+        // starting over. We also need to destroy the playlistCache, or else it
+        // won't actually recalculate the list.
+        const newSeed = makeGetRandom(options.seed)()
+        options.seed = newSeed
+        delete options[playlistCache]
+        return generalPicker(sourcePlaylist, null, options)
+      }
+
+      if (loop === 'no-loop' || loop === 'no') {
+        // Returning null means the picker is done picking.
+        return null
+      }
+    }
+
+    if (index + 1 > playlist.items.length) {
+      throw new Error(
+        "Picker index is greater than total item count?" +
+        `(${index + 1} > ${playlist.items.length}`
+      )
+    }
+
+    if (index + 1 < playlist.items.length) {
+      // Pick-random is a special exception - in this case we don't actually
+      // care about the value of the index variable; instead we just pick a
+      // random track from the generated top level.
+      //
+      // Loop=pick-random is different from sort=shuffle. Sort=shuffle always
+      // ensures the same song doesn't play twice in a single shuffle. It's
+      // like how when you shuffle a deck of cards, you'll still never pick
+      // the same card twice, until you go all the way through the deck and
+      // re-shuffle the deck!
+      //
+      // Loop=pick-random instead picks a random track every time the picker
+      // is called. It's more like you reshuffle the complete deck every time
+      // you pick something.
+      //
+      // Now, how should pick-random work when dealing with groups, such as
+      // when using sort=shuffle-groups? (If I can't find a solution, I'd say
+      // that's alright.)
+      /*
+      if (loop === 'pick-random') {
+        const pickedIndex = Math.floor(Math.random() * topLevel.items.length)
+        return topLevel.items[pickedIndex]
+      }
+      */
+
+      index += 1
+      break decideTrackIndex
     }
   }
 
-  if (index + 1 > playlist.items.length) {
-    throw new Error(
-      "Picker index is greater than total item count?" +
-      `(${index + 1} > ${playlist.items.length}`
-    )
+  const oldItem = playlist.items[index]
+  const item = Object.assign({}, oldItem, {[oldSymbol]: oldItem})
+
+  item.overallTrackIndex = [index, playlist.items.length]
+
+  if (
+    ['order', 'ordered', 'shuffle-groups', 'shuffled-groups'].includes(sort)
+  ) {
+    item.groupTrackIndex = getTrackIndexInParent(item)
   }
 
-  if (index + 1 < playlist.items.length) {
-    // Pick-random is a special exception - in this case we don't actually
-    // care about the value of the index variable; instead we just pick a
-    // random track from the generated top level.
-    //
-    // Loop=pick-random is different from sort=shuffle. Sort=shuffle always
-    // ensures the same song doesn't play twice in a single shuffle. It's
-    // like how when you shuffle a deck of cards, you'll still never pick
-    // the same card twice, until you go all the way through the deck and
-    // re-shuffle the deck!
-    //
-    // Loop=pick-random instead picks a random track every time the picker
-    // is called. It's more like you reshuffle the complete deck every time
-    // you pick something.
-    //
-    // Now, how should pick-random work when dealing with groups, such as
-    // when using sort=shuffle-groups? (If I can't find a solution, I'd say
-    // that's alright.)
-    /*
-    if (loop === 'pick-random') {
-      const pickedIndex = Math.floor(Math.random() * topLevel.items.length)
-      return topLevel.items[pickedIndex]
-    }
-    */
-
-    return playlist.items[index + 1]
-  }
+  return item
 }
 
 module.exports = {HistoryController, generalPicker}
