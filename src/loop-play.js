@@ -96,7 +96,9 @@ class MPVPlayer extends Player {
         const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
         const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
         const percentVal = (100 / lenSecTotal) * curSecTotal
-        const percentStr = (Math.trunc(percentVal * 100) / 100).toFixed(2)
+        const percentStr = (
+          (Math.trunc(percentVal * 100) / 100).toFixed(2) + '%'
+        )
 
         this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
       }
