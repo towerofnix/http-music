@@ -375,21 +375,33 @@ class PlayController extends EventEmitter {
         if (track.overallTrackIndex || track.groupTrackIndex) {
           fullStatusLine += '('
 
-          if (track.overallTrackIndex) {
-            const [ cur, len ] = track.overallTrackIndex
-            fullStatusLine += `${cur + 1} / ${len}`
+          addTrackNumberInnards: {
+            if (track.overallTrackIndex) {
+              const [ cur, len ] = track.overallTrackIndex
+              fullStatusLine += `${cur + 1} / ${len}`
+
+              if (track.groupTrackIndex) {
+                const [ curGroup, lenGroup ] = track.groupTrackIndex
+
+                // If the overall and group track indexes are equal to each
+                // other, there's a fair chance we're just playing a single
+                // group; so, we only display one index (and we don't show
+                // "[All]"/"[Group]" labels).
+                if (curGroup === cur && lenGroup === len) {
+                  break addTrackNumberInnards
+                } else {
+                  fullStatusLine += ' [All]; '
+                }
+              }
+            }
 
             if (track.groupTrackIndex) {
-              fullStatusLine += ' [All]; '
-            }
-          }
+              const [ cur, len ] = track.groupTrackIndex
+              fullStatusLine += `${cur + 1} / ${len}`
 
-          if (track.groupTrackIndex) {
-            const [ cur, len ] = track.groupTrackIndex
-            fullStatusLine += `${cur + 1} / ${len}`
-
-            if (track.overallTrackIndex) {
-              fullStatusLine += ' [Group]'
+              if (track.overallTrackIndex) {
+                fullStatusLine += ' [Group]'
+              }
             }
           }
 
