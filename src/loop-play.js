@@ -365,9 +365,9 @@ class PlayController extends EventEmitter {
     this.player.on('printStatusLine', playerString => {
       let fullStatusLine = ''
 
-      // 1K - clears the screen from the start of the cursor onwards. This is
-      // here to avoid artefacts from a previously printed status line.
-      fullStatusLine += '\x1b[1K'
+      // ESC[K - clears the line going from the cursor position onwards.
+      // This is here to avoid artefacts from a previously printed status line.
+      fullStatusLine += '\x1b[K'
 
       const track = this.currentTrack
 
