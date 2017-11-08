@@ -173,7 +173,9 @@ async function main(args) {
       keybindings.splice(0)
     }
 
-    keybindings.push(...openedKeybindings)
+    // Place new keybindings at the top of the array, so that they are
+    // prioritized over old ones.
+    keybindings.unshift(...openedKeybindings)
   }
 
   function requiresOpenPlaylist() {
