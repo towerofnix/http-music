@@ -401,3 +401,6 @@ TODO: A way to search the playlist for a path. Probably best to modify the
       function which filters a grouplike by a path. I think I'll hide this
       feature behind a special prefix, e.g. -c -k '?72 Minutes of Fame'.
       (Done!)
+
+TODO: Case-insensitive checking with command keybindings - I think this is
+      broken with the new command system.

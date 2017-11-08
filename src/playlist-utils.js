@@ -533,7 +533,7 @@ module.exports = {
   filterPlaylistByPathString, filterGrouplikeByPath,
   removeGroupByPathString, removeGroupByPath,
   getPlaylistTreeString,
-  getItemPathString,
+  getItemPath, getItemPathString,
   parsePathString,
   isSameTrack,
   getTrackIndexInParent,

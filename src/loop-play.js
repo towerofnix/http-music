@@ -96,7 +96,9 @@ class MPVPlayer extends Player {
         const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
         const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
         const percentVal = (100 / lenSecTotal) * curSecTotal
-        const percentStr = (Math.trunc(percentVal * 100) / 100).toFixed(2)
+        const percentStr = (
+          (Math.trunc(percentVal * 100) / 100).toFixed(2) + '%'
+        )
 
         this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
       }
@@ -363,27 +365,43 @@ class PlayController extends EventEmitter {
     this.player.on('printStatusLine', playerString => {
       let fullStatusLine = ''
 
+      // ESC[K - clears the line going from the cursor position onwards.
+      // This is here to avoid artefacts from a previously printed status line.
+      fullStatusLine += '\x1b[K'
+
       const track = this.currentTrack
 
       if (track) {
         if (track.overallTrackIndex || track.groupTrackIndex) {
           fullStatusLine += '('
 
-          if (track.overallTrackIndex) {
-            const [ cur, len ] = track.overallTrackIndex
-            fullStatusLine += `${cur + 1} / ${len}`
+          addTrackNumberInnards: {
+            if (track.overallTrackIndex) {
+              const [ cur, len ] = track.overallTrackIndex
+              fullStatusLine += `${cur + 1} / ${len}`
+
+              if (track.groupTrackIndex) {
+                const [ curGroup, lenGroup ] = track.groupTrackIndex
+
+                // If the overall and group track indexes are equal to each
+                // other, there's a fair chance we're just playing a single
+                // group; so, we only display one index (and we don't show
+                // "[All]"/"[Group]" labels).
+                if (curGroup === cur && lenGroup === len) {
+                  break addTrackNumberInnards
+                } else {
+                  fullStatusLine += ' [All]; '
+                }
+              }
+            }
 
             if (track.groupTrackIndex) {
-              fullStatusLine += ' [All]; '
-            }
-          }
+              const [ cur, len ] = track.groupTrackIndex
+              fullStatusLine += `${cur + 1} / ${len}`
 
-          if (track.groupTrackIndex) {
-            const [ cur, len ] = track.groupTrackIndex
-            fullStatusLine += `${cur + 1} / ${len}`
-
-            if (track.overallTrackIndex) {
-              fullStatusLine += ' [Group]'
+              if (track.overallTrackIndex) {
+                fullStatusLine += ' [Group]'
+              }
             }
           }
 
