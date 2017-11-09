@@ -11,7 +11,6 @@
 const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
-const promisifyProcess = require('./promisify-process')
 const killProcess = require('./kill-process')
 const { HistoryController, generalPicker } = require('./pickers')
 

@@ -3,12 +3,14 @@
 'use strict'
 
 const { promisify } = require('util')
+const { spawn } = require('child_process')
 const clone = require('clone')
 const fs = require('fs')
 const fetch = require('node-fetch')
 const commandExists = require('./command-exists')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
+const promisifyProcess = require('./promisify-process')
 const { compileKeybindings } = require('./keybinder')
 const processSmartPlaylist = require('./smart-playlist')
 
@@ -87,6 +89,15 @@ async function main(args) {
   let willUseConverterOptions = null
 
   let disablePlaybackStatus = false
+
+  // Trust shell commands - permits keybindings to activate console commands.
+  let trustShellCommands = false
+
+  // Whether or not "trust shell commands" *may* be set to true. Set to false
+  // when shell command permissions are revoked (to prevent them from being
+  // granted in the future). Basic protection against dumb attempts at Evil
+  // keybinding files.
+  let mayTrustShellCommands = true
 
   const keybindings = [
     [['space'], 'togglePause'],
@@ -536,7 +547,31 @@ async function main(args) {
       disablePlaybackStatus = true
     },
 
-    '-hide-playback-status': util => util.alias('-disable-playback-status')
+    '-hide-playback-status': util => util.alias('-disable-playback-status'),
+
+    '-trust-shell-commands': function(util) {
+      // --trust-shell-commands  (alias: --trust)
+      // Lets keybindings run shell commands. Only use this when loading
+      // keybindings from a trusted source. Defaults to false (no shell
+      // permissions).
+
+      // We don't want an imported playlist to enable this! - Only arguments
+      // directly passed to http-music from the command line.
+      if (util.argv !== args) {
+        console.warn(
+          "--trust-shell-commands must be passed directly to http-music " +
+          "from the command line! (Revoking shell command permissions.)"
+        )
+
+        trustShellCommands = false
+        mayTrustShellCommands = false
+      } else {
+        console.log("Trusting shell commands.")
+        trustShellCommands = true
+      }
+    },
+
+    '-trust': util => util.alias('-trust-shell-commands')
   }
 
   await openPlaylist('./playlist.json', true)
@@ -660,6 +695,22 @@ async function main(args) {
       'showTrackInfo': function() {
         clearConsoleLine()
         playController.logTrackInfo()
+      },
+
+      'runShellCommand': async function(command, args) {
+        if (trustShellCommands) {
+          console.log(
+            'From keybinding, running shell command:',
+            `${command} ${args.join(' ')}`
+          )
+          await promisifyProcess(spawn(command, args))
+        } else {
+          console.warn(
+            'From keybinding, shell command requested but not executed',
+            '(no --trust):',
+            `${command} ${args.join(' ')}`
+          )
+        }
       }
     }
 
