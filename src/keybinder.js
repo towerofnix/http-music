@@ -49,13 +49,16 @@ module.exports.compileKeybindings = function(bindings, commands) {
     return function(inputData) {
       if (buffer.equals(inputData)) {
         commands[command](...args)
+        return true
       }
     }
   }).filter(Boolean)
 
   return function(inputData) {
-    for (let handler of handlers) {
-      handler(inputData)
+    for (const handler of handlers) {
+      if (handler(inputData)) {
+        break
+      }
     }
   }
 }
