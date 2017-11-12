@@ -170,6 +170,12 @@ Prints the JSON representation of the active playlist to the console.
 Removes a group from the (active) playlist.
 
 .TP
+.BR \-\-show\-keybindings ", " \-\-list\-keybindings
+Shows the list of keybindings set.
+Higher items are more prioritized; if A was first bound to showTrackInfo, then later bound to togglePause, pressing A will run togglePause, not showTrackInfo.
+A: togglePause will also show up higher in the list than A: showTrackInfo, so that it is apparent that it will run togglePause and not showTrackInfo.
+
+.TP
 .BR \-\-sort\-mode ", " \-\-sort
 Sets the mode by which the playback order list is sorted.
 Valid options include \fBorder\fR, \fBshuffle\fR (the default), and \fBshuffle-groups\fR.
