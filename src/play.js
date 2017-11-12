@@ -11,13 +11,16 @@ const commandExists = require('./command-exists')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const promisifyProcess = require('./promisify-process')
-const { compileKeybindings } = require('./keybinder')
 const processSmartPlaylist = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
   updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty, isTrack
 } = require('./playlist-utils')
+
+const {
+  compileKeybindings, getComboForCommand, stringifyCombo
+} = require('./keybinder')
 
 const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
@@ -401,6 +404,20 @@ async function main(args) {
     '-list-tracks': util => util.alias('-list-all'),
     'L': util => util.alias('-list-all'),
 
+    '-list-keybindings': function() {
+      console.log('Keybindings:')
+
+      for (const [ combo, command, ...args ] of keybindings) {
+        console.log(`${stringifyCombo(combo)}: ${command}${
+          args ? ' ' + args.join(' ') : ''}`)
+      }
+
+      shouldPlay = false
+    },
+
+    '-show-keybindings': util => util.alias('-list-keybindings'),
+    '-keybindings': util => util.alias('-list-keybindings'),
+
     '-play': function(util) {
       // --play  (alias: -p)
       // Forces the playlist to actually play.
@@ -625,6 +642,12 @@ async function main(args) {
       console.warn("If you're piping into http-music, this is normal.")
     }
 
+    const trackInfoCombo = stringifyCombo(getComboForCommand(
+      'showTrackInfo', keybindings
+    ))
+
+    const trackInfoString = `(Press ${trackInfoCombo} for track info!)`
+
     const commands = {
       'doNothing': function() {},
 
@@ -662,7 +685,7 @@ async function main(args) {
 
       'skipBack': function() {
         clearConsoleLine()
-        console.log("Skipping backwards. (Press I for track info!")
+        console.log("Skipping backwards.", trackInfoString)
 
         playController.skipBack()
       },
@@ -670,8 +693,7 @@ async function main(args) {
       'skipAhead': function() {
         clearConsoleLine()
         console.log(
-          "Skipping the track that's currently playing. " +
-          "(Press I for track info!)"
+          "Skipping the track that's currently playing.", trackInfoString
         )
 
         playController.skip()
