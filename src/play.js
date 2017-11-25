@@ -15,7 +15,8 @@ const processSmartPlaylist = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
-  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty, isTrack
+  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty, isTrack,
+  flattenGrouplike
 } = require('./playlist-utils')
 
 const {
@@ -609,6 +610,22 @@ async function main(args) {
   }
 
   if (willPlay || (willPlay === null && shouldPlay)) {
+    // Quick and simple test - if there are no items in the playlist, don't
+    // continue. This is mainly to catch incomplete user-entered commands
+    // (like `http-music play -c`).
+    if (flattenGrouplike(activePlaylist).items.length === 0) {
+      console.error(
+        'Your playlist doesn\'t have any tracks in it, so it can\'t be ' +
+        'played.'
+      )
+      console.error(
+        '(Make sure your http-music command doesn\'t have any typos ' +
+        'and isn\'t incomplete? You might have used -c or --clear but not ' +
+        '--keep to actually pick tracks to play!)'
+      )
+      return false
+    }
+
     console.log(`Using sort: ${pickerSortMode} and loop: ${pickerLoopMode}.`)
     console.log(`Using ${playerCommand} player.`)
     console.log(`Using ${converterCommand} converter.`)
