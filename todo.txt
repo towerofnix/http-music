@@ -407,3 +407,4 @@ TODO: Case-insensitive checking with command keybindings - I think this is
 
 TODO: Handle empty (active) playlists. Showing an error message and stopping
       is best, I think.
+      (Done!)
