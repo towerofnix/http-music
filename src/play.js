@@ -11,7 +11,7 @@ const commandExists = require('./command-exists')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const promisifyProcess = require('./promisify-process')
-const processSmartPlaylist = require('./smart-playlist')
+const { processSmartPlaylist } = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
