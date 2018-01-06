@@ -23,6 +23,7 @@ async function main(args) {
     switch (args[0]) {
       case 'play': script = require('./play'); break
       case 'download-playlist': script = require('./download-playlist'); break
+      case 'process-metadata': script = require('./process-metadata'); break
       case 'smart-playlist': script = require('./smart-playlist'); break
       case 'setup': script = require('./setup'); break
 

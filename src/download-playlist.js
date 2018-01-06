@@ -12,6 +12,7 @@ const {
 } = require('./playlist-utils')
 
 const { getDownloaderFor, makePowerfulDownloader } = require('./downloaders')
+const { showTrackProcessStatus } = require('./general-util')
 const { promisify } = require('util')
 const { spawn } = require('child_process')
 
@@ -24,12 +25,8 @@ async function downloadCrawl(playlist, topOut = './out/') {
   const flat = flattenGrouplike(playlist)
   let doneCount = 0
 
-  const showStatus = function() {
-    const total = flat.items.length
-    const percent = Math.trunc(doneCount / total * 10000) / 100
-    console.log(
-      `\x1b[1mDownload crawler - ${percent}% completed ` +
-      `(${doneCount}/${total} tracks)\x1b[0m`)
+  const showStatus = () => {
+    showTrackProcessStatus(flat.items.length, doneCount)
   }
 
   // First off, we go through all tracks and see which are already downloaded.

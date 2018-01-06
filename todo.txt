@@ -408,3 +408,15 @@ TODO: Case-insensitive checking with command keybindings - I think this is
 TODO: Handle empty (active) playlists. Showing an error message and stopping
       is best, I think.
       (Done!)
+
+TODO: A way to switch between what information is displayed in the status bar.
+      I think using ">" and "<" as default keybindings would work.
+      Make one set be (track # in group) / (# of tracks in group); one be
+      (total track #) / (total # of tracks).
+
+TODO: Adding onto the last one, show the total amount of time in the group/all
+      groups together. Requires a track metadata tool, though...
+
+TODO: Make process-metadata work with non-local tracks, somehow...
+
+TODO: Make process-metadata work nicely with smart playlists, somehow...
