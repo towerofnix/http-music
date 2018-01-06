@@ -21,7 +21,7 @@ function crawl(absURL, opts = {}, internals = {}) {
     keepSeparateHosts = false,
 
     keepAnyFileType = false,
-    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov'],
+    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov', 'mpga'],
 
     filterRegex = null
   } = opts
