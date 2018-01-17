@@ -111,8 +111,7 @@ function makePowerfulDownloader(downloader, maxAttempts = 5) {
 }
 
 async function makeConverter(
-  converterCommand = null, exportExtension = 'wav',
-  converterOptions = ['-i', '$in', '$out']
+  converterCommand = null, exportExtension = 'wav'
 ) {
   if (converterCommand === null) {
     throw new Error(
@@ -120,7 +119,14 @@ async function makeConverter(
     )
   }
 
-  return function(converterOptions = ['-i', '$in', '$out']) {
+  return function(converterOptions = null) {
+    if (converterOptions === null) {
+      if (['ffmpeg', 'avconv'].includes(converterCommand)) {
+        converterOptions = ['-i', '$in', '$out']
+      } else if (converterCommand === 'cp') {
+        converterOptions = ['$in', '$out']
+      }
+    }
     return async function(inFile) {
       const base = path.basename(inFile, path.extname(inFile))
       const tempDir = tempy.directory()
