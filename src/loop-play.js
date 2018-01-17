@@ -11,15 +11,19 @@
 const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
+const fs = require('fs')
+const util = require('util')
 const killProcess = require('./kill-process')
 const { HistoryController, generalPicker } = require('./pickers')
+
+const writeFile = util.promisify(fs.writeFile)
 
 const {
   getDownloaderFor, byName: downloadersByName, makeConverter
 } = require('./downloaders')
 
 const {
-  getItemPathString, safeUnlink, parentSymbol
+  getItemPathString, safeUnlink, parentSymbol, sourceSymbol
 } = require('./playlist-utils')
 
 function createStatusLine({percentStr, curStr, lenStr}) {
@@ -33,13 +37,34 @@ class Player extends EventEmitter {
     this.disablePlaybackStatus = false
   }
 
+  set process(newProcess) {
+    this._process = newProcess
+    this._process.on('exit', code => {
+      if (code !== 0 && !this._killed) {
+        this.emit('crashed', code)
+      }
+
+      this._killed = false
+    })
+  }
+
+  get process() {
+    return this._process
+  }
+
   playFile(file) {}
   seekAhead(secs) {}
   seekBack(secs) {}
   volUp(amount) {}
   volDown(amount) {}
   togglePause() {}
-  kill() {}
+
+  async kill() {
+    if (this.process) {
+      this._killed = true
+      await killProcess(this.process)
+    }
+  }
 
   printStatusLine(str) {
     // Quick sanity check - we don't want to print the status line if it's
@@ -106,12 +131,6 @@ class MPVPlayer extends Player {
     return new Promise(resolve => {
       this.process.once('close', resolve)
     })
-  }
-
-  async kill() {
-    if (this.process) {
-      await killProcess(this.process)
-    }
   }
 }
 
@@ -228,9 +247,6 @@ class SoXPlayer extends Player {
   }
 
   async kill() {
-    if (this.process) {
-      await killProcess(this.process)
-    }
   }
 }
 
@@ -294,7 +310,7 @@ class DownloadController extends EventEmitter {
     try {
       downloadFile = await downloader(downloaderArg)
     } catch(err) {
-      this.emit('errored', err)
+      this.emit('errored', 'Download error: ' + err)
       return
     }
 
@@ -310,7 +326,7 @@ class DownloadController extends EventEmitter {
     try {
       convertFile = await this.converter(converterOptions)(downloadFile)
     } catch(err) {
-      this.emit('errored', err)
+      this.emit('errored', 'Convert error: ' + err)
       return
     } finally {
       // Whether the convertion succeeds or not (hence 'finally'), we should
@@ -345,14 +361,19 @@ class DownloadController extends EventEmitter {
 }
 
 class PlayController extends EventEmitter {
-  constructor(player, playlist, historyController, downloadController) {
+  constructor({
+    player, playlist, historyController, downloadController,
+    useConverterOptions = true,
+    trackDisplayFile = null // File to output current track path to.
+  }) {
     super()
 
     this.player = player
     this.playlist = playlist
     this.historyController = historyController
     this.downloadController = downloadController
-    this.useConverterOptions = true
+    this.useConverterOptions = useConverterOptions
+    this.trackDisplayFile = trackDisplayFile
 
     this.currentTrack = null
     this.nextTrack = null
@@ -360,6 +381,28 @@ class PlayController extends EventEmitter {
     this.stopped = false
     this.shouldMoveNext = true
     this.failedCount = 0
+    this.playFailCount = 0
+
+    this.player.on('crashed', () => {
+      if (this.currentTrack) {
+        console.log('\x1b[31mFailed to play track \x1b[1m' +
+          getItemPathString(this.currentTrack) + '\x1b[0m'
+        )
+      } else {
+        console.log('\x1b[31mFailed to play track.\x1b[0m')
+      }
+      this.playFailCount++
+
+      if (this.playFailCount >= 5) {
+        console.error(
+          '\x1b[31mFailed to play 5 tracks. Halting, to prevent damage to ' +
+          'the computer.\x1b[0m'
+        )
+
+        process.exit(1)
+        throw new Error('Intentionally halted - failed to play tracks.')
+      }
+    })
 
     this.player.on('printStatusLine', playerString => {
       let fullStatusLine = ''
@@ -440,6 +483,12 @@ class PlayController extends EventEmitter {
       ])
 
       if (next) {
+        if (this.trackDisplayFile) {
+          await writeFile(this.trackDisplayFile,
+            getItemPathString(this.currentTrack[sourceSymbol])
+          )
+        }
+
         await this.playFile(next)
 
         // Now that we're done playing the file, we should delete it.. unless
@@ -529,8 +578,8 @@ class PlayController extends EventEmitter {
             "prevent damage to the computer.\x1b[0m"
           )
 
-          process.exit(0)
-          throw new Error('Intentionally halted.')
+          process.exit(1)
+          throw new Error('Intentionally halted - failed to download tracks.')
         }
 
         // A little bit blecht, but.. this works.
@@ -603,7 +652,11 @@ class PlayController extends EventEmitter {
     this.stopped = true
   }
 
-  logTrackInfo() {
+  logTrackInfo(upNextTrackCount = 3, previousTrackCount = undefined) {
+    if (typeof previousTrackCount === 'undefined') {
+      previousTrackCount = upNextTrackCount
+    }
+
     const getColorMessage = t => {
       if (!t) return '\x1b[2m(No track)\x1b[0m'
 
@@ -626,13 +679,13 @@ class PlayController extends EventEmitter {
     const tl = hc.timeline
     const tlI = hc.timelineIndex
 
-    for (let i = Math.max(0, tlI - 2); i < tlI; i++) {
+    for (let i = Math.max(0, tlI - (previousTrackCount - 1)); i < tlI; i++) {
       console.log(`\x1b[2m(Prev) ${getCleanMessage(tl[i])}\x1b[0m`)
     }
 
     console.log(`\x1b[1m(Curr) \x1b[1m${getColorMessage(tl[tlI])}\x1b[0m`)
 
-    for (let i = tlI + 1; i < Math.min(tlI + 3, tl.length); i++) {
+    for (let i = tlI + 1; i < Math.min(tlI + upNextTrackCount, tl.length); i++) {
       console.log(`(Next) ${getCleanMessage(tl[i])}`)
     }
   }
@@ -643,7 +696,8 @@ module.exports = async function startLoopPlay(
     pickerOptions, playerCommand, converterCommand,
     useConverterOptions = true,
     disablePlaybackStatus = false,
-    startTrack = null
+    startTrack = null,
+    trackDisplayFile = null
   }
 ) {
   // Looping play function. Takes a playlist and an object containing general
@@ -686,11 +740,12 @@ module.exports = async function startLoopPlay(
     historyController.timeline.push(startTrack)
   }
 
-  const playController = new PlayController(
-    player, playlist, historyController, downloadController
-  )
+  const playController = new PlayController({
+    player, playlist, historyController, downloadController,
+    trackDisplayFile
+  })
 
-  Object.assign(playController, {playerCommand, useConverterOptions})
+  Object.assign(playController, {useConverterOptions})
 
   const promise = playController.loopPlay()
 

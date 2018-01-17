@@ -8,8 +8,9 @@ const unlink = promisify(fs.unlink)
 
 const parentSymbol = Symbol('Parent group')
 const oldSymbol = Symbol('Old track or group reference')
+const sourceSymbol = Symbol('Source-playlist item reference')
 
-function updatePlaylistFormat(playlist) {
+function updatePlaylistFormat(playlist, firstTime = false) {
   const defaultPlaylist = {
     options: [],
     items: []
@@ -39,10 +40,10 @@ function updatePlaylistFormat(playlist) {
 
   const fullPlaylistObj = Object.assign(defaultPlaylist, playlistObj)
 
-  return updateGroupFormat(fullPlaylistObj)
+  return updateGroupFormat(fullPlaylistObj, firstTime)
 }
 
-function updateGroupFormat(group) {
+function updateGroupFormat(group, firstTime = false) {
   const defaultGroup = {
     name: '',
     items: [],
@@ -62,7 +63,7 @@ function updateGroupFormat(group) {
   groupObj.items = groupObj.items.map(item => {
     // Check if it's a group; if not, it's probably a track.
     if (typeof item[1] === 'array' || item.items) {
-      item = updateGroupFormat(item)
+      item = updateGroupFormat(item, firstTime)
     } else {
       item = updateTrackFormat(item)
 
@@ -78,6 +79,10 @@ function updateGroupFormat(group) {
     }
 
     item[parentSymbol] = groupObj
+
+    if (firstTime) {
+      item[sourceSymbol] = item
+    }
 
     return item
   })
@@ -107,22 +112,37 @@ function updateTrackFormat(track) {
   return Object.assign(defaultTrack, trackObj)
 }
 
-function mapGrouplikeItems(grouplike, handleTrack) {
-  if (typeof handleTrack === 'undefined') {
+function filterTracks(grouplike, handleTrack) {
+  // Recursively filters every track in the passed grouplike. The track-handler
+  // function passed should either return true (to keep a track) or false (to
+  // remove the track). After tracks are filtered, groups which contain no
+  // items are removed.
+
+  if (typeof handleTrack !== 'function') {
     throw new Error("Missing track handler function")
   }
 
-  return {
-    items: grouplike.items.map(item => {
+  return Object.assign({}, grouplike, {
+    items: grouplike.items.filter(item => {
       if (isTrack(item)) {
         return handleTrack(item)
-      } else if (isGroup(item)) {
-        return mapGrouplikeItems(item, handleTrack, handleGroup)
       } else {
-        throw new Error('Non-track/group item')
+        return true
+      }
+    }).map(item => {
+      if (isGroup(item)) {
+        return filterTracks(item, handleTrack)
+      } else {
+        return item
+      }
+    }).filter(item => {
+      if (isGroup(item)) {
+        return item.items.length > 0
+      } else {
+        return true
       }
     })
-  }
+  })
 }
 
 function flattenGrouplike(grouplike) {
@@ -261,15 +281,7 @@ function filterGrouplikeByPath(grouplike, pathParts) {
   let possibleMatches
 
   if (firstPart.startsWith('?')) {
-    // TODO: Note to self - remove isGroup here to let this match anything, not
-    // just groups. Definitely want to do that in the future, but there'll need
-    // to be some preparing first - for example, what if a group contains a
-    // track which is the same name as the group? Then there are two possible
-    // matches; how should http-music know which to pick? Probably be biased to
-    // pick a group before a track, but.. that doesn't seem perfect either. And
-    // it doesn't solve the problem where there might be two descendants of the
-    // same name (groups or otherwise).
-    possibleMatches = collectGrouplikeChildren(grouplike, isGroup)
+    possibleMatches = collectGrouplikeChildren(grouplike)
     firstPart = firstPart.slice(1)
   } else {
     possibleMatches = grouplike.items
@@ -525,8 +537,9 @@ async function safeUnlink(file, playlist) {
 }
 
 module.exports = {
-  parentSymbol, oldSymbol,
+  parentSymbol, oldSymbol, sourceSymbol,
   updatePlaylistFormat, updateTrackFormat,
+  filterTracks,
   flattenGrouplike,
   partiallyFlattenGrouplike, collapseGrouplike,
   filterGrouplikeByProperty,

@@ -19,9 +19,10 @@ function crawl(absURL, opts = {}, internals = {}) {
     maxAttempts = 5,
 
     keepSeparateHosts = false,
+    stayInSameDirectory = true,
 
     keepAnyFileType = false,
-    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov'],
+    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov', 'mpga', 'mod'],
 
     filterRegex = null
   } = opts
@@ -35,7 +36,7 @@ function crawl(absURL, opts = {}, internals = {}) {
 
   const verboseLog = text => {
     if (verbose) {
-      console.log(text)
+      console.error(text)
     }
   }
 
@@ -43,10 +44,12 @@ function crawl(absURL, opts = {}, internals = {}) {
 
   return fetch(absURL)
     .then(
-      res => res.text().then(text => {
+      res => res.text().then(async text => {
         const links = getHTMLLinks(text)
 
-        return Promise.all(links.map(link => {
+        const items = []
+
+        for (const link of links) {
           let [ name, href ] = link
 
           // If the name (that's the content inside of <a>..</a>) ends with a
@@ -56,27 +59,34 @@ function crawl(absURL, opts = {}, internals = {}) {
             name = name.slice(0, -1)
           }
 
-          const urlObj = new url.URL(href, absURL)
+          name = name.trim()
+
+          const urlObj = new url.URL(href, absURL + '/')
           const linkURL = url.format(urlObj)
 
           if (internals.allURLs.includes(linkURL)) {
             verboseLog("[Ignored] Already done this URL: " + linkURL)
-
-            return false
+            continue
           }
 
           internals.allURLs.push(linkURL)
 
           if (filterRegex && !(filterRegex.test(linkURL))) {
             verboseLog("[Ignored] Failed regex: " + linkURL)
-
-            return false
+            continue
           }
 
           if (!keepSeparateHosts && urlObj.host !== absURLObj.host) {
             verboseLog("[Ignored] Inconsistent host: " + linkURL)
+            continue
+          }
 
-            return false
+          if (stayInSameDirectory) {
+            const relative = path.relative(absURLObj.pathname, urlObj.pathname)
+            if (relative.startsWith('..') || path.isAbsolute(relative)) {
+              verboseLog("[Ignored] Outside of parent directory: " + linkURL)
+              continue
+            }
           }
 
           if (href.endsWith('/')) {
@@ -84,8 +94,10 @@ function crawl(absURL, opts = {}, internals = {}) {
 
             verboseLog("[Dir] " + linkURL)
 
-            return crawl(linkURL, opts, Object.assign({}, internals))
-              .then(({ items }) => ({name, items}))
+            items.push(await (
+              crawl(linkURL, opts, Object.assign({}, internals))
+                .then(({ items }) => ({name, items}))
+            ))
           } else {
             // It's a file!
 
@@ -96,14 +108,15 @@ function crawl(absURL, opts = {}, internals = {}) {
               !(extensions.includes(path.extname(href)))
             ) {
               verboseLog("[Ignored] Bad extension: " + linkURL)
-
-              return false
+              continue
             }
 
             verboseLog("[File] " + linkURL)
-            return Promise.resolve({name, downloaderArg: linkURL})
+            items.push({name, downloaderArg: linkURL})
           }
-        }).filter(Boolean)).then(items => ({items}))
+        }
+
+        return {items}
       }),
 
       err => {
@@ -190,7 +203,10 @@ async function main(args, shouldReturn = false) {
       // such. Defaults to false.
 
       verbose = true
-      console.log('Outputting verbosely.')
+      console.error(
+        'Outputting verbosely. (Log output goes to STDERR - ' +
+        'you can still pipe to a file to save your playlist.)'
+      )
     },
 
     'v': util => util.alias('-verbose'),

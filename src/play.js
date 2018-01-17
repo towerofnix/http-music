@@ -11,12 +11,17 @@ const commandExists = require('./command-exists')
 const startLoopPlay = require('./loop-play')
 const processArgv = require('./process-argv')
 const promisifyProcess = require('./promisify-process')
-const processSmartPlaylist = require('./smart-playlist')
+const { processSmartPlaylist } = require('./smart-playlist')
 
 const {
   filterPlaylistByPathString, removeGroupByPathString, getPlaylistTreeString,
-  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty, isTrack
+  updatePlaylistFormat, collapseGrouplike, filterGrouplikeByProperty, isTrack,
+  flattenGrouplike
 } = require('./playlist-utils')
+
+const {
+  downloadPlaylistFromOptionValue
+} = require('./general-util')
 
 const {
   compileKeybindings, getComboForCommand, stringifyCombo
@@ -24,23 +29,6 @@ const {
 
 const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
-
-function downloadPlaylistFromURL(url) {
-  return fetch(url).then(res => res.text())
-}
-
-function downloadPlaylistFromLocalPath(path) {
-  return readFile(path)
-}
-
-function downloadPlaylistFromOptionValue(arg) {
-  // TODO: Verify things!
-  if (arg.startsWith('http://') || arg.startsWith('https://')) {
-    return downloadPlaylistFromURL(arg)
-  } else {
-    return downloadPlaylistFromLocalPath(arg)
-  }
-}
 
 function clearConsoleLine() {
   process.stdout.write('\x1b[1K\r')
@@ -102,6 +90,19 @@ async function main(args) {
   // keybinding files.
   let mayTrustShellCommands = true
 
+  // The file to output the playlist path to the current file.
+  let trackDisplayFile
+
+  // Whether or not a playlist has been opened yet. This is just used to
+  // decide when exactly to load the default playlist. (We don't want to load
+  // it as soon as the process starts, since there might be an --open-playlist
+  // option that specifies opening a *different* playlist! But if we encounter
+  // an action that requires a playlist, and no playlist has yet been opened,
+  // we assume that the user probably wants to do something with the default
+  // playlist, and that's when we open it. See requiresOpenPlaylist for the
+  // implementation of this.)
+  let hasOpenedPlaylist = false
+
   const keybindings = [
     [['space'], 'togglePause'],
     [['left'], 'seek', -5],
@@ -110,11 +111,12 @@ async function main(args) {
     [['shiftRight'], 'seek', +30],
     [['up'], 'skipBack'],
     [['down'], 'skipAhead'],
-    [['s'], 'skipAhead'],
     [['delete'], 'skipUpNext'],
-    [['i'], 'showTrackInfo'],
-    [['t'], 'showTrackInfo'],
-    [['q'], 'quit']
+    [['s'], 'skipAhead'], [['S'], 'skipAhead'],
+    [['i'], 'showTrackInfo'], [['I'], 'showTrackInfo'],
+    [['t'], 'showTrackInfo', 0, 0], [['T'], 'showTrackInfo', 0, 0],
+    [['%'], 'showTrackInfo', 20, 0],
+    [['q'], 'quit'], [['Q'], 'quit']
   ]
 
   async function openPlaylist(arg, silent = false) {
@@ -140,6 +142,8 @@ async function main(args) {
 
     const importedPlaylist = JSON.parse(playlistText)
 
+    hasOpenedPlaylist = true
+
     await loadPlaylist(importedPlaylist)
   }
 
@@ -154,7 +158,9 @@ async function main(args) {
 
     // ..And finally, we have to update the playlist format again, since
     // processSmartPlaylist might have added new (un-updated) items:
-    const finalPlaylist = updatePlaylistFormat(processedPlaylist)
+    const finalPlaylist = updatePlaylistFormat(processedPlaylist, true)
+    // We also pass true so that the playlist-format-updater knows that this
+    // is the source playlist.
 
     sourcePlaylist = finalPlaylist
 
@@ -192,12 +198,20 @@ async function main(args) {
     keybindings.unshift(...openedKeybindings)
   }
 
-  function requiresOpenPlaylist() {
+  async function requiresOpenPlaylist() {
     if (activePlaylist === null) {
-      throw new Error(
-        "This action requires an open playlist - try --open (file)"
-      )
+      if (hasOpenedPlaylist === false) {
+        await openDefaultPlaylist()
+      } else {
+        throw new Error(
+          "This action requires an open playlist - try --open (file)"
+        )
+      }
     }
+  }
+
+  function openDefaultPlaylist() {
+    return openPlaylist('./playlist.json', true)
   }
 
   const optionFunctions = {
@@ -234,13 +248,15 @@ async function main(args) {
       await loadPlaylist(JSON.parse(util.nextArg()))
     },
 
-    '-write-playlist': function(util) {
+    '-playlist-string': util => util.alias('-open-playlist-string'),
+
+    '-write-playlist': async function(util) {
       // --write-playlist <file>  (alias: --write, -w, --save)
       // Writes the active playlist to a file. This file can later be used
       // with --open <file>; you won't need to stick in all the filtering
       // options again.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       const playlistString = JSON.stringify(activePlaylist, null, 2)
       const file = util.nextArg()
@@ -264,11 +280,11 @@ async function main(args) {
     'w': util => util.alias('-write-playlist'),
     '-save': util => util.alias('-write-playlist'),
 
-    '-print-playlist': function(util) {
+    '-print-playlist': async function(util) {
       // --print-playlist  (alias: --log-playlist, --json)
       // Prints out the JSON representation of the active playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       console.log(JSON.stringify(activePlaylist, null, 2))
 
@@ -295,26 +311,26 @@ async function main(args) {
       await openKeybindings(util.nextArg(), false)
     },
 
-    '-clear': function(util) {
+    '-clear': async function(util) {
       // --clear  (alias: -c)
       // Clears the active playlist. This does not affect the source
       // playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       activePlaylist.items = []
     },
 
     'c': util => util.alias('-clear'),
 
-    '-keep': function(util) {
+    '-keep': async function(util) {
       // --keep <groupPath>  (alias: -k)
       // Keeps a group by loading it from the source playlist into the
       // active playlist. This is usually useful after clearing the
       // active playlist; it can also be used to keep a subgroup when
       // you've removed an entire parent group, e.g. `-r foo -k foo/baz`.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       const pathString = util.nextArg()
       const group = filterPlaylistByPathString(sourcePlaylist, pathString)
@@ -326,11 +342,11 @@ async function main(args) {
 
     'k': util => util.alias('-keep'),
 
-    '-remove': function(util) {
+    '-remove': async function(util) {
       // --remove <groupPath>  (alias: -r, -x)
       // Filters the playlist so that the given path is removed.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       const pathString = util.nextArg()
       console.log("Ignoring path: " + pathString)
@@ -340,38 +356,59 @@ async function main(args) {
     'r': util => util.alias('-remove'),
     'x': util => util.alias('-remove'),
 
-    '-filter': function(util) {
-      // --filter <property> <value>  (alias: -f)
-      // Filters the playlist so that only tracks with the given property-
-      // value pair are kept.
+    '-filter': async function(util) {
+      // --filter <filterJSON>
+      // Filters the playlist so that only tracks that match the given filter
+      // are kept. FilterJSON should be a JSON object as described in the
+      // man page section "filters".
 
-      const property = util.nextArg()
-      const value = util.nextArg()
+      const filterJSON = util.nextArg()
 
-      const p = filterGrouplikeByProperty(activePlaylist, property, value)
-      activePlaylist = updatePlaylistFormat(p)
+      let filterObj
+      try {
+        filterObj = JSON.parse(filterJSON)
+      } catch (error) {
+        console.error('Invalid JSON for filter:', filterJSON)
+        return
+      }
+
+      activePlaylist.filters = [filterObj]
+      activePlaylist = await processSmartPlaylist(activePlaylist)
+      activePlaylist = updatePlaylistFormat(activePlaylist)
     },
 
     'f': util => util.alias('-filter'),
 
-    '-collapse-groups': function() {
+    '-collapse-groups': async function() {
       // --collapse-groups  (alias: --collapse)
       // Collapses groups in the active playlist so that there is only one
       // level of sub-groups. Handy for shuffling the order groups play in;
       // try `--collapse-groups --sort shuffle-groups`.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       activePlaylist = updatePlaylistFormat(collapseGrouplike(activePlaylist))
     },
 
     '-collapse': util => util.alias('-collapse-groups'),
 
-    '-list-groups': function(util) {
+    '-flatten-tracks': async function() {
+      // --flatten-tracks  (alias: --flatten)
+      // Flattens the entire active playlist, so that only tracks remain,
+      // and there are no groups.
+
+      await requiresOpenPlaylist()
+
+      activePlaylist = updatePlaylistFormat(flattenGrouplike(activePlaylist))
+    },
+
+    '-flatten': util => util.alias('-flatten-tracks'),
+
+    '-list-groups': async function(util) {
       // --list-groups  (alias: -l, --list)
       // Lists all groups in the playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       console.log(getPlaylistTreeString(activePlaylist))
 
@@ -386,11 +423,11 @@ async function main(args) {
     '-list': util => util.alias('-list-groups'),
     'l': util => util.alias('-list-groups'),
 
-    '-list-all': function(util) {
+    '-list-all': async function(util) {
       // --list-all  (alias: --list-tracks, -L)
       // Lists all groups and tracks in the playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       console.log(getPlaylistTreeString(activePlaylist, true))
 
@@ -445,6 +482,7 @@ async function main(args) {
     },
 
     '-sort': util => util.alias('-sort-mode'),
+    'S': util => util.alias('-sort-mode'),
 
     '-shuffle-seed': function(util) {
       // --shuffle-seed <seed>  (alias: --seed)
@@ -568,6 +606,24 @@ async function main(args) {
 
     '-hide-playback-status': util => util.alias('-disable-playback-status'),
 
+    '-track-display-file': async function(util) {
+      // --track-display-file  (alias: --display-track-file)
+      // Sets the file to output the current track's path to every time a new
+      // track is played. This is mostly useful for using tools like OBS to
+      // interface with http-music, for example so that you can display the
+      // name/path of the track that is currently playing in a live stream.
+      const file = util.nextArg()
+      try {
+        await writeFile(file, 'Not yet playing.')
+      } catch (error) {
+        console.log(`Failed to set track display file to "${file}".`)
+        return
+      }
+      trackDisplayFile = file
+    },
+
+    '-display-track-file': util => util.alias('-track-display-file'),
+
     '-trust-shell-commands': function(util) {
       // --trust-shell-commands  (alias: --trust)
       // Lets keybindings run shell commands. Only use this when loading
@@ -593,9 +649,11 @@ async function main(args) {
     '-trust': util => util.alias('-trust-shell-commands')
   }
 
-  await openPlaylist('./playlist.json', true)
-
   await processArgv(args, optionFunctions)
+
+  if (!hasOpenedPlaylist) {
+    await openDefaultPlaylist()
+  }
 
   if (activePlaylist === null) {
     console.error(
@@ -609,6 +667,22 @@ async function main(args) {
   }
 
   if (willPlay || (willPlay === null && shouldPlay)) {
+    // Quick and simple test - if there are no items in the playlist, don't
+    // continue. This is mainly to catch incomplete user-entered commands
+    // (like `http-music play -c`).
+    if (flattenGrouplike(activePlaylist).items.length === 0) {
+      console.error(
+        'Your playlist doesn\'t have any tracks in it, so it can\'t be ' +
+        'played.'
+      )
+      console.error(
+        '(Make sure your http-music command doesn\'t have any typos ' +
+        'and isn\'t incomplete? You might have used -c or --clear but not ' +
+        '--keep to actually pick tracks to play!)'
+      )
+      return false
+    }
+
     console.log(`Using sort: ${pickerSortMode} and loop: ${pickerLoopMode}.`)
     console.log(`Using ${playerCommand} player.`)
     console.log(`Using ${converterCommand} converter.`)
@@ -629,7 +703,8 @@ async function main(args) {
         willUseConverterOptions === null && shouldUseConverterOptions
       ),
       disablePlaybackStatus,
-      startTrack
+      startTrack,
+      trackDisplayFile
     })
 
     // We're looking to gather standard input one keystroke at a time.
@@ -715,10 +790,9 @@ async function main(args) {
         })
       },
 
-      // TODO: Number of history/up-next tracks to show.
-      'showTrackInfo': function() {
+      'showTrackInfo': function(previousTrackCount = 3, upNextTrackCount = undefined) {
         clearConsoleLine()
-        playController.logTrackInfo()
+        playController.logTrackInfo(previousTrackCount, upNextTrackCount)
       },
 
       'runShellCommand': async function(command, args) {

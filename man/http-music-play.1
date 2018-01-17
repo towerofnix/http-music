@@ -54,8 +54,8 @@ Pauses (or resumes) playback.
 
 .TP
 .BR i
-Shows information (title, URL/path) on the currently playing track.
-(\fBt\fR also works.)
+Shows information (title, URL/path) about the currently playing track, as well as the upcoming and previously-played three tracks.
+(Use \fBt\fR to see information about just the current track.)
 
 .TP
 .BR p
@@ -71,6 +71,11 @@ Quits the http-music process and stops music currently being played.
 .BR s
 Skips past the track that's currently playing.
 (\fB<down-arrow>\fR also works.)
+
+.TP
+.BR t
+Shows information about the track that's currently playing.
+(Use \fBi\fR to also see previous and upcoming tracks.)
 
 
 .SH OPTIONS
@@ -107,11 +112,9 @@ By default, they are enabled.
 See also \fB\-\-disable\-converter\-options\fR.
 
 .TP
-.BR \-f ", " \-\-filter " \fIproperty\fR \fIvalue\fR"
-Filters the playlist so that only tracks with the given property-value pair are kept.
-If the property is an array, it checks if the given value is contained within that array.
-For example, this is useful for adding "tags" to songs.
-Try adding \fB"tag": ["cool"]\fR to a track in a playlist file, then use \fB\-\-filter tag cool\fR to only play that track (and other tracks whose \fB"tag"\fR property contains \fB"cool"\fR).
+.BR \-f ", " \-\-filter " \fIfilterJSON\fR
+Filters the playlist so that only tracks that match the given filter are kept.
+\fIfilterJSON\fR should be a JSON object as described in the section \fBFILTERS\fR.
 
 .TP
 .BR \-h ", " \-? ", " \-\-help
@@ -151,6 +154,11 @@ Opens a specific file to be used as the playlist file.
 The default playlist file used upon loading is \fBplaylist.json\fR (in the same directory as \fBhttp-music\fR is being run in).
 
 .TP
+.BR \-\-open\-playlist\-string ", " \-\-playlist\-string " \fIplaylistString\fR"
+Loads a playlist directly from the passed string, which should be the JSON text of a playlist.
+(This sets the source playlist.)
+
+.TP
 .BR \-p ", " \-\-play
 Forces the playlist to actually play, regardless of options such as \fB\-\-list\fR. See also \fB\-\-no\-play\fR.
 
@@ -178,7 +186,8 @@ A: togglePause will also show up higher in the list than A: showTrackInfo, so th
 .TP
 .BR \-\-sort\-mode ", " \-\-sort
 Sets the mode by which the playback order list is sorted.
-Valid options include \fBorder\fR, \fBshuffle\fR (the default), and \fBshuffle-groups\fR.
+Valid options include \fBorder\fR, \fBshuffle\fR (the default), \fBshuffle-groups\fR, and \fBalphabet\fR.
+(Some variations of these strings, such as \fBa-z\fR and \fBshuffled\fR, are also valid.)
 See also \fB\-\-loop\-mode\fR.
 
 .TP
@@ -188,10 +197,74 @@ Especially useful when using an ordered sort; for example, this option could be 
 (See also \fB\-\-sort\fR.)
 
 .TP
+.BR \-\-track\-display\-file ", " \-\-display\-track\-file " \fIfilePath\fR"
+Sets the file to output the current track's path to every time a track is played.
+This is mostly useful for interfacing tools like OBS with http-music, for example so that you can display the name/path of the track that is currently playing during a live stream.
+
+.TP
 .BR \-w ", " \-\-write\-playlist ", " \-\-write ", " \-\-save " \fIfilePath\fR"
 Writes the active playlist to a file.
 This file can later be used with \fB\-\-open\fR; you won't need to stick in all the filtering options again.
 
+
+.SH FILTERS
+Filters are simple pieces of JSON text used to indicate exactly what songs http-music should select to play from a playlist.
+A basic filter might look something like \fB{"tag": "name.length", "most": 10}\fR.
+Filters can be specified in two ways:
+.TP
+1)
+By using the \fB--filter\fR (shorthand \fB-f\fR) option.
+For example: \fBhttp-music play --filter '{"tag": "name.length", "most": 10}\fR.
+.TP
+2)
+By passing the filter directly into the playlist's JSON file, under the \fB"filters"\fR field.
+For example: \fB{"source": ["open-file", "playlist.json"], "filters": [{"tag": "name.length", "most": 10}]}\fR.
+.PP
+Either of these ways have the same effect: only tracks whose names are at most 10 characters long are played.
+
+.PP
+Generally, filters can only access data that is available right inside the playlist file.
+If you try to pass \fBmetadata.duration\fR as the tag when there is no such value in the playlist file, \fBthe filter will not work.\fR
+Thus, the power of filters are unlocked primarily when using the \fBhttp-music process-playlist\fR command initially.
+This utility command automatically adds specific metadata information, such as duration, to the \fBmetadata\fR property of each track.
+That metadata can then be accessed using filters, for example \fB{"tag": "metadata.duration", "least": 180}\fR.
+
+.PP
+Generally, every filter must have a \fB"tag"\fR property as well as at least one other property (and potentially more) used to check the value of that tag.
+The \fB"tag"\fR property is simply a path to any property on the track; for example, \fBmetadata.bitrate\fR means the \fBbitrate\fR property found on the track's \fBmetadata\fR, so 18000 in \fB{"name": "Cool track", "metadata": {"bitrate": 18000}}\fR.
+A list of every property follows:
+
+.TP
+.BR gt " \fIamount\fR"
+Checks if the tag value is greater than the given amount.
+\fB{"tag": "metadata.duration", "gt": 30}\fR only keeps tracks which are more than 30 seconds long.
+
+.TP
+.BR lt " \fIamount\fR"
+Checks if the tag value is less than the given amount.
+\fB{"tag": "metadata.duration", "lt": 120}\fR only keeps tracks which are less than 120 seconds long.
+
+.TP
+.BR gte ", " least ", " min " \fIamount\fR"
+Checks if the tag value is greater than or equal to the given amount.
+\fB{"tag": "metadata.duration", "gte": 300}\fR only keeps tracks that are at least five minutes long.
+
+.TP
+.BR lte ", " most ", " max " \fIamount\fR"
+Checks if the tag value is less than or equal to the given amount.
+\fB{"tag": "metadata.duration", "lte": 60}\fR only keeps tracks that are 60 seconds or shorter.
+
+.TP
+.BR includes ", " contains " \fIvalue\fR"
+Checks if the tag value contains the given value.
+\fB{"tag": "name", "contains": "the"}\fR only keeps tracks whose names contain "the" (case-sensitive).
+\fB{"tag": "genres", "contains": "jazz"}\fR only keeps tracks whose "genres" tag contains "jazz".
+(There is not officially a property "genres" on http-music tracks, but this could be added to a playlist file by hand.)
+
+.TP
+.BR regex " \fIre\fR"
+Checks if the tag value matches the given regular expression.
+\fB{"tag": "name", "regex": "^[Aa]"}\fR only keeps tracks whose names begin with "A" or "a".
 
 .SH EXAMPLES
 Basic usage:

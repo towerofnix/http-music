@@ -79,7 +79,7 @@ function makeLocalDownloader() {
     // TODO: Is it necessary to sanitize here?
     // Haha, the answer to "should I sanitize" is probably always YES..
     const base = path.basename(arg, path.extname(arg))
-    const file = dir + '/' + sanitize(base) + '.mp3'
+    const file = dir + '/' + sanitize(base) + path.extname(arg)
     return copyFile(arg, file)
       .then(() => file)
   }
