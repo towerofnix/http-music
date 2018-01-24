@@ -261,15 +261,7 @@ function filterGrouplikeByPath(grouplike, pathParts) {
   let possibleMatches
 
   if (firstPart.startsWith('?')) {
-    // TODO: Note to self - remove isGroup here to let this match anything, not
-    // just groups. Definitely want to do that in the future, but there'll need
-    // to be some preparing first - for example, what if a group contains a
-    // track which is the same name as the group? Then there are two possible
-    // matches; how should http-music know which to pick? Probably be biased to
-    // pick a group before a track, but.. that doesn't seem perfect either. And
-    // it doesn't solve the problem where there might be two descendants of the
-    // same name (groups or otherwise).
-    possibleMatches = collectGrouplikeChildren(grouplike, isGroup)
+    possibleMatches = collectGrouplikeChildren(grouplike)
     firstPart = firstPart.slice(1)
   } else {
     possibleMatches = grouplike.items
