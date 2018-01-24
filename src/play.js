@@ -111,11 +111,11 @@ async function main(args) {
     [['shiftRight'], 'seek', +30],
     [['up'], 'skipBack'],
     [['down'], 'skipAhead'],
-    [['s'], 'skipAhead'],
     [['delete'], 'skipUpNext'],
-    [['i'], 'showTrackInfo'],
-    [['t'], 'showTrackInfo'],
-    [['q'], 'quit']
+    [['s'], 'skipAhead'], [['S'], 'skipAhead'],
+    [['i'], 'showTrackInfo'], [['I'], 'showTrackInfo'],
+    [['t'], 'showTrackInfo'], [['T'], 'showTrackInfo'],
+    [['q'], 'quit'], [['Q'], 'quit']
   ]
 
   async function openPlaylist(arg, silent = false) {
