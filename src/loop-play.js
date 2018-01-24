@@ -22,8 +22,11 @@ const {
   getItemPathString, safeUnlink, parentSymbol
 } = require('./playlist-utils')
 
-function createStatusLine({percentStr, curStr, lenStr}) {
-  return `(${percentStr}) ${curStr} / ${lenStr}`
+function createStatusLine({percentStr, curStr, lenStr, paused = false}) {
+  return (
+    `(${percentStr}) ${curStr} / ${lenStr}` +
+    (paused === true ? ' (Paused)' : '')
+  )
 }
 
 class Player extends EventEmitter {
@@ -31,6 +34,7 @@ class Player extends EventEmitter {
     super()
 
     this.disablePlaybackStatus = false
+    this.paused = false
   }
 
   playFile(file) {}
@@ -99,7 +103,9 @@ class MPVPlayer extends Player {
           (Math.trunc(percentVal * 100) / 100).toFixed(2) + '%'
         )
 
-        this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
+        this.printStatusLine(createStatusLine({
+          percentStr, curStr, lenStr, paused: this.paused
+        }))
       }
     })
 
@@ -150,6 +156,7 @@ class ControllableMPVPlayer extends MPVPlayer {
 
   togglePause() {
     this.sendCommand('cycle pause')
+    this.paused = !this.paused
   }
 
   kill() {
@@ -217,6 +224,8 @@ class SoXPlayer extends Player {
             lenStr = `${lenMin}:${pad(lenSec)}`
           }
 
+          // No need to pass paused to createStatusLine, since the SoX player
+          // can never be paused!
           this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
         }
       }
