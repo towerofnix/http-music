@@ -404,6 +404,7 @@ TODO: A way to search the playlist for a path. Probably best to modify the
 
 TODO: Case-insensitive checking with command keybindings - I think this is
       broken with the new command system.
+      (Done!)
 
 TODO: Handle empty (active) playlists. Showing an error message and stopping
       is best, I think.
