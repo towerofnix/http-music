@@ -151,6 +151,11 @@ Opens a specific file to be used as the playlist file.
 The default playlist file used upon loading is \fBplaylist.json\fR (in the same directory as \fBhttp-music\fR is being run in).
 
 .TP
+.BR \-\-open\-playlist\-string ", " \-\-playlist\-string " \fIplaylistString\fR"
+Loads a playlist directly from the passed string, which should be the JSON text of a playlist.
+(This sets the source playlist.)
+
+.TP
 .BR \-p ", " \-\-play
 Forces the playlist to actually play, regardless of options such as \fB\-\-list\fR. See also \fB\-\-no\-play\fR.
 

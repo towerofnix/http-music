@@ -235,6 +235,8 @@ async function main(args) {
       await loadPlaylist(JSON.parse(util.nextArg()))
     },
 
+    '-playlist-string': util => util.alias('-open-playlist-string'),
+
     '-write-playlist': function(util) {
       // --write-playlist <file>  (alias: --write, -w, --save)
       // Writes the active playlist to a file. This file can later be used
