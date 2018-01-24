@@ -420,3 +420,6 @@ TODO: Adding onto the last one, show the total amount of time in the group/all
 TODO: Make process-metadata work with non-local tracks, somehow...
 
 TODO: Make process-metadata work nicely with smart playlists, somehow...
+
+TODO: A way (key, option) to change the "/ duration" text in the status bar to
+      "- remaining".
