@@ -161,7 +161,6 @@ TODO: The results of pressing key commands aren't very clear currently. Useful
       things that come to mind would be presenting the volume when it's
       changed; making it clear that a song is being skipped when it is; and
       having "paused" be part of the status bar.
-      (Done!)
 
 TODO: Figure out a way to make the same mpv process be reused, so that options
       such as volume can be remembered. (At the moment volume is reset to the
