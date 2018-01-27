@@ -19,9 +19,10 @@ function crawl(absURL, opts = {}, internals = {}) {
     maxAttempts = 5,
 
     keepSeparateHosts = false,
+    stayInSameDirectory = true,
 
     keepAnyFileType = false,
-    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov', 'mpga'],
+    fileTypes = ['wav', 'ogg', 'oga', 'mp3', 'mp4', 'm4a', 'mov', 'mpga', 'mod'],
 
     filterRegex = null
   } = opts
@@ -56,7 +57,9 @@ function crawl(absURL, opts = {}, internals = {}) {
             name = name.slice(0, -1)
           }
 
-          const urlObj = new url.URL(href, absURL)
+          name = name.trim()
+
+          const urlObj = new url.URL(href, absURL + '/')
           const linkURL = url.format(urlObj)
 
           if (internals.allURLs.includes(linkURL)) {
@@ -77,6 +80,14 @@ function crawl(absURL, opts = {}, internals = {}) {
             verboseLog("[Ignored] Inconsistent host: " + linkURL)
 
             return false
+          }
+
+          if (stayInSameDirectory) {
+            const relative = path.relative(absURLObj.pathname, urlObj.pathname)
+            if (relative.startsWith('..') || path.isAbsolute(relative)) {
+              verboseLog("[Ignored] Outside of parent directory: " + linkURL)
+              return false
+            }
           }
 
           if (href.endsWith('/')) {
