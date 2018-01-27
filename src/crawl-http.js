@@ -44,10 +44,12 @@ function crawl(absURL, opts = {}, internals = {}) {
 
   return fetch(absURL)
     .then(
-      res => res.text().then(text => {
+      res => res.text().then(async text => {
         const links = getHTMLLinks(text)
 
-        return Promise.all(links.map(link => {
+        const items = []
+
+        for (const link of links) {
           let [ name, href ] = link
 
           // If the name (that's the content inside of <a>..</a>) ends with a
@@ -64,29 +66,26 @@ function crawl(absURL, opts = {}, internals = {}) {
 
           if (internals.allURLs.includes(linkURL)) {
             verboseLog("[Ignored] Already done this URL: " + linkURL)
-
-            return false
+            continue
           }
 
           internals.allURLs.push(linkURL)
 
           if (filterRegex && !(filterRegex.test(linkURL))) {
             verboseLog("[Ignored] Failed regex: " + linkURL)
-
-            return false
+            continue
           }
 
           if (!keepSeparateHosts && urlObj.host !== absURLObj.host) {
             verboseLog("[Ignored] Inconsistent host: " + linkURL)
-
-            return false
+            continue
           }
 
           if (stayInSameDirectory) {
             const relative = path.relative(absURLObj.pathname, urlObj.pathname)
             if (relative.startsWith('..') || path.isAbsolute(relative)) {
               verboseLog("[Ignored] Outside of parent directory: " + linkURL)
-              return false
+              continue
             }
           }
 
@@ -95,8 +94,10 @@ function crawl(absURL, opts = {}, internals = {}) {
 
             verboseLog("[Dir] " + linkURL)
 
-            return crawl(linkURL, opts, Object.assign({}, internals))
-              .then(({ items }) => ({name, items}))
+            items.push(await (
+              crawl(linkURL, opts, Object.assign({}, internals))
+                .then(({ items }) => ({name, items}))
+            ))
           } else {
             // It's a file!
 
@@ -107,14 +108,15 @@ function crawl(absURL, opts = {}, internals = {}) {
               !(extensions.includes(path.extname(href)))
             ) {
               verboseLog("[Ignored] Bad extension: " + linkURL)
-
-              return false
+              continue
             }
 
             verboseLog("[File] " + linkURL)
-            return Promise.resolve({name, downloaderArg: linkURL})
+            items.push({name, downloaderArg: linkURL})
           }
-        }).filter(Boolean)).then(items => ({items}))
+        }
+
+        return {items}
       }),
 
       err => {
