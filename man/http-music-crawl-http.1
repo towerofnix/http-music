@@ -73,3 +73,8 @@ As you can see, the resulting playlist file follows the same structure as the di
 .BR -m ", " --max-download-attempts
 Sets the maximum number of times any single directory will be attempted to be downloaded, when the HTTP download request fails.
 Defaults to 5.
+
+.TP
+.BR -v ", " --verbose
+Outputs potentially-useful debugging information regarding what files and links are (and aren't) being followed.
+Note that log output goes to STDERR, so you can still pipe STDOUT to a file to save the resulting playlist.

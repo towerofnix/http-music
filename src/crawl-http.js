@@ -36,7 +36,7 @@ function crawl(absURL, opts = {}, internals = {}) {
 
   const verboseLog = text => {
     if (verbose) {
-      console.log(text)
+      console.error(text)
     }
   }
 
@@ -203,7 +203,10 @@ async function main(args, shouldReturn = false) {
       // such. Defaults to false.
 
       verbose = true
-      console.log('Outputting verbosely.')
+      console.error(
+        'Outputting verbosely. (Log output goes to STDERR - ' +
+        'you can still pipe to a file to save your playlist.)'
+      )
     },
 
     'v': util => util.alias('-verbose'),
