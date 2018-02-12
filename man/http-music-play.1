@@ -193,6 +193,11 @@ Especially useful when using an ordered sort; for example, this option could be 
 (See also \fB\-\-sort\fR.)
 
 .TP
+.BR \-\-track\-display\-file ", " \-\-display\-track\-file " \fIfilePath\fR"
+Sets the file to output the current track's path to every time a track is played.
+This is mostly useful for interfacing tools like OBS with http-music, for example so that you can display the name/path of the track that is currently playing during a live stream.
+
+.TP
 .BR \-w ", " \-\-write\-playlist ", " \-\-write ", " \-\-save " \fIfilePath\fR"
 Writes the active playlist to a file.
 This file can later be used with \fB\-\-open\fR; you won't need to stick in all the filtering options again.

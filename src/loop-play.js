@@ -11,8 +11,12 @@
 const { spawn } = require('child_process')
 const FIFO = require('fifo-js')
 const EventEmitter = require('events')
+const fs = require('fs')
+const util = require('util')
 const killProcess = require('./kill-process')
 const { HistoryController, generalPicker } = require('./pickers')
+
+const writeFile = util.promisify(fs.writeFile)
 
 const {
   getDownloaderFor, byName: downloadersByName, makeConverter
@@ -345,14 +349,19 @@ class DownloadController extends EventEmitter {
 }
 
 class PlayController extends EventEmitter {
-  constructor(player, playlist, historyController, downloadController) {
+  constructor({
+    player, playlist, historyController, downloadController,
+    useConverterOptions = true,
+    trackDisplayFile = null // File to output current track path to.
+  }) {
     super()
 
     this.player = player
     this.playlist = playlist
     this.historyController = historyController
     this.downloadController = downloadController
-    this.useConverterOptions = true
+    this.useConverterOptions = useConverterOptions
+    this.trackDisplayFile = trackDisplayFile
 
     this.currentTrack = null
     this.nextTrack = null
@@ -440,6 +449,10 @@ class PlayController extends EventEmitter {
       ])
 
       if (next) {
+        if (this.trackDisplayFile) {
+          await writeFile(this.trackDisplayFile, getItemPathString(this.currentTrack))
+        }
+
         await this.playFile(next)
 
         // Now that we're done playing the file, we should delete it.. unless
@@ -643,7 +656,8 @@ module.exports = async function startLoopPlay(
     pickerOptions, playerCommand, converterCommand,
     useConverterOptions = true,
     disablePlaybackStatus = false,
-    startTrack = null
+    startTrack = null,
+    trackDisplayFile = null
   }
 ) {
   // Looping play function. Takes a playlist and an object containing general
@@ -686,11 +700,12 @@ module.exports = async function startLoopPlay(
     historyController.timeline.push(startTrack)
   }
 
-  const playController = new PlayController(
-    player, playlist, historyController, downloadController
-  )
+  const playController = new PlayController({
+    player, playlist, historyController, downloadController,
+    trackDisplayFile
+  })
 
-  Object.assign(playController, {playerCommand, useConverterOptions})
+  Object.assign(playController, {useConverterOptions})
 
   const promise = playController.loopPlay()
 

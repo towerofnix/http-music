@@ -103,6 +103,9 @@ async function main(args) {
   // keybinding files.
   let mayTrustShellCommands = true
 
+  // The file to output the playlist path to the current file.
+  let trackDisplayFile
+
   const keybindings = [
     [['space'], 'togglePause'],
     [['left'], 'seek', -5],
@@ -571,6 +574,24 @@ async function main(args) {
 
     '-hide-playback-status': util => util.alias('-disable-playback-status'),
 
+    '-track-display-file': async function(util) {
+      // --track-display-file  (alias: --display-track-file)
+      // Sets the file to output the current track's path to every time a new
+      // track is played. This is mostly useful for using tools like OBS to
+      // interface with http-music, for example so that you can display the
+      // name/path of the track that is currently playing in a live stream.
+      const file = util.nextArg()
+      try {
+        await writeFile(file, 'Not yet playing.')
+      } catch (error) {
+        console.log(`Failed to set track display file to "${file}".`)
+        return
+      }
+      trackDisplayFile = file
+    },
+
+    '-display-track-file': util => util.alias('-track-display-file'),
+
     '-trust-shell-commands': function(util) {
       // --trust-shell-commands  (alias: --trust)
       // Lets keybindings run shell commands. Only use this when loading
@@ -648,7 +669,8 @@ async function main(args) {
         willUseConverterOptions === null && shouldUseConverterOptions
       ),
       disablePlaybackStatus,
-      startTrack
+      startTrack,
+      trackDisplayFile
     })
 
     // We're looking to gather standard input one keystroke at a time.
