@@ -158,7 +158,9 @@ async function main(args) {
 
     // ..And finally, we have to update the playlist format again, since
     // processSmartPlaylist might have added new (un-updated) items:
-    const finalPlaylist = updatePlaylistFormat(processedPlaylist)
+    const finalPlaylist = updatePlaylistFormat(processedPlaylist, true)
+    // We also pass true so that the playlist-format-updater knows that this
+    // is the source playlist.
 
     sourcePlaylist = finalPlaylist
 

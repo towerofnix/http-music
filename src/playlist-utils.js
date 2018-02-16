@@ -8,8 +8,9 @@ const unlink = promisify(fs.unlink)
 
 const parentSymbol = Symbol('Parent group')
 const oldSymbol = Symbol('Old track or group reference')
+const sourceSymbol = Symbol('Source-playlist item reference')
 
-function updatePlaylistFormat(playlist) {
+function updatePlaylistFormat(playlist, firstTime = false) {
   const defaultPlaylist = {
     options: [],
     items: []
@@ -39,10 +40,10 @@ function updatePlaylistFormat(playlist) {
 
   const fullPlaylistObj = Object.assign(defaultPlaylist, playlistObj)
 
-  return updateGroupFormat(fullPlaylistObj)
+  return updateGroupFormat(fullPlaylistObj, firstTime)
 }
 
-function updateGroupFormat(group) {
+function updateGroupFormat(group, firstTime = false) {
   const defaultGroup = {
     name: '',
     items: [],
@@ -62,7 +63,7 @@ function updateGroupFormat(group) {
   groupObj.items = groupObj.items.map(item => {
     // Check if it's a group; if not, it's probably a track.
     if (typeof item[1] === 'array' || item.items) {
-      item = updateGroupFormat(item)
+      item = updateGroupFormat(item, firstTime)
     } else {
       item = updateTrackFormat(item)
 
@@ -78,6 +79,10 @@ function updateGroupFormat(group) {
     }
 
     item[parentSymbol] = groupObj
+
+    if (firstTime) {
+      item[sourceSymbol] = item
+    }
 
     return item
   })
@@ -517,7 +522,7 @@ async function safeUnlink(file, playlist) {
 }
 
 module.exports = {
-  parentSymbol, oldSymbol,
+  parentSymbol, oldSymbol, sourceSymbol,
   updatePlaylistFormat, updateTrackFormat,
   flattenGrouplike,
   partiallyFlattenGrouplike, collapseGrouplike,

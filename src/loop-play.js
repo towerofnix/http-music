@@ -23,7 +23,7 @@ const {
 } = require('./downloaders')
 
 const {
-  getItemPathString, safeUnlink, parentSymbol
+  getItemPathString, safeUnlink, parentSymbol, sourceSymbol
 } = require('./playlist-utils')
 
 function createStatusLine({percentStr, curStr, lenStr}) {
@@ -450,7 +450,9 @@ class PlayController extends EventEmitter {
 
       if (next) {
         if (this.trackDisplayFile) {
-          await writeFile(this.trackDisplayFile, getItemPathString(this.currentTrack))
+          await writeFile(this.trackDisplayFile,
+            getItemPathString(this.currentTrack[sourceSymbol])
+          )
         }
 
         await this.playFile(next)
