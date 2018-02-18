@@ -1,3 +1,9 @@
+const { promisify } = require('util')
+const fs = require('fs')
+const fetch = require('node-fetch')
+
+const readFile = promisify(fs.readFile)
+
 module.exports.showTrackProcessStatus = function(
   total, doneCount, noLineBreak = false
 ) {
@@ -13,4 +19,21 @@ module.exports.showTrackProcessStatus = function(
     `(${doneCount}/${total} tracks)\x1b[0m` +
     (noLineBreak ? '' : '\n')
   )
+}
+
+function downloadPlaylistFromURL(url) {
+  return fetch(url).then(res => res.text())
+}
+
+function downloadPlaylistFromLocalPath(path) {
+  return readFile(path)
+}
+
+module.exports.downloadPlaylistFromOptionValue = function(arg) {
+  // TODO: Verify things!
+  if (arg.startsWith('http://') || arg.startsWith('https://')) {
+    return downloadPlaylistFromURL(arg)
+  } else {
+    return downloadPlaylistFromLocalPath(arg)
+  }
 }

@@ -20,28 +20,15 @@ const {
 } = require('./playlist-utils')
 
 const {
+  downloadPlaylistFromOptionValue
+} = require('./general-util')
+
+const {
   compileKeybindings, getComboForCommand, stringifyCombo
 } = require('./keybinder')
 
 const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
-
-function downloadPlaylistFromURL(url) {
-  return fetch(url).then(res => res.text())
-}
-
-function downloadPlaylistFromLocalPath(path) {
-  return readFile(path)
-}
-
-function downloadPlaylistFromOptionValue(arg) {
-  // TODO: Verify things!
-  if (arg.startsWith('http://') || arg.startsWith('https://')) {
-    return downloadPlaylistFromURL(arg)
-  } else {
-    return downloadPlaylistFromLocalPath(arg)
-  }
-}
 
 function clearConsoleLine() {
   process.stdout.write('\x1b[1K\r')
