@@ -26,7 +26,7 @@ function downloadPlaylistFromURL(url) {
 }
 
 function downloadPlaylistFromLocalPath(path) {
-  return readFile(path)
+  return readFile(path).then(buf => buf.toString())
 }
 
 module.exports.downloadPlaylistFromOptionValue = function(arg) {
