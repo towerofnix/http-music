@@ -6,8 +6,8 @@ const {
   downloadPlaylistFromOptionValue
 } = require('./general-util')
 
-function crawl(input) {
-  return downloadPlaylistFromOptionValue(input)
+async function crawl(input) {
+  return JSON.parse(await downloadPlaylistFromOptionValue(input))
 }
 
 async function main(args, shouldReturn = false) {

@@ -112,22 +112,37 @@ function updateTrackFormat(track) {
   return Object.assign(defaultTrack, trackObj)
 }
 
-function mapGrouplikeItems(grouplike, handleTrack) {
-  if (typeof handleTrack === 'undefined') {
+function filterTracks(grouplike, handleTrack) {
+  // Recursively filters every track in the passed grouplike. The track-handler
+  // function passed should either return true (to keep a track) or false (to
+  // remove the track). After tracks are filtered, groups which contain no
+  // items are removed.
+
+  if (typeof handleTrack !== 'function') {
     throw new Error("Missing track handler function")
   }
 
-  return {
-    items: grouplike.items.map(item => {
+  return Object.assign({}, grouplike, {
+    items: grouplike.items.filter(item => {
       if (isTrack(item)) {
         return handleTrack(item)
-      } else if (isGroup(item)) {
-        return mapGrouplikeItems(item, handleTrack, handleGroup)
       } else {
-        throw new Error('Non-track/group item')
+        return true
+      }
+    }).map(item => {
+      if (isGroup(item)) {
+        return filterTracks(item, handleTrack)
+      } else {
+        return item
+      }
+    }).filter(item => {
+      if (isGroup(item)) {
+        return item.items.length > 0
+      } else {
+        return true
       }
     })
-  }
+  })
 }
 
 function flattenGrouplike(grouplike) {
@@ -524,6 +539,7 @@ async function safeUnlink(file, playlist) {
 module.exports = {
   parentSymbol, oldSymbol, sourceSymbol,
   updatePlaylistFormat, updateTrackFormat,
+  filterTracks,
   flattenGrouplike,
   partiallyFlattenGrouplike, collapseGrouplike,
   filterGrouplikeByProperty,

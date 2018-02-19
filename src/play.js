@@ -335,16 +335,25 @@ async function main(args) {
     'r': util => util.alias('-remove'),
     'x': util => util.alias('-remove'),
 
-    '-filter': function(util) {
-      // --filter <property> <value>  (alias: -f)
-      // Filters the playlist so that only tracks with the given property-
-      // value pair are kept.
+    '-filter': async function(util) {
+      // --filter <filterJSON>
+      // Filters the playlist so that only tracks that match the given filter
+      // are kept. FilterJSON should be a JSON object as described in the
+      // man page section "filters".
 
-      const property = util.nextArg()
-      const value = util.nextArg()
+      const filterJSON = util.nextArg()
 
-      const p = filterGrouplikeByProperty(activePlaylist, property, value)
-      activePlaylist = updatePlaylistFormat(p)
+      let filterObj
+      try {
+        filterObj = JSON.parse(filterJSON)
+      } catch (error) {
+        console.error('Invalid JSON for filter:', filterJSON)
+        return
+      }
+
+      activePlaylist.filters = [filterObj]
+      activePlaylist = await processSmartPlaylist(activePlaylist)
+      activePlaylist = updatePlaylistFormat(activePlaylist)
     },
 
     'f': util => util.alias('-filter'),
