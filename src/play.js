@@ -93,6 +93,16 @@ async function main(args) {
   // The file to output the playlist path to the current file.
   let trackDisplayFile
 
+  // Whether or not a playlist has been opened yet. This is just used to
+  // decide when exactly to load the default playlist. (We don't want to load
+  // it as soon as the process starts, since there might be an --open-playlist
+  // option that specifies opening a *different* playlist! But if we encounter
+  // an action that requires a playlist, and no playlist has yet been opened,
+  // we assume that the user probably wants to do something with the default
+  // playlist, and that's when we open it. See requiresOpenPlaylist for the
+  // implementation of this.)
+  let hasOpenedPlaylist = false
+
   const keybindings = [
     [['space'], 'togglePause'],
     [['left'], 'seek', -5],
@@ -186,8 +196,6 @@ async function main(args) {
     // prioritized over old ones.
     keybindings.unshift(...openedKeybindings)
   }
-
-  let hasOpenedPlaylist = false
 
   async function requiresOpenPlaylist() {
     if (activePlaylist === null) {
