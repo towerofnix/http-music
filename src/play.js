@@ -131,6 +131,8 @@ async function main(args) {
 
     const importedPlaylist = JSON.parse(playlistText)
 
+    hasOpenedPlaylist = true
+
     await loadPlaylist(importedPlaylist)
   }
 
@@ -185,12 +187,22 @@ async function main(args) {
     keybindings.unshift(...openedKeybindings)
   }
 
-  function requiresOpenPlaylist() {
+  let hasOpenedPlaylist = false
+
+  async function requiresOpenPlaylist() {
     if (activePlaylist === null) {
-      throw new Error(
-        "This action requires an open playlist - try --open (file)"
-      )
+      if (hasOpenedPlaylist === false) {
+        await openDefaultPlaylist()
+      } else {
+        throw new Error(
+          "This action requires an open playlist - try --open (file)"
+        )
+      }
     }
+  }
+
+  function openDefaultPlaylist() {
+    return openPlaylist('./playlist.json', true)
   }
 
   const optionFunctions = {
@@ -229,13 +241,13 @@ async function main(args) {
 
     '-playlist-string': util => util.alias('-open-playlist-string'),
 
-    '-write-playlist': function(util) {
+    '-write-playlist': async function(util) {
       // --write-playlist <file>  (alias: --write, -w, --save)
       // Writes the active playlist to a file. This file can later be used
       // with --open <file>; you won't need to stick in all the filtering
       // options again.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       const playlistString = JSON.stringify(activePlaylist, null, 2)
       const file = util.nextArg()
@@ -259,11 +271,11 @@ async function main(args) {
     'w': util => util.alias('-write-playlist'),
     '-save': util => util.alias('-write-playlist'),
 
-    '-print-playlist': function(util) {
+    '-print-playlist': async function(util) {
       // --print-playlist  (alias: --log-playlist, --json)
       // Prints out the JSON representation of the active playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       console.log(JSON.stringify(activePlaylist, null, 2))
 
@@ -290,26 +302,26 @@ async function main(args) {
       await openKeybindings(util.nextArg(), false)
     },
 
-    '-clear': function(util) {
+    '-clear': async function(util) {
       // --clear  (alias: -c)
       // Clears the active playlist. This does not affect the source
       // playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       activePlaylist.items = []
     },
 
     'c': util => util.alias('-clear'),
 
-    '-keep': function(util) {
+    '-keep': async function(util) {
       // --keep <groupPath>  (alias: -k)
       // Keeps a group by loading it from the source playlist into the
       // active playlist. This is usually useful after clearing the
       // active playlist; it can also be used to keep a subgroup when
       // you've removed an entire parent group, e.g. `-r foo -k foo/baz`.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       const pathString = util.nextArg()
       const group = filterPlaylistByPathString(sourcePlaylist, pathString)
@@ -321,11 +333,11 @@ async function main(args) {
 
     'k': util => util.alias('-keep'),
 
-    '-remove': function(util) {
+    '-remove': async function(util) {
       // --remove <groupPath>  (alias: -r, -x)
       // Filters the playlist so that the given path is removed.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       const pathString = util.nextArg()
       console.log("Ignoring path: " + pathString)
@@ -358,24 +370,24 @@ async function main(args) {
 
     'f': util => util.alias('-filter'),
 
-    '-collapse-groups': function() {
+    '-collapse-groups': async function() {
       // --collapse-groups  (alias: --collapse)
       // Collapses groups in the active playlist so that there is only one
       // level of sub-groups. Handy for shuffling the order groups play in;
       // try `--collapse-groups --sort shuffle-groups`.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       activePlaylist = updatePlaylistFormat(collapseGrouplike(activePlaylist))
     },
 
     '-collapse': util => util.alias('-collapse-groups'),
 
-    '-list-groups': function(util) {
+    '-list-groups': async function(util) {
       // --list-groups  (alias: -l, --list)
       // Lists all groups in the playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       console.log(getPlaylistTreeString(activePlaylist))
 
@@ -390,11 +402,11 @@ async function main(args) {
     '-list': util => util.alias('-list-groups'),
     'l': util => util.alias('-list-groups'),
 
-    '-list-all': function(util) {
+    '-list-all': async function(util) {
       // --list-all  (alias: --list-tracks, -L)
       // Lists all groups and tracks in the playlist.
 
-      requiresOpenPlaylist()
+      await requiresOpenPlaylist()
 
       console.log(getPlaylistTreeString(activePlaylist, true))
 
@@ -615,9 +627,11 @@ async function main(args) {
     '-trust': util => util.alias('-trust-shell-commands')
   }
 
-  await openPlaylist('./playlist.json', true)
-
   await processArgv(args, optionFunctions)
+
+  if (!hasOpenedPlaylist) {
+    await openDefaultPlaylist()
+  }
 
   if (activePlaylist === null) {
     console.error(

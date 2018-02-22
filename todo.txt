@@ -424,3 +424,11 @@ TODO: Make process-metadata work nicely with smart playlists, somehow...
 
 TODO: A way (key, option) to change the "/ duration" text in the status bar to
       "- remaining". This would work very nicely with the >/< status bar idea.
+
+TODO: Be a bit more loose (strict?) about what means crashing... Right now if
+      five tracks fail to play in a row, http-music stops. This is good for
+      dealing with, for example, a messed up playlist file that now references
+      moved MP3s, since "failing" means "the download failed". But if the PLAY
+      command fails (i.e. mpv or sox exits with code 1), THAT should also be
+      counted as a failure. (An example case of the "play" command failing --
+      trying to play a track when there is no audio device.)
