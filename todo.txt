@@ -432,3 +432,4 @@ TODO: Be a bit more loose (strict?) about what means crashing... Right now if
       command fails (i.e. mpv or sox exits with code 1), THAT should also be
       counted as a failure. (An example case of the "play" command failing --
       trying to play a track when there is no audio device.)
+      (Done!)

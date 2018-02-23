@@ -37,6 +37,19 @@ class Player extends EventEmitter {
     this.disablePlaybackStatus = false
   }
 
+  set process(newProcess) {
+    this._process = newProcess
+    this._process.on('exit', code => {
+      if (code !== 0) {
+        this.emit('crashed', code) // TODO: HANDLE THIS
+      }
+    })
+  }
+
+  get process() {
+    return this._process
+  }
+
   playFile(file) {}
   seekAhead(secs) {}
   seekBack(secs) {}
@@ -369,6 +382,24 @@ class PlayController extends EventEmitter {
     this.stopped = false
     this.shouldMoveNext = true
     this.failedCount = 0
+    this.playFailCount = 0
+
+    this.player.on('crashed', () => {
+      console.log('\x1b[31mFailed to play track \x1b[1m' +
+        getItemPathString(this.currentTrack) + '\x1b[0m'
+      )
+      this.playFailCount++
+
+      if (this.playFailCount >= 5) {
+        console.error(
+          '\x1b[31mFailed to play 5 tracks. Halting, to prevent damage to ' +
+          'the computer.\x1b[0m'
+        )
+
+        process.exit(1)
+        throw new Error('Intentionally halted - failed to play tracks.')
+      }
+    })
 
     this.player.on('printStatusLine', playerString => {
       let fullStatusLine = ''
@@ -544,8 +575,8 @@ class PlayController extends EventEmitter {
             "prevent damage to the computer.\x1b[0m"
           )
 
-          process.exit(0)
-          throw new Error('Intentionally halted.')
+          process.exit(1)
+          throw new Error('Intentionally halted - failed to download tracks.')
         }
 
         // A little bit blecht, but.. this works.
