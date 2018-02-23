@@ -40,9 +40,11 @@ class Player extends EventEmitter {
   set process(newProcess) {
     this._process = newProcess
     this._process.on('exit', code => {
-      if (code !== 0) {
-        this.emit('crashed', code) // TODO: HANDLE THIS
+      if (code !== 0 && !this._killed) {
+        this.emit('crashed', code)
       }
+
+      this._killed = false
     })
   }
 
@@ -56,7 +58,13 @@ class Player extends EventEmitter {
   volUp(amount) {}
   volDown(amount) {}
   togglePause() {}
-  kill() {}
+
+  async kill() {
+    if (this.process) {
+      this._killed = true
+      await killProcess(this.process)
+    }
+  }
 
   printStatusLine(str) {
     // Quick sanity check - we don't want to print the status line if it's
@@ -123,12 +131,6 @@ class MPVPlayer extends Player {
     return new Promise(resolve => {
       this.process.once('close', resolve)
     })
-  }
-
-  async kill() {
-    if (this.process) {
-      await killProcess(this.process)
-    }
   }
 }
 
@@ -245,9 +247,6 @@ class SoXPlayer extends Player {
   }
 
   async kill() {
-    if (this.process) {
-      await killProcess(this.process)
-    }
   }
 }
 
@@ -385,9 +384,13 @@ class PlayController extends EventEmitter {
     this.playFailCount = 0
 
     this.player.on('crashed', () => {
-      console.log('\x1b[31mFailed to play track \x1b[1m' +
-        getItemPathString(this.currentTrack) + '\x1b[0m'
-      )
+      if (this.currentTrack) {
+        console.log('\x1b[31mFailed to play track \x1b[1m' +
+          getItemPathString(this.currentTrack) + '\x1b[0m'
+        )
+      } else {
+        console.log('\x1b[31mFailed to play track.\x1b[0m')
+      }
       this.playFailCount++
 
       if (this.playFailCount >= 5) {
