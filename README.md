@@ -74,6 +74,10 @@ $ http-music play
 
 ![Clear/keep](screenshots/hm-clearkeep.png)
 
+**Visually look at the longest tracks in a playlist:**
+
+![Duration graph](screenshots/hm-duration-graph.png)
+
 ## Documentation
 
 Check out [the man pages](man/). (Or view them with `man http-music`.)
