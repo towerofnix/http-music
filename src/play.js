@@ -391,6 +391,18 @@ async function main(args) {
 
     '-collapse': util => util.alias('-collapse-groups'),
 
+    '-flatten-tracks': async function() {
+      // --flatten-tracks  (alias: --flatten)
+      // Flattens the entire active playlist, so that only tracks remain,
+      // and there are no groups.
+
+      await requiresOpenPlaylist()
+
+      activePlaylist = updatePlaylistFormat(flattenGrouplike(activePlaylist))
+    },
+
+    '-flatten': util => util.alias('-flatten-tracks'),
+
     '-list-groups': async function(util) {
       // --list-groups  (alias: -l, --list)
       // Lists all groups in the playlist.

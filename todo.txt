@@ -433,3 +433,13 @@ TODO: Be a bit more loose (strict?) about what means crashing... Right now if
       counted as a failure. (An example case of the "play" command failing --
       trying to play a track when there is no audio device.)
       (Done!)
+
+TODO: Group/album length visualizer thing!!! Colorful and PRETTY. Only work on
+      the first level of groups since I'm lazy and don't want to figure out how
+      to nicely display multiple levels. Use --keep + --save to use the viz on
+      specific albums (or maybe implement --clear, --keep, etc as common code
+      between the player and the visualizer, shrug). Also using --collapse
+      would work for comparing album lengths rather than artist lengths.
+      (Done!)
+
+TODO: Show mean/media/mode statistics for songs in duration-graph.
