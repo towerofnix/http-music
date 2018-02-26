@@ -443,3 +443,6 @@ TODO: Group/album length visualizer thing!!! Colorful and PRETTY. Only work on
       (Done!)
 
 TODO: Show mean/media/mode statistics for songs in duration-graph.
+
+TODO: In duration-graph, show warning message if *no* items in a playlist have
+      duration metadata (direct the user to use process-metadata).
