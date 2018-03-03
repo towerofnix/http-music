@@ -310,7 +310,7 @@ class DownloadController extends EventEmitter {
     try {
       downloadFile = await downloader(downloaderArg)
     } catch(err) {
-      this.emit('errored', err)
+      this.emit('errored', 'Download error: ' + err)
       return
     }
 
@@ -326,7 +326,7 @@ class DownloadController extends EventEmitter {
     try {
       convertFile = await this.converter(converterOptions)(downloadFile)
     } catch(err) {
-      this.emit('errored', err)
+      this.emit('errored', 'Convert error: ' + err)
       return
     } finally {
       // Whether the convertion succeeds or not (hence 'finally'), we should
