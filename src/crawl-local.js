@@ -21,7 +21,8 @@ function crawl(dirPath, extensions = [
   // This list isn't very extensive, and can be customized via the
   // --extensions (or --exts, -e) option.
   'ogg', 'oga',
-  'wav', 'mp3', 'mp4', 'm4a', 'aac'
+  'wav', 'mp3', 'mp4', 'm4a', 'aac',
+  'mod'
 ]) {
   return readDir(dirPath).then(items => {
     items.sort(sortIgnoreCase(naturalSort()))
