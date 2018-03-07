@@ -652,7 +652,11 @@ class PlayController extends EventEmitter {
     this.stopped = true
   }
 
-  logTrackInfo() {
+  logTrackInfo(upNextTrackCount = 3, previousTrackCount = undefined) {
+    if (typeof previousTrackCount === 'undefined') {
+      previousTrackCount = upNextTrackCount
+    }
+
     const getColorMessage = t => {
       if (!t) return '\x1b[2m(No track)\x1b[0m'
 
@@ -675,13 +679,13 @@ class PlayController extends EventEmitter {
     const tl = hc.timeline
     const tlI = hc.timelineIndex
 
-    for (let i = Math.max(0, tlI - 2); i < tlI; i++) {
+    for (let i = Math.max(0, tlI - (previousTrackCount - 1)); i < tlI; i++) {
       console.log(`\x1b[2m(Prev) ${getCleanMessage(tl[i])}\x1b[0m`)
     }
 
     console.log(`\x1b[1m(Curr) \x1b[1m${getColorMessage(tl[tlI])}\x1b[0m`)
 
-    for (let i = tlI + 1; i < Math.min(tlI + 3, tl.length); i++) {
+    for (let i = tlI + 1; i < Math.min(tlI + upNextTrackCount, tl.length); i++) {
       console.log(`(Next) ${getCleanMessage(tl[i])}`)
     }
   }

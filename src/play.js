@@ -114,7 +114,7 @@ async function main(args) {
     [['delete'], 'skipUpNext'],
     [['s'], 'skipAhead'], [['S'], 'skipAhead'],
     [['i'], 'showTrackInfo'], [['I'], 'showTrackInfo'],
-    [['t'], 'showTrackInfo'], [['T'], 'showTrackInfo'],
+    [['t'], 'showTrackInfo', 0, 0], [['T'], 'showTrackInfo', 0, 0],
     [['q'], 'quit'], [['Q'], 'quit']
   ]
 
@@ -788,10 +788,9 @@ async function main(args) {
         })
       },
 
-      // TODO: Number of history/up-next tracks to show.
-      'showTrackInfo': function() {
+      'showTrackInfo': function(previousTrackCount = 3, upNextTrackCount = undefined) {
         clearConsoleLine()
-        playController.logTrackInfo()
+        playController.logTrackInfo(previousTrackCount, upNextTrackCount)
       },
 
       'runShellCommand': async function(command, args) {
