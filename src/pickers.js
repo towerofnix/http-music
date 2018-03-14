@@ -153,6 +153,42 @@ function sortFlattenGrouplike(grouplike, sort, getRandom) {
     return {items: flattenGrouplike(grouplike).items}
   }
 
+  if (['alphabetically', 'alphabetical', 'alphabet', 'az', 'a-z'].includes(sort)) {
+    return {items: flattenGrouplike(grouplike).items.sort(
+      function (a, b) {
+        let { name: aName } = a
+        let { name: bName } = b
+
+        const cleanup = str => {
+          str = str.trim()
+          str = str.toLowerCase()
+          str = str.replace(/[^a-zA-Z0-9]/g, '')
+
+          if (/^[0-9]+$/.test(str)) {
+            // Do nothing, the string is made of one group of digits and so
+            // would be messed up by our sort here if we got rid of those
+            // digits.
+          } else {
+            str = str.replace(/^[0-9]+/, '').trim()
+          }
+
+          return str
+        }
+
+        aName = cleanup(aName)
+        bName = cleanup(bName)
+
+        if (aName < bName) {
+          return -1
+        } else if (aName === bName) {
+          return 0
+        } else {
+          return +1
+        }
+      }
+    )}
+  }
+
   if (
     sort === 'shuffle' || sort === 'shuffled' ||
     sort === 'shuffle-tracks' || sort === 'shuffled-tracks'
@@ -177,7 +213,8 @@ function generalPicker(sourcePlaylist, lastTrack, options) {
 
   if (![
     'order', 'ordered', 'shuffle', 'shuffled', 'shuffle-tracks',
-    'shuffled-tracks','shuffle-groups', 'shuffled-groups'
+    'shuffled-tracks', 'shuffle-groups', 'shuffled-groups',
+    'alphabetically', 'alphabetical', 'alphabet', 'a-z', 'az'
   ].includes(sort)) {
     throw new Error(`Invalid sort mode: ${sort}`)
   }

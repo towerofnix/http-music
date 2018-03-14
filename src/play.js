@@ -115,6 +115,7 @@ async function main(args) {
     [['s'], 'skipAhead'], [['S'], 'skipAhead'],
     [['i'], 'showTrackInfo'], [['I'], 'showTrackInfo'],
     [['t'], 'showTrackInfo', 0, 0], [['T'], 'showTrackInfo', 0, 0],
+    [['%'], 'showTrackInfo', 20, 0],
     [['q'], 'quit'], [['Q'], 'quit']
   ]
 
