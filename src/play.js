@@ -482,6 +482,7 @@ async function main(args) {
     },
 
     '-sort': util => util.alias('-sort-mode'),
+    'S': util => util.alias('-sort-mode'),
 
     '-shuffle-seed': function(util) {
       // --shuffle-seed <seed>  (alias: --seed)
