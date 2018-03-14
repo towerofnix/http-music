@@ -255,6 +255,8 @@ async function main(args) {
 
     '-only': util => util.alias('-only-first'),
     'o': util => util.alias('-only-first'),
+    '-first': util => util.alias('-only-first'),
+    'f': util => util.alias('-only-first'),
 
     '-all': util => {
       onlyFirst = Infinity
