@@ -7,11 +7,13 @@ const { isGroup, filterTracks, sourceSymbol, updatePlaylistFormat } = require('.
 const { promisify } = require('util')
 const readFile = promisify(fs.readFile)
 
-async function processSmartPlaylist(item) {
+async function processSmartPlaylist(item, topItem = true) {
   // Object.assign is used so that we keep original properties, e.g. "name"
   // or "apply". (It's also used so we return copies of original objects.)
 
-  item = await updatePlaylistFormat(item)
+  if (topItem) {
+    item = await updatePlaylistFormat(item)
+  }
 
   const newItem = Object.assign({}, item)
 
@@ -30,7 +32,9 @@ async function processSmartPlaylist(item) {
 
     delete newItem.source
   } else if ('items' in newItem) {
-    newItem.items = await Promise.all(item.items.map(processSmartPlaylist))
+    // Pass topItem = false, since we don't want to use updatePlaylistFormat
+    // on these items.
+    newItem.items = await Promise.all(item.items.map(x => processSmartPlaylist(x, false)))
   }
 
   if ('filters' in newItem) filters: {
@@ -122,9 +126,13 @@ async function processSmartPlaylist(item) {
     delete newItem.filters
   }
 
-  // We pass true so that the playlist-format-updater knows that this
-  // is going to be the source playlist, probably.
-  return updatePlaylistFormat(newItem, true)
+  if (topItem) {
+    // We pass true so that the playlist-format-updater knows that this
+    // is going to be the source playlist, probably.
+    return updatePlaylistFormat(newItem, true)
+  } else {
+    return newItem
+  }
 }
 
 async function main(opts) {

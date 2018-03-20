@@ -268,8 +268,6 @@ async function main(args) {
 
   const playlist = getStuff.activePlaylist
 
-  console.log(playlist)
-
   for (const line of makePlaylistGraph(playlist, {
     graphWidth, onlyFirst, metric
   })) {
