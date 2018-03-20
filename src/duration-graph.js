@@ -11,6 +11,8 @@ const {
   flattenGrouplike
 } = require('./playlist-utils')
 
+const { makePlaylistOptions } = require('./general-util')
+
 const readFile = util.promisify(fs.readFile)
 
 const metrics = {}
@@ -217,7 +219,9 @@ async function main(args) {
   let onlyFirst = 20
   let metric = metrics.duration
 
-  await processArgv(args.slice(1), {
+  const { optionFunctions, getStuff } = makePlaylistOptions()
+
+  Object.assign(optionFunctions, {
     '-metric': util => {
       const arg = util.nextArg()
       if (Object.keys(metrics).includes(arg)) {
@@ -253,19 +257,18 @@ async function main(args) {
       }
     },
 
-    '-only': util => util.alias('-only-first'),
-    'o': util => util.alias('-only-first'),
     '-first': util => util.alias('-only-first'),
-    'f': util => util.alias('-only-first'),
 
     '-all': util => {
       onlyFirst = Infinity
-    },
-
-    'a': util => util.alias('-all')
+    }
   })
 
-  const playlist = updatePlaylistFormat(JSON.parse(await readFile(args[0])))
+  await processArgv(args, optionFunctions)
+
+  const playlist = getStuff.activePlaylist
+
+  console.log(playlist)
 
   for (const line of makePlaylistGraph(playlist, {
     graphWidth, onlyFirst, metric
