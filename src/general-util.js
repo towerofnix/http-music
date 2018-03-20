@@ -100,25 +100,17 @@ module.exports.makePlaylistOptions = function() {
     // Takes an actual playlist object and sets it up as the source and active
     // playlist.
 
-    const openedPlaylist = updatePlaylistFormat(importedPlaylist)
-
-    // We also want to de-smart-ify (stupidify? - simplify?) the playlist.
-    const processedPlaylist = await processSmartPlaylist(openedPlaylist)
-
-    // ..And finally, we have to update the playlist format again, since
-    // processSmartPlaylist might have added new (un-updated) items:
-    const finalPlaylist = updatePlaylistFormat(processedPlaylist, true)
-    // We also pass true so that the playlist-format-updater knows that this
-    // is the source playlist.
-
-    sourcePlaylist = finalPlaylist
+    // We want to de-smart-ify (stupidify? - simplify?) the playlist.
+    // This also automatically updates the playlist format for us, which is
+    // handy.
+    sourcePlaylist = await processSmartPlaylist(importedPlaylist)
 
     // The active playlist is a clone of the source playlist; after all it's
     // quite possible we'll be messing with the value of the active playlist,
     // and we don't want to reflect those changes in the source playlist.
     activePlaylist = clone(sourcePlaylist)
 
-    await processArgv(processedPlaylist.options, optionFunctions)
+    await processArgv(sourcePlaylist.options, optionFunctions)
   }
 
   const requiresOpenPlaylist = async function() {

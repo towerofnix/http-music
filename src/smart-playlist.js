@@ -2,7 +2,7 @@
 
 const fs = require('fs')
 const { getCrawlerByName } = require('./crawlers')
-const { isGroup, filterTracks, sourceSymbol } = require('./playlist-utils')
+const { isGroup, filterTracks, sourceSymbol, updatePlaylistFormat } = require('./playlist-utils')
 
 const { promisify } = require('util')
 const readFile = promisify(fs.readFile)
@@ -10,6 +10,8 @@ const readFile = promisify(fs.readFile)
 async function processSmartPlaylist(item) {
   // Object.assign is used so that we keep original properties, e.g. "name"
   // or "apply". (It's also used so we return copies of original objects.)
+
+  item = await updatePlaylistFormat(item)
 
   const newItem = Object.assign({}, item)
 
@@ -120,7 +122,9 @@ async function processSmartPlaylist(item) {
     delete newItem.filters
   }
 
-  return newItem
+  // We pass true so that the playlist-format-updater knows that this
+  // is going to be the source playlist, probably.
+  return updatePlaylistFormat(newItem, true)
 }
 
 async function main(opts) {

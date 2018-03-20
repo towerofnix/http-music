@@ -5,6 +5,7 @@ const { spawn } = require('child_process')
 const { promisify } = require('util')
 const { showTrackProcessStatus } = require('./general-util')
 const { updatePlaylistFormat, flattenGrouplike } = require('./playlist-utils')
+const { processSmartPlaylist } = require('./smart-playlist')
 
 const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
@@ -72,7 +73,7 @@ async function main(args) {
 
   let doneCount = 0
 
-  const playlist = updatePlaylistFormat(JSON.parse(await readFile(args[0])))
+  const playlist = await processSmartPlaylist(JSON.parse(await readFile(args[0])))
 
   const flattened = flattenGrouplike(playlist)
   for (const item of flattened.items) {
