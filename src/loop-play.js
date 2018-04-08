@@ -218,7 +218,8 @@ class SoXPlayer extends Player {
           const duration = Math.round(
             (curHour + remHour) * 3600 +
             (curMin + remMin) * 60 +
-            (curSec + remSec) * 1
+            (curSec + remSec) * 1 +
+            (curSecFrac + remSecFrac) / 100
           )
 
           const lenHour = Math.floor(duration / 3600)
