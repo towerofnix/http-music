@@ -446,3 +446,10 @@ TODO: Show mean/media/mode statistics for songs in duration-graph.
 
 TODO: In duration-graph, show warning message if *no* items in a playlist have
       duration metadata (direct the user to use process-metadata).
+
+TODO: A way to customize the tmux window title, somehow. I have no idea how
+      that technically works, but it would be super cool. This is definitely
+      a thing I want to do once we've got the "status line formatting" system
+      working; we can just reuse the formatting code so that the user can
+      customize what shows up (if anything) in the window title. Some will
+      prefer the title of a song while others will prefer its duration!

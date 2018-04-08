@@ -26,8 +26,37 @@ const {
   getItemPathString, safeUnlink, parentSymbol, sourceSymbol
 } = require('./playlist-utils')
 
-function createStatusLine({percentStr, curStr, lenStr}) {
-  return `(${percentStr}) ${curStr} / ${lenStr}`
+const { processTemplateString } = require('./general-util')
+
+function getTimeStrings({curHour, curMin, curSec, lenHour, lenMin, lenSec}) {
+  let timeDone, duration
+
+  const pad = val => val.toString().padStart(2, '0')
+  curMin = pad(curMin)
+  curSec = pad(curSec)
+  lenMin = pad(lenMin)
+  lenSec = pad(lenSec)
+
+  // We don't want to display hour counters if the total length is less
+  // than an hour.
+  if (parseInt(lenHour) > 0) {
+    timeDone = `${curHour}:${curMin}:${curSec}`
+    duration = `${lenHour}:${lenMin}:${lenSec}`
+  } else {
+    timeDone = `${curMin}:${curSec}`
+    duration = `${lenMin}:${lenSec}`
+  }
+
+  // Multiplication casts to numbers; addition prioritizes strings.
+  // Thanks, JavaScript!
+  const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
+  const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
+  const percentVal = (100 / lenSecTotal) * curSecTotal
+  const percentDone = (
+    (Math.trunc(percentVal * 100) / 100).toFixed(2) + '%'
+  )
+
+  return {percentDone, timeDone, duration}
 }
 
 class Player extends EventEmitter {
@@ -66,12 +95,12 @@ class Player extends EventEmitter {
     }
   }
 
-  printStatusLine(str) {
+  printStatusLine(data) {
     // Quick sanity check - we don't want to print the status line if it's
     // disabled! Hopefully printStatusLine won't be called in that case, but
     // if it is, we should be careful.
     if (!this.disablePlaybackStatus) {
-      this.emit('printStatusLine', str)
+      this.emit('printStatusLine', data)
     }
   }
 }
@@ -103,28 +132,7 @@ class MPVPlayer extends Player {
           percent // ###%
         ] = match.slice(1)
 
-        let curStr, lenStr
-
-        // We don't want to display hour counters if the total length is less
-        // than an hour.
-        if (parseInt(lenHour) > 0) {
-          curStr = `${curHour}:${curMin}:${curSec}`
-          lenStr = `${lenHour}:${lenMin}:${lenSec}`
-        } else {
-          curStr = `${curMin}:${curSec}`
-          lenStr = `${lenMin}:${lenSec}`
-        }
-
-        // Multiplication casts to numbers; addition prioritizes strings.
-        // Thanks, JavaScript!
-        const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
-        const lenSecTotal = (3600 * lenHour) + (60 * lenMin) + (1 * lenSec)
-        const percentVal = (100 / lenSecTotal) * curSecTotal
-        const percentStr = (
-          (Math.trunc(percentVal * 100) / 100).toFixed(2) + '%'
-        )
-
-        this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
+        this.printStatusLine(getTimeStrings({curHour, curMin, curSec, lenHour, lenMin, lenSec}))
       }
     })
 
@@ -210,6 +218,10 @@ class SoXPlayer extends Player {
         if (match) {
           const percentStr = match[1]
 
+          // SoX takes a loooooot of math in order to actually figure out the
+          // duration, since it outputs the current time and the remaining time
+          // (but not the duration).
+
           const [
             curHour, curMin, curSec, curSecFrac, // ##:##:##.##
             remHour, remMin, remSec, remSecFrac // ##:##:##.##
@@ -226,18 +238,7 @@ class SoXPlayer extends Player {
           const lenMin = Math.floor((duration - lenHour * 3600) / 60)
           const lenSec = Math.floor(duration - lenHour * 3600 - lenMin * 60)
 
-          let curStr, lenStr
-          const pad = val => val.toString().padStart(2, '0')
-
-          if (lenHour > 0) {
-            curStr = `${curHour}:${pad(curMin)}:${pad(curSec)}`
-            lenStr = `${lenHour}:${pad(lenMin)}:${pad(lenSec)}`
-          } else {
-            curStr = `${curMin}:${pad(curSec)}`
-            lenStr = `${lenMin}:${pad(lenSec)}`
-          }
-
-          this.printStatusLine(createStatusLine({percentStr, curStr, lenStr}))
+          this.printStatusLine(getTimeStrings({curHour, curMin, curSec, lenHour, lenMin, lenSec}))
         }
       }
     })
@@ -361,6 +362,7 @@ class DownloadController extends EventEmitter {
 class PlayController extends EventEmitter {
   constructor({
     player, playlist, historyController, downloadController,
+    statusLineTemplate = '%longIndex% (%percentDone%) %timeDone% / %duration%',
     useConverterOptions = true,
     trackDisplayFile = null // File to output current track path to.
   }) {
@@ -402,7 +404,7 @@ class PlayController extends EventEmitter {
       }
     })
 
-    this.player.on('printStatusLine', playerString => {
+    this.player.on('printStatusLine', playerData => {
       let fullStatusLine = ''
 
       // ESC[K - clears the line going from the cursor position onwards.
@@ -411,14 +413,15 @@ class PlayController extends EventEmitter {
 
       const track = this.currentTrack
 
+      let longIndex = ''
       if (track) {
         if (track.overallTrackIndex || track.groupTrackIndex) {
-          fullStatusLine += '('
+          longIndex += '('
 
           addTrackNumberInnards: {
             if (track.overallTrackIndex) {
               const [ cur, len ] = track.overallTrackIndex
-              fullStatusLine += `${cur + 1} / ${len}`
+              longIndex += `${cur + 1} / ${len}`
 
               if (track.groupTrackIndex) {
                 const [ curGroup, lenGroup ] = track.groupTrackIndex
@@ -430,26 +433,32 @@ class PlayController extends EventEmitter {
                 if (curGroup === cur && lenGroup === len) {
                   break addTrackNumberInnards
                 } else {
-                  fullStatusLine += ' [All]; '
+                  longIndex += ' [All]; '
                 }
               }
             }
 
             if (track.groupTrackIndex) {
               const [ cur, len ] = track.groupTrackIndex
-              fullStatusLine += `${cur + 1} / ${len}`
+              longIndex += `${cur + 1} / ${len}`
 
               if (track.overallTrackIndex) {
-                fullStatusLine += ' [Group]'
+                longIndex += ' [Group]'
               }
             }
           }
 
-          fullStatusLine += ') '
+          longIndex += ')'
         }
       }
 
-      fullStatusLine += playerString
+      fullStatusLine += processTemplateString(statusLineTemplate, Object.assign({
+        index: track ? (track.overallTrackIndex[0] + 1) : '',
+        trackCount: track ? (track.overallTrackIndex[1]) : '',
+        indexGroup: track ? (track.groupTrackIndex[0] + 1) : '',
+        trackCountGroup: track ? (track.groupTrackIndex[1]) : '',
+        longIndex
+      }, playerData))
 
       // Carriage return - moves the cursor back to the start of the line,
       // so that the next status line is printed on top of this one.

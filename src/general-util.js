@@ -313,3 +313,31 @@ module.exports.makePlaylistOptions = function() {
     }
   }
 }
+
+module.exports.processTemplateString = function(string, replacements) {
+  let outString = ''
+  let currentReplacement = null
+  for (let i = 0; i < string.length; i++) {
+    const char = string[i]
+
+    if (char === '%') {
+      if (currentReplacement === null) {
+        currentReplacement = ''
+      } else {
+        if (Object.keys(replacements).includes(currentReplacement)) {
+          outString += replacements[currentReplacement].toString()
+        } else {
+          outString += '%UnknownKey:' + currentReplacement + '%'
+        }
+        currentReplacement = null
+      }
+    } else {
+      if (currentReplacement === null) {
+        outString += char
+      } else {
+        currentReplacement += char
+      }
+    }
+  }
+  return outString
+}
