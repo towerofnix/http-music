@@ -245,9 +245,6 @@ class SoXPlayer extends Player {
       this.process.on('close', () => resolve())
     })
   }
-
-  async kill() {
-  }
 }
 
 class DownloadController extends EventEmitter {
