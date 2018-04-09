@@ -463,13 +463,17 @@ class PlayController extends EventEmitter {
       const groupIndexArr = (track && track.groupTrackIndex) || ['', '']
 
       fullStatusLine += processTemplateString(statusLineTemplate, Object.assign({
+        esc: '\x1b',
         index: track ? (track.overallTrackIndex[0] + 1) : '',
         trackCount: track ? (track.overallTrackIndex[1]) : '',
         indexGroup: groupIndexArr[0],
         trackCountGroup: groupIndexArr[1],
         longIndex,
-        trackName: track.name
+        trackName: track.name, name: track.name
       }, playerData))
+
+      // Clear format - custom color codes, etc.
+      fullStatusLine += '\x1b[0m'
 
       // Carriage return - moves the cursor back to the start of the line,
       // so that the next status line is printed on top of this one.
