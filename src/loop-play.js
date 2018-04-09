@@ -29,24 +29,6 @@ const {
 const { processTemplateString } = require('./general-util')
 
 function getTimeStrings({curHour, curMin, curSec, lenHour, lenMin, lenSec}) {
-  let timeDone, duration
-
-  const pad = val => val.toString().padStart(2, '0')
-  curMin = pad(curMin)
-  curSec = pad(curSec)
-  lenMin = pad(lenMin)
-  lenSec = pad(lenSec)
-
-  // We don't want to display hour counters if the total length is less
-  // than an hour.
-  if (parseInt(lenHour) > 0) {
-    timeDone = `${curHour}:${curMin}:${curSec}`
-    duration = `${lenHour}:${lenMin}:${lenSec}`
-  } else {
-    timeDone = `${curMin}:${curSec}`
-    duration = `${lenMin}:${lenSec}`
-  }
-
   // Multiplication casts to numbers; addition prioritizes strings.
   // Thanks, JavaScript!
   const curSecTotal = (3600 * curHour) + (60 * curMin) + (1 * curSec)
@@ -56,7 +38,33 @@ function getTimeStrings({curHour, curMin, curSec, lenHour, lenMin, lenSec}) {
     (Math.trunc(percentVal * 100) / 100).toFixed(2) + '%'
   )
 
-  return {percentDone, timeDone, duration}
+  const leftSecTotal = lenSecTotal - curSecTotal
+  let leftHour = Math.floor(leftSecTotal / 3600)
+  let leftMin = Math.floor((leftSecTotal - leftHour * 3600) / 60)
+  let leftSec = Math.floor(leftSecTotal - leftHour * 3600 - leftMin * 60)
+
+  const pad = val => val.toString().padStart(2, '0')
+  curMin = pad(curMin)
+  curSec = pad(curSec)
+  lenMin = pad(lenMin)
+  lenSec = pad(lenSec)
+  leftMin = pad(leftMin)
+  leftSec = pad(leftSec)
+
+  // We don't want to display hour counters if the total length is less
+  // than an hour.
+  let timeDone, timeLeft, duration
+  if (parseInt(lenHour) > 0) {
+    timeDone = `${curHour}:${curMin}:${curSec}`
+    timeLeft = `${leftHour}:${leftMin}:${leftSec}`
+    duration = `${lenHour}:${lenMin}:${lenSec}`
+  } else {
+    timeDone = `${curMin}:${curSec}`
+    timeLeft = `${leftMin}:${leftSec}`
+    duration = `${lenMin}:${lenSec}`
+  }
+
+  return {percentDone, timeDone, timeLeft, duration}
 }
 
 class Player extends EventEmitter {
