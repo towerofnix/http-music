@@ -467,7 +467,8 @@ class PlayController extends EventEmitter {
         trackCount: track ? (track.overallTrackIndex[1]) : '',
         indexGroup: groupIndexArr[0],
         trackCountGroup: groupIndexArr[1],
-        longIndex
+        longIndex,
+        trackName: track.name
       }, playerData))
 
       // Carriage return - moves the cursor back to the start of the line,
