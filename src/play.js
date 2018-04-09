@@ -77,8 +77,11 @@ async function main(args) {
   // keybinding files.
   let mayTrustShellCommands = true
 
-  // The file to output the playlist path to the current file.
+  // The file to write the playlist path of the current file to.
   let trackDisplayFile
+
+  // The (custom) status line template string.
+  let statusLineTemplate
 
   const keybindings = [
     [['space'], 'togglePause'],
@@ -381,6 +384,20 @@ async function main(args) {
 
     '-hide-playback-status': util => util.alias('-disable-playback-status'),
 
+    '-status-line': function(util) {
+      // --status-line <string>  (alias: --playback-status-line, --status, etc)
+      // Sets the text to be shown in status line. This is a "template" string,
+      // which means you can use text such as %timeLeft% and %duration% and
+      // these will be replaced with appropriate values.)
+
+      statusLineTemplate = util.nextArg()
+      console.log('Using custom status line:', statusLineTemplate)
+    },
+
+    '-playback-status': util => util.alias('-status-line'),
+    '-playback-status-line': util => util.alias('-status-line'),
+    '-status': util => util.alias('-status-line'),
+
     '-track-display-file': async function(util) {
       // --track-display-file  (alias: --display-track-file)
       // Sets the file to output the current track's path to every time a new
@@ -482,6 +499,7 @@ async function main(args) {
         willUseConverterOptions === null && shouldUseConverterOptions
       ),
       disablePlaybackStatus,
+      statusLineTemplate,
       startTrack,
       trackDisplayFile
     })

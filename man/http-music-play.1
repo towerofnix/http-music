@@ -184,6 +184,12 @@ Higher items are more prioritized; if A was first bound to showTrackInfo, then l
 A: togglePause will also show up higher in the list than A: showTrackInfo, so that it is apparent that it will run togglePause and not showTrackInfo.
 
 .TP
+.BR \-\-status\-line " \fIstring\fR"
+Sets how the playback status line should appear.
+See the \fBSTATUS LINES\fR section for information on how to format this string.
+(As a brief example: \fB--status-line '%name (-%timeLeft%)'\fR will make the status line show up as something along the lines of \fB02 United Colors of Scrapyard (-02:58)\fR.)
+
+.TP
 .BR \-\-sort\-mode ", " \-\-sort
 Sets the mode by which the playback order list is sorted.
 Valid options include \fBorder\fR, \fBshuffle\fR (the default), \fBshuffle-groups\fR, and \fBalphabet\fR.
@@ -205,6 +211,61 @@ This is mostly useful for interfacing tools like OBS with http-music, for exampl
 .BR \-w ", " \-\-write\-playlist ", " \-\-write ", " \-\-save " \fIfilePath\fR"
 Writes the active playlist to a file.
 This file can later be used with \fB\-\-open\fR; you won't need to stick in all the filtering options again.
+
+
+.SH STATUS LINES
+By using the \fB--status-line\fR option, a custom playback status line can be set.
+The basic idea is that strings like \fB%timeLeft%\fR, called "replacement strings", will be replaced with appropriate values (like \fB03:14\fR).
+A list of every such replacement string follows:
+
+.TP
+.BR %name% ", " %trackName%
+The name of the current track, e.g. \fBTimelapse Kingdom\fR.
+
+.TP
+.BR %longIndex%
+A "long" string that automatically contains information about the index of the current track, e.g. \fB(35 / 1572)\fR or \fB(35 / 1572 [All]; 1 / 11 [Group])\fR.
+(It only shows up like the second example when you're playing in a sort mode (see \fB--sort\fR) that plays the tracks of groups in order, such as \fBorder\fR or \fBshuffle-groups\fR.)
+
+.TP
+.BR %index%
+The index of the track in the entire track queue, e.g. \fB35\fR.
+
+.TP
+.BR %trackCount%
+The number of tracks in the entire track queue, e.g. \fB1572\fR.
+
+.TP
+.BR %indexGroup%
+The index of the track in the current group, e.g. \fB1\fR.
+Only exists if the sort mode (see \fB--sort\fR) is set to some option where the tracks in a group play in order (such as \fBorder\fR or \fBshuffle-groups\fR).
+(It's just an empty string otherwise.)
+
+.TP
+.BR %trackCountGroup%
+The number of tracks in the current group, e.g. \fB11\fR.
+As with \fBindexGroup\fR, only present according to the sort mode; otherwise an empty string.
+
+.TP
+.BR %duration%
+The duration of the track, e.g. \fB08:24\fR.
+In the format of "MM:SS", or "H:MM:SS" if the track is over an hour long.
+(MM and SS are padded, e.g. 03 instead of 3, but the number of hours isn't padded.)
+
+.TP
+.BR %timeDone%
+The time currently passed in the track, e.g. \fB03:10\fR.
+Formatted the same way as \fB%duration%\fR.
+
+.TP
+.BR %timeLeft%
+The time that remains in the track, e.g. \fB05:14\fR.
+Formatted the same way as \fB%duration%\fR.
+
+.TP
+.BR %esc%
+The escape string; equal to \fBESC\fR, \fB\\x1b\fB, \fB\\003\fR.
+You can use this to do fancy formatting tricks, like showing the name of the track in blue: \fB%esc%[34m%name%\fR.
 
 
 .SH FILTERS

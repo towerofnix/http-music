@@ -719,7 +719,8 @@ module.exports = async function startLoopPlay(
     useConverterOptions = true,
     disablePlaybackStatus = false,
     startTrack = null,
-    trackDisplayFile = null
+    trackDisplayFile = null,
+    statusLineTemplate = undefined
   }
 ) {
   // Looping play function. Takes a playlist and an object containing general
@@ -764,7 +765,7 @@ module.exports = async function startLoopPlay(
 
   const playController = new PlayController({
     player, playlist, historyController, downloadController,
-    trackDisplayFile
+    trackDisplayFile, statusLineTemplate
   })
 
   Object.assign(playController, {useConverterOptions})
