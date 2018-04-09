@@ -452,11 +452,13 @@ class PlayController extends EventEmitter {
         }
       }
 
+      const groupIndexArr = (track && track.groupTrackIndex) || ['', '']
+
       fullStatusLine += processTemplateString(statusLineTemplate, Object.assign({
         index: track ? (track.overallTrackIndex[0] + 1) : '',
         trackCount: track ? (track.overallTrackIndex[1]) : '',
-        indexGroup: track ? (track.groupTrackIndex[0] + 1) : '',
-        trackCountGroup: track ? (track.groupTrackIndex[1]) : '',
+        indexGroup: groupIndexArr[0],
+        trackCountGroup: groupIndexArr[1],
         longIndex
       }, playerData))
 
