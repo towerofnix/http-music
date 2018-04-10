@@ -80,8 +80,9 @@ async function main(args) {
   // The file to write the playlist path of the current file to.
   let trackDisplayFile
 
-  // The (custom) status line template string.
+  // The (custom) status line template strings.
   let statusLineTemplate
+  let titleLineTemplate
 
   const keybindings = [
     [['space'], 'togglePause'],
@@ -396,7 +397,24 @@ async function main(args) {
 
     '-playback-status': util => util.alias('-status-line'),
     '-playback-status-line': util => util.alias('-status-line'),
+    '-playback-line': util => util.alias('-status-line'),
     '-status': util => util.alias('-status-line'),
+
+    '-title-status-line': function(util) {
+      // --title-status-line <string> (alias: --title)
+      // Sets the text to be displayed in the title of the terminal window.
+      // This has particularly noticable use alongside utilities such as tmux
+      // and screen; for example, in tmux, the window list at the bottom of
+      // the screen will show the string here.  As with --status-line, this is
+      // a "template" string, of course. Setting this to an empty string
+      // disables the title status line (which is the default).
+
+      titleLineTemplate = util.nextArg()
+      console.log('Using custom title line:', titleLineTemplate)
+    },
+
+    '-title-line': util => util.alias('-title-status-line'),
+    '-title': util => util.alias('-title-status-line'),
 
     '-track-display-file': async function(util) {
       // --track-display-file  (alias: --display-track-file)
@@ -500,6 +518,7 @@ async function main(args) {
       ),
       disablePlaybackStatus,
       statusLineTemplate,
+      titleLineTemplate,
       startTrack,
       trackDisplayFile
     })

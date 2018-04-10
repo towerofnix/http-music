@@ -371,6 +371,7 @@ class PlayController extends EventEmitter {
   constructor({
     player, playlist, historyController, downloadController,
     statusLineTemplate = '%longIndex% (%percentDone%) %timeDone% / %duration%',
+    titleLineTemplate = '',
     useConverterOptions = true,
     trackDisplayFile = null // File to output current track path to.
   }) {
@@ -462,17 +463,30 @@ class PlayController extends EventEmitter {
 
       const groupIndexArr = (track && track.groupTrackIndex) || ['', '']
 
-      fullStatusLine += processTemplateString(statusLineTemplate, Object.assign({
+      const replacements = Object.assign({
         esc: '\x1b',
         index: track ? (track.overallTrackIndex[0] + 1) : '',
         trackCount: track ? (track.overallTrackIndex[1]) : '',
         indexGroup: groupIndexArr[0],
         trackCountGroup: groupIndexArr[1],
         longIndex,
-        trackName: track.name, name: track.name
-      }, playerData))
+        trackName: track.name, name: track.name,
+        trackTitle: track.title, title: track.title
+      }, playerData)
+
+      fullStatusLine += processTemplateString(statusLineTemplate, replacements)
 
       // Clear format - custom color codes, etc.
+      fullStatusLine += '\x1b[0m'
+
+      if (titleLineTemplate) {
+        const title = processTemplateString(titleLineTemplate, replacements)
+        if (title) {
+          fullStatusLine += '\x1bk' + title + '\x1b\\'
+        }
+      }
+
+      // Clear formatting again, juuuuust in case.
       fullStatusLine += '\x1b[0m'
 
       // Carriage return - moves the cursor back to the start of the line,
@@ -720,7 +734,8 @@ module.exports = async function startLoopPlay(
     disablePlaybackStatus = false,
     startTrack = null,
     trackDisplayFile = null,
-    statusLineTemplate = undefined
+    statusLineTemplate = undefined,
+    titleLineTemplate = undefined
   }
 ) {
   // Looping play function. Takes a playlist and an object containing general
@@ -765,7 +780,7 @@ module.exports = async function startLoopPlay(
 
   const playController = new PlayController({
     player, playlist, historyController, downloadController,
-    trackDisplayFile, statusLineTemplate
+    trackDisplayFile, statusLineTemplate, titleLineTemplate
   })
 
   Object.assign(playController, {useConverterOptions})
