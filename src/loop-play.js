@@ -370,7 +370,7 @@ class DownloadController extends EventEmitter {
 class PlayController extends EventEmitter {
   constructor({
     player, playlist, historyController, downloadController,
-    statusLineTemplate = '%longIndex% (%percentDone%) %timeDone% / %duration%',
+    statusLineTemplates = ['%timeLeft%'],
     titleLineTemplate = '',
     useConverterOptions = true,
     trackDisplayFile = null // File to output current track path to.
@@ -389,6 +389,8 @@ class PlayController extends EventEmitter {
     this.nextFile = undefined // TODO: Why isn't this null?
     this.stopped = false
     this.shouldMoveNext = true
+    this.statusLineTemplates = statusLineTemplates
+    this.statusLineIndex = statusLineTemplates.length - 1
     this.failedCount = 0
     this.playFailCount = 0
 
@@ -474,7 +476,8 @@ class PlayController extends EventEmitter {
         trackTitle: track.title, title: track.title
       }, playerData)
 
-      fullStatusLine += processTemplateString(statusLineTemplate, replacements)
+      fullStatusLine += processTemplateString(
+        statusLineTemplates[this.statusLineIndex], replacements)
 
       // Clear format - custom color codes, etc.
       fullStatusLine += '\x1b[0m'
@@ -725,6 +728,20 @@ class PlayController extends EventEmitter {
       console.log(`(Next) ${getCleanMessage(tl[i])}`)
     }
   }
+
+  nextStatusLine() {
+    this.statusLineIndex++
+    if (this.statusLineIndex >= this.statusLineTemplates.length) {
+      this.statusLineIndex = 0
+    }
+  }
+
+  previousStatusLine() {
+    this.statusLineIndex--
+    if (this.statusLineIndex < 0) {
+      this.statusLineIndex = this.statusLineTemplates.length - 1
+    }
+  }
 }
 
 module.exports = async function startLoopPlay(
@@ -734,7 +751,7 @@ module.exports = async function startLoopPlay(
     disablePlaybackStatus = false,
     startTrack = null,
     trackDisplayFile = null,
-    statusLineTemplate = undefined,
+    statusLineTemplates = undefined,
     titleLineTemplate = undefined
   }
 ) {
@@ -780,7 +797,7 @@ module.exports = async function startLoopPlay(
 
   const playController = new PlayController({
     player, playlist, historyController, downloadController,
-    trackDisplayFile, statusLineTemplate, titleLineTemplate
+    trackDisplayFile, statusLineTemplates, titleLineTemplate
   })
 
   Object.assign(playController, {useConverterOptions})

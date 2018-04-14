@@ -81,7 +81,10 @@ async function main(args) {
   let trackDisplayFile
 
   // The (custom) status line template strings.
-  let statusLineTemplate
+  let statusLineTemplates = [
+    '%longIndex% (%percentDone%) %timeDone% / %timeLeft%',
+    '%longIndex% (%percentDone%) %timeDone% / %duration%'
+  ]
   let titleLineTemplate
 
   const keybindings = [
@@ -97,6 +100,8 @@ async function main(args) {
     [['i'], 'showTrackInfo'], [['I'], 'showTrackInfo'],
     [['t'], 'showTrackInfo', 0, 0], [['T'], 'showTrackInfo', 0, 0],
     [['%'], 'showTrackInfo', 20, 0],
+    [['<'], 'previousStatusLine'],
+    [['>'], 'nextStatusLine'],
     [['q'], 'quit'], [['Q'], 'quit']
   ]
 
@@ -391,14 +396,29 @@ async function main(args) {
       // which means you can use text such as %timeLeft% and %duration% and
       // these will be replaced with appropriate values.)
 
-      statusLineTemplate = util.nextArg()
-      console.log('Using custom status line:', statusLineTemplate)
+      statusLineTemplates = [util.nextArg()]
+      console.log('Using custom status line:', statusLineTemplates[0])
     },
 
     '-playback-status': util => util.alias('-status-line'),
     '-playback-status-line': util => util.alias('-status-line'),
     '-playback-line': util => util.alias('-status-line'),
     '-status': util => util.alias('-status-line'),
+
+    '-add-status-line': function(util) {
+      // --add-status-line <string> (alias: all the same ones as --status-line)
+      // Works basically the same as --status-line, but adds a status line that
+      // can be switched to using the "<" and ">" keys. The most-recently-added
+      // status line is the one that's selected by default.
+
+      const line = util.nextArg()
+      if (statusLineTemplates) {
+        statusLineTemplates.push(line)
+      } else {
+        statusLineTemplates = [line]
+      }
+      console.log('Adding a quick-switch status line:', line)
+    },
 
     '-title-status-line': function(util) {
       // --title-status-line <string> (alias: --title)
@@ -517,7 +537,7 @@ async function main(args) {
         willUseConverterOptions === null && shouldUseConverterOptions
       ),
       disablePlaybackStatus,
-      statusLineTemplate,
+      statusLineTemplates,
       titleLineTemplate,
       startTrack,
       trackDisplayFile
@@ -570,6 +590,14 @@ async function main(args) {
         } else {
           player.volUp(diff)
         }
+      },
+
+      'nextStatusLine': function() {
+        playController.nextStatusLine()
+      },
+
+      'previousStatusLine': function() {
+        playController.previousStatusLine()
       },
 
       // TODO: Skip back/ahead multiple tracks at once

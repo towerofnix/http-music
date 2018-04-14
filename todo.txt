@@ -424,6 +424,7 @@ TODO: Make process-metadata work nicely with smart playlists, somehow...
 
 TODO: A way (key, option) to change the "/ duration" text in the status bar to
       "- remaining". This would work very nicely with the >/< status bar idea.
+      (Done!)
 
 TODO: Be a bit more loose (strict?) about what means crashing... Right now if
       five tracks fail to play in a row, http-music stops. This is good for
@@ -453,3 +454,4 @@ TODO: A way to customize the tmux window title, somehow. I have no idea how
       working; we can just reuse the formatting code so that the user can
       customize what shows up (if anything) in the window title. Some will
       prefer the title of a song while others will prefer its duration!
+      (Done!)
