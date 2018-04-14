@@ -420,6 +420,11 @@ async function main(args) {
       console.log('Adding a quick-switch status line:', line)
     },
 
+    '-add-playback-status': util => util.alias('-add-status-line'),
+    '-add-playback-status-line': util => util.alias('-add-status-line'),
+    '-add-playback-line': util => util.alias('-add-status-line'),
+    '-add-status': util => util.alias('-add-status-line'),
+
     '-title-status-line': function(util) {
       // --title-status-line <string> (alias: --title)
       // Sets the text to be displayed in the title of the terminal window.

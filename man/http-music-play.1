@@ -77,8 +77,19 @@ Skips past the track that's currently playing.
 Shows information about the track that's currently playing.
 (Use \fBi\fR to also see previous and upcoming tracks.)
 
+.TP
+.BR > ", " <
+(Shift-"." and "," on most keyboards.)
+Switches to the next or previous status line.
+Practically, this means displaying the remaining amount of time instead of the duration, but you can customize it with \fB--add-status-line\fR.
+
 
 .SH OPTIONS
+.TP
+.BR \-\-add\-status\-line
+Works basically the same as \fB--status-line\fR, but adds a status line that can be switched to using the "<" and ">" keys.
+The most-recently-added status line is the one that's selected by default.
+
 .TP
 .BR \-c ", " \-\-clear
 Clears the active playlist.
@@ -188,7 +199,7 @@ A: togglePause will also show up higher in the list than A: showTrackInfo, so th
 Sets how the playback status line should appear.
 See the \fBSTATUS LINES\fR section for information on how to format this string.
 (As a brief example: \fB--status-line '%name (-%timeLeft%)'\fR will make the status line show up as something along the lines of \fB02 United Colors of Scrapyard (-02:58)\fR.)
-See also \fB--title-line\fR.
+See also \fB--title-line\fR and \fB--add-status-line\fR.
 
 .TP
 .BR \-\-sort\-mode ", " \-\-sort
