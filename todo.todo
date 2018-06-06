@@ -1,0 +1,459 @@
+!TODO: Get `avconv` working. Oftentimes `play` won't be able to play
+       some tracks due to an unsupported format; we'll need to use
+       `avconv` to convert them (to WAV).
+       (Done!)
+
+!TODO: Get `play` working.
+       (Done!)
+
+!TODO: Get play-next working; probably just act like a shuffle. Will
+       need to keep an eye out for the `play` process finishing.
+       (Done!)
+
+!TODO: Preemptively download and process the next track, while the
+       current one is playing, to eliminate the silent time between
+       tracks.
+       (Done!)
+
+!TODO: Delete old tracks! Since we aren't overwriting files, we
+       need to manually delete files once we're done with them.
+       (Done!)
+
+!TODO: Get library filter path from stdin.
+       (Done!)
+
+!TODO: Show library tree. Do this AFTER filtering, so that people
+       can e.g. see all albums by a specific artist.
+       (Done!)
+
+!TODO: Ignore .DS_Store.
+       (Done!)
+
+TODO: Have a download timeout, somehow.
+
+!TODO: Fix the actual group format. Often times we get single-letter
+       files being downloaded (which don't exist); I'm guessing that's
+       related to folder names (which are just strings, not title-href
+       arrays) still being in the group array. (Update: that's defin-
+       itely true; 'Saucey Sounds'[0] === 'S', and 'Unofficial'[0]
+       === 'U', which are the two "files" it crashes on while playing
+       -g 'Jake Chudnow'.)
+       (Done!)
+
+!TODO: A way to exclude a specific group path.
+       (Done!)
+
+!TODO: Better argv handling.
+       (Done!)
+
+!TODO: Option to include a specific path from the source playlist.
+       (Done!)
+
+!TODO: Make a playlist generator that parses http://billwurtz.com
+       instrumentals.html.
+       (Done!)
+
+!TODO: Make crawl-itunes.js a bit more general, more command-line
+       friendly (i.e. don't require editing the script itself), and
+       make it use the getHTMLLinks function defined in the new
+       crawl-links.js script.
+       (Done!)
+
+!TODO: Play-in-order track picker.
+       (Done!)
+
+!TODO: Volume controls. Who knows how to do this? It might have to be an
+       argument passed to `play`. Being able to change the volume while it's
+       playing would be nice, but I'm not sure if that's really possible.
+       (Done! - To the greatest current ability.)
+
+!TODO: Tempfiles, maybe?
+       (Done!)
+
+!TODO: Use NOT the internet as its source, so that it's a bit more general
+       purpose. This would only take adding a new downloader.
+       (Done!)
+
+!TODO: Recursive local file playlist crawler.
+       (Done!)
+
+!TODO: *Requiring* a literal `playlist.json` file doesn't seem quite right,
+       especially since there's the `--open` option.
+       (Done!)
+
+!TODO: Make local downlaoder sort more natural - that is, 10 comes immediately
+       after 9, not 1. (1, 5, 9, 10, 12; not 1, 10, 12, 5, 9.)
+       (Done!)
+
+!TODO: Make a way to skip tracks while playing. Currently the only way is to
+       kill and restart the http-music process; this is bad for numerous
+       reasons, particularly because it gets rid of the pre-downloaded track and
+       forces the user to wait for another one to be downloaded.
+       (Done!)
+
+!TODO: Make a --help/-h/-? option that directs helpless users to the man page.
+       (Done!)
+
+!TODO: Make a way to write the current playlist to a file. I think just renaming
+       the debug-playlist-log option could work, since you could pipe that to a
+       file through your shell.
+       (Done!)
+
+TODO: Figure out a less "hacky" way to kill the process. Ideally we shouldn't
+      have to handle ^C and ^D ourselves; for instance right now ^Z is actually
+      broken, since we aren't using the shell's normal way of handling any
+      keyboard controls such as those!
+
+!TODO: Separate the code in loop-play.js to be a bit nicer.
+       (Done!)
+
+TODO: Cleaning up http-music.js would be nice as well!
+
+!TODO: A way to kill the up-next song.
+       (Done!)
+
+!TODO: A way to see information about the currently playing song, as well as
+       the up-next song.
+       (Done!)
+
+!TODO: A way to see the previously played songs, and to skip back (or forwards).
+
+!TODO: Exit on loop-play end. (Since it listens to stdin for input right now,
+       it won't automatically stop.)
+
+!TODO: Figure out how to attempt to avoid being forced to convert every file..
+       converting a 10MB MP3 into an 80MB WAV is never good, even if we're
+       storing it as a tempfile!
+       (Done!)
+
+!TODO: Let playlist filter match things lowercase. '72 Minutes Of Fame' should
+       be matched if '72 Minutes of Fame' can't be! (However, it would also be
+       best to prioritize a case-sensitive match before a non-case-sensitive
+       one. Given the input 'FoObAR', prioritize 'FoObAR' over 'Foobar'.)
+       (Done!)
+
+!TODO: Figure out why written track files (when using HTTP downloader) are
+       URL-encoded. It's probably writing a file based on the href-file name,
+       rather than the title. That's alright, but maybe we should URL-decode
+       and then sanitize the href-file name, so that we get 'Foo Bar.mp3'
+       instead of 'Foo%20Bar.mp3'.
+       (Done!)
+
+!TODO: Make max download attempts variable by the user (without requiring
+       source editing, obviously).
+       (Done!)
+
+TODO: Update HTTP crawl man page to include new options, and maybe update
+      the HTTP crawler itself to reveal more options to the command line.
+
+!TODO: Fix the bug in loop-play.js where wasDestroyed doesn't exist!
+       (Done!)
+
+!TODO: Use `mpv` instead of `play`!!!!!!!!! This would fix every problem ever.
+       (Done!)
+
+!TODO: It looks like up-next doesn't seem to work properly when using the
+       YouTube downloader; though it's possible we'll be scrapping downloaders
+       altogether..
+       (Done! - Removed downloaders.)
+
+TODO: The results of pressing key commands aren't very clear currently. Useful
+      things that come to mind would be presenting the volume when it's
+      changed; making it clear that a song is being skipped when it is; and
+      having "paused" be part of the status bar.
+
+TODO: Figure out a way to make the same mpv process be reused, so that options
+      such as volume can be remembered. (At the moment volume is reset to the
+      default whenever a new track is played!)
+
+TODO: Figure out how to stream audio data directly, or at least at a lower
+      level (and stupider, as in "man git" stupid).
+
+TODO: Validate local file paths in getDownloaderFor, maybe?
+
+!TODO: Figure out the horrible, evil cause of the max listeners warning
+       I'm getting lately.. current repro: play a bunch of files locally.
+       Skipping tracks still leads to issue. Wait for them to start playing
+       before skipping, though.
+       (Done!)
+
+TODO: Something's requesting avprobe, and I'm not sure why. (While playing
+      YouTube videos.) Perhaps it's youtube-dl..?
+
+!TODO: Re-implement skip.
+       (Done!)
+
+!TODO: Re-implement skip and view up-next track.
+       (Done!)
+
+!TODO: In the playlist downloader, we can't guarantee filenames - the OS likes
+       to do its own verification, e.g. by removing colons. Maybe we can use
+       sanitize file name?
+       (Done!)
+
+!TODO: In the playlist downloader, it would be nice if we skipped past existing
+       files before trying to do any old files, so that the 'percent complete'
+       status is more accurate. After all, we might skip 20% of the total track
+       count because 20% were downloaded, and then we'd download one track,
+       which makes up 10%, and then the rest would still be downloaded, which
+       take up 70%. It would be better if we went from 0%, skipped ALL complete
+       tracks to get to 90%, then did the 10% for the downloaded tracks.
+       (Done!)
+
+!TODO: Tracks should be able to contain more data than the title and downloader
+       argument, by being stored as objects instead of arrays. This would also
+       make it easier to implement things such as temporary state stored on
+       tracks by sticking Symbols onto the track objects. It'd be particularly
+       useful to store the original group path for tracks in flattenGroup, for
+       example.
+       (Done!)
+
+!TODO: Piping the output of a crawl command into the http-music command would
+       be nifty!
+       (Done! - try '-o /dev/stdin'. This was apparently always a feature.)
+
+!TODO: Having all the http-music commands be stuck into one main command might
+       be nice, like the way git does it..
+       (Done!)
+
+TODO: Figure out how man pages work, and update the syntax in those files.
+      Particularly I'd like to make the number of blank lines between headings
+      more consistent, and figure out when to use '\-' or '-'.
+
+!TODO: Fix skip up-next..!
+       (Done!)
+
+!TODO: Make iTunes crawler prefer album artist over artist.
+       (Done!)
+
+TODO: Make iTunes crawler take into account track numbers.
+
+!TODO: Make a YouTube playlist crawler.
+       (Done!)
+
+!TODO: The filter utility function shouldn't work at all if it fails to find
+       what it's looking for.
+       (Done!)
+
+TODO: Make the keep/remove options also work with tracks!
+
+!TODO: The URL 'http://somesite.com/youtube.com.mp3' would probably
+       automatically assume the YouTube downloader. Instead of checking for the
+       string 'youtube.com' included in the downloader arg, check if it is a
+       valid URL and that the URL's domain is 'youtube.com'.
+
+TODO: Figure out when to process.exit(1). In cli.js?
+
+!TODO: Change usages of "/example/path" to a more specific "/path/to/playlist"
+       (for example).
+       (Done!)
+
+!TODO: Support smart playlists right inside of play - and ideally any other
+       usage, e.g. download-playlist. For now the user can just run
+       smart-playlist, save the result, and load that in whatever command
+       they're using.
+       (Done!)
+
+TODO: Markdown documentation? Man pages are nice, but aren't really all that
+      user-friendly (citation needed); for example you can't easily read them
+      online. (Whereas Markdown documents are easily viewed online, and aren't
+      hard to read by hand, e.g. with `less doc/foo.md`.)
+
+!TODO: Handle avconv failing (probably handle downloader rejections from within
+       DownloadController). Less important now that only music file extensions
+       are loaded, but still relevant (for old playlists which may contain
+       .DS_Stores or album cover arts, etc).
+       (Done!)
+
+!TODO: Delete temporary files when done with them - seriously! http-music alone
+       filled up a good 9GB of disk space, solely on temporary music files.
+       (Done!)
+
+!TODO: Players (MPV, SoX) should be separate (sub-)classes.
+       (Done!)
+
+!TODO: FIFO doesn't work on Windows. Implement a no-fifo player.
+       (Done!)
+
+!TODO: It looks like the SoX player is broken? - Fix this!
+       (Done!)
+
+!TODO: Support caps-lock variants of letter-based keyboard controls, and avoid
+       separate functionality based on shift being pressed or not. (What this
+       practically means is - make keyboard controls work even if caps-lock is
+       pressed!)
+       (Done!)
+
+!TODO: Only create one converter instance (per DownloadController).
+       (Done!)
+
+!TODO: More selectors! No-loop/loop options of ordered and shuffled would be
+       nice.
+       (Done!)
+
+TODO: Magically watching for the play/pause keyboard button being pressed
+      would be fun. (This would definitely be togglable via option!)
+
+!TODO: Show the new up-next song when delete-up-next (backspace) is pressed.
+       (Done!)
+
+!TODO: safeUnlink probably shouldn't throw/reject if it fails to delete its
+       given file (e.g. if a temporary file was automatically purged by the
+       system before safeUnlink). Having a warning might be better? (Since
+       *most* of the time it's probably a bug.)
+       (Done!)
+
+!TODO: A shuffle-groups picker would be fun! (That is, it would take a
+       grouplike, then shuffle all the items on the TOP level; so it would
+       play random (top-level) groups at a time.)
+       (Done!)
+
+TODO: cheerio and xmldoc are both NPM dependencies. This seems Bad!
+
+!TODO: Check if the `mkfifo` shell command exists when determining the
+       player to use; if it doesn't, use mpv-nofifo. For better support on
+       Windows!
+       (Done!)
+
+!TODO: History VOODOO!
+       (Done!)
+
+!TODO: Fix the shuffle players, which don't really work anymore (they more or
+       less behave like pick-random).
+       (Done!)
+
+!TODO: Also fix the shuffle-groups player.
+       (Done!)
+
+TODO: Consider adding pick-random back, in some way or another?
+
+TODO: The concepts of importing and adding keybindings isn't very intuitive..
+
+TODO: A way to export the "timeline" playlist (though we'll need a better
+      term) - that is, the flat result of the picker - would be awesome!
+
+!TODO: I'm really, really bad at seeding randomness. Aaaaaa. Aaaaaaa. Aaa.
+       AAAAAAA. (Fix the code. Unless it's working right already. Hmm.)
+       (Done!)
+
+!TODO: Now that we're using seeded randomness, generating the entire timeline
+       every time we want to call the picker is definitely really slow. There
+       should be some way to make it faster. (Maybe store the playlist on the
+       mutable options object?).
+       (Done!)
+
+!TODO: Rename pickers2.js to pickers.js, and get rid of the old pickers.js.
+       (Done!)
+
+TODO: Some way to control how verbose http-music is.. most people probably
+       don't care about 'Indexing (flattening)', but it is handy for those on
+       slow computers.
+
+!TODO: Make the natural sort in crawl-local ignore capitalization case.
+       (Done!)
+
+!TODO: Make the '@ ...' part of track-info show the path to the track, rather
+       than the track name again (this is a bug!).
+       (Done!)
+
+!TODO: Only show the path to a given track's group in the track info.
+       (Done!)
+
+!TODO: Figure out what to show in the '@ ...' part when a track is in the top
+       level (i.e. its group is only the top). Probably just '/'? Probably best
+       to make sure that the to-path-string function always returns a slash at
+       the start.
+       (Done!)
+
+!TODO: Let track objects have an option for command line arguments to pass to
+       the converter program (ffmpeg or avconv). This would be useful for a
+       variety of cases:
+       * Have a track which has two minutes of blank audio you want to skip?
+         Make the converter skip past those first two minutes!
+       * Have a track which is much quieter than the rest of your library?
+         Make the converter amplify its volume!
+       It'd also be useful with the 'apply' option of groups (e.g., amplify
+       all the tracks in an album's group).
+       Since there are differences between avconv and ffmepg, it'd be
+       recommended to specify the converter program via the "options" part of
+       the playlist. When http-music finds that a playlist has asked for a
+       converter program that isn't installed, it simply won't run the
+       convertion options on the tracks in the playlist.
+       (Done!)
+
+TODO: Should the '@ ...' part display the path to the track in the SOURCE
+      playlist, rather than in the active one? I'm split on this; showing the
+      active path is handy for debugging or writing your own playlist, but
+      showing the source path is usually more practically useful, so you know
+      where the album came from (e.g. displaying /C418/BAM instead of /BAM).
+
+!TODO: Let playlists be passed to `play` by an actual string argument; e.g.
+       --playlist-string '{"tracks": [...]}'. Could work well with http-music's
+       own crawler utilities (e.g. --playlist-string
+       '{"source": ["crawl-local", "."]}' or with external ones (e.g.
+       --playlist-string "$(cool-crawler-utilith.sh)". At the moment the only
+       workaround is to use a temporary file to store the playlist in, or to
+       pipe the output of the crawler command (which might be `echo`!) to http-
+       music and use /dev/stdin as the --playlist-file value.. which obviously
+       isn't cross-platform or practical!
+       (Done!)
+
+!TODO: A way to search the playlist for a path. Probably best to modify the
+       function which filters a grouplike by a path. I think I'll hide this
+       feature behind a special prefix, e.g. -c -k '?72 Minutes of Fame'.
+       (Done!)
+
+!TODO: Case-insensitive checking with command keybindings - I think this is
+       broken with the new command system.
+       (Done!)
+
+!TODO: Handle empty (active) playlists. Showing an error message and stopping
+       is best, I think.
+       (Done!)
+
+!TODO: A way to switch between what information is displayed in the status bar.
+       I think using ">" and "<" as default keybindings would work.
+       Make one set be (track # in group) / (# of tracks in group); one be
+       (total track #) / (total # of tracks).
+       (Done! - Use --add-status-line.)
+
+TODO: Adding onto the last one, show the total amount of time in the group/all
+      groups together. Requires a track metadata tool, though...
+
+TODO: Make process-metadata work with non-local tracks, somehow...
+
+TODO: Make process-metadata work nicely with smart playlists, somehow...
+
+!TODO: A way (key, option) to change the "/ duration" text in the status bar to
+       "- remaining". This would work very nicely with the >/< status bar idea.
+       (Done!)
+
+!TODO: Be a bit more loose (strict?) about what means crashing... Right now if
+       five tracks fail to play in a row, http-music stops. This is good for
+       dealing with, for example, a messed up playlist file that now references
+       moved MP3s, since "failing" means "the download failed". But if the PLAY
+       command fails (i.e. mpv or sox exits with code 1), THAT should also be
+       counted as a failure. (An example case of the "play" command failing --
+       trying to play a track when there is no audio device.)
+       (Done!)
+
+!TODO: Group/album length visualizer thing!!! Colorful and PRETTY. Only work on
+       the first level of groups since I'm lazy and don't want to figure out how
+       to nicely display multiple levels. Use --keep + --save to use the viz on
+       specific albums (or maybe implement --clear, --keep, etc as common code
+       between the player and the visualizer, shrug). Also using --collapse
+       would work for comparing album lengths rather than artist lengths.
+       (Done!)
+
+TODO: Show mean/media/mode statistics for songs in duration-graph.
+
+TODO: In duration-graph, show warning message if *no* items in a playlist have
+      duration metadata (direct the user to use process-metadata).
+
+!TODO: A way to customize the tmux window title, somehow. I have no idea how
+       that technically works, but it would be super cool. This is definitely
+       a thing I want to do once we've got the "status line formatting" system
+       working; we can just reuse the formatting code so that the user can
+       customize what shows up (if anything) in the window title. Some will
+       prefer the title of a song while others will prefer its duration!
+       (Done!)

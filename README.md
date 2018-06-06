@@ -1,5 +1,13 @@
 # `http-music`
 
+## http-music's code is no longer updated on GitHub
+
+Please check out [https://git.ed1.club/florrie/http-music.git][git] instead.
+
+  [git]: https://git.ed1.club/florrie/http-music.git
+
+---
+
 ![Play demo](screenshots/hm-basic-usage.png)
 ![Local crawl demo](screenshots/hm-crawllocal.png)
 
